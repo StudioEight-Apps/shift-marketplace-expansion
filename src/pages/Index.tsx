@@ -7,11 +7,11 @@ import ListingsGrid from "@/components/shift/ListingsGrid";
 import EmptyState from "@/components/shift/EmptyState";
 import { villaListings, carListings, yachtListings } from "@/data/listings";
 
-type AssetType = "Villas" | "Cars" | "Yachts";
+type AssetType = "Stays" | "Cars" | "Yachts";
 
 const Index = () => {
   const [selectedCity, setSelectedCity] = useState("Miami");
-  const [selectedType, setSelectedType] = useState<AssetType>("Villas");
+  const [selectedType, setSelectedType] = useState<AssetType>("Stays");
 
   const listings = useMemo(() => {
     let allListings;
@@ -22,6 +22,7 @@ const Index = () => {
       case "Yachts":
         allListings = yachtListings;
         break;
+      case "Stays":
       default:
         allListings = villaListings;
     }

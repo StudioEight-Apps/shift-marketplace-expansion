@@ -1,7 +1,7 @@
 import { Heart, Share2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type AssetType = "Villas" | "Cars" | "Yachts";
+type AssetType = "Stays" | "Cars" | "Yachts";
 
 export interface Listing {
   id: string;
@@ -34,7 +34,7 @@ const ListingCard = ({ listing, className }: ListingCardProps) => {
     switch (assetType) {
       case "Yachts":
         return { price: listing.price, unit: "/ hour" };
-      default: // Villas and Cars use per day
+      default: // Stays and Cars use per day
         return { price: listing.price, unit: "/ day" };
     }
   };
@@ -55,7 +55,7 @@ const ListingCard = ({ listing, className }: ListingCardProps) => {
           listing.length ? `${listing.length}ft` : listing.attributes[0],
           "Crew Included",
         ].filter(Boolean).slice(0, 3);
-      default: // Villas
+      default: // Stays
         return [
           `${listing.guests} Guests`,
           listing.bedrooms ? `${listing.bedrooms} Beds` : null,

@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
 
-type AssetType = "Villas" | "Cars" | "Yachts";
+type AssetType = "Stays" | "Cars" | "Yachts";
 
 interface AssetTypeSelectorProps {
   selectedType: AssetType;
   onTypeChange: (type: AssetType) => void;
 }
 
-const assetTypes: AssetType[] = ["Villas", "Cars", "Yachts"];
+const assetTypes: AssetType[] = ["Stays", "Cars", "Yachts"];
 
 const AssetTypeSelector = ({ selectedType, onTypeChange }: AssetTypeSelectorProps) => {
   return (
