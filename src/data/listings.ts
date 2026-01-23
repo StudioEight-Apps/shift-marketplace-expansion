@@ -6,10 +6,19 @@ import villa2 from "@/assets/villa-2.jpg";
 import villa3 from "@/assets/villa-3.jpg";
 import villa4 from "@/assets/villa-4.jpg";
 import villa5 from "@/assets/villa-5.jpg";
-import car1 from "@/assets/car-1.jpg";
-import car2 from "@/assets/car-2.jpg";
 import yacht1 from "@/assets/yacht-1.jpg";
 import yacht2 from "@/assets/yacht-2.jpg";
+
+// Car images - accurate make/model
+import lamborghiniUrus from "@/assets/lamborghini-urus.jpg";
+import rollsRoyceGhost from "@/assets/rolls-royce-ghost.jpg";
+import bentleyContinentalGt from "@/assets/bentley-continental-gt.jpg";
+import mercedesAmgG63 from "@/assets/mercedes-amg-g63.jpg";
+import ferrari488Spider from "@/assets/ferrari-488-spider.jpg";
+import porsche911TurboS from "@/assets/porsche-911-turbo-s.jpg";
+import mclaren720s from "@/assets/mclaren-720s.jpg";
+import astonMartinDb11 from "@/assets/aston-martin-db11.jpg";
+import rangeRoverAutobiography from "@/assets/range-rover-autobiography.jpg";
 
 export const villaListings: Listing[] = [
   {
@@ -154,7 +163,7 @@ export const carListings: Listing[] = [
     rating: 5.0,
     price: 1200,
     priceUnit: "per day",
-    image: car1,
+    image: lamborghiniUrus,
     attributes: ["SUV", "V8 Twin-Turbo", "Supercar"],
     badges: ["Guest Favorite", "Reserve"],
     assetType: "Cars",
@@ -170,7 +179,7 @@ export const carListings: Listing[] = [
     rating: 4.9,
     price: 950,
     priceUnit: "per day",
-    image: car2,
+    image: rollsRoyceGhost,
     attributes: ["Sedan", "V12", "Luxury"],
     badges: ["Reserve"],
     assetType: "Cars",
@@ -186,7 +195,7 @@ export const carListings: Listing[] = [
     rating: 4.8,
     price: 850,
     priceUnit: "per day",
-    image: car1,
+    image: bentleyContinentalGt,
     attributes: ["Coupe", "W12", "Grand Tourer"],
     badges: ["Guest Favorite"],
     assetType: "Cars",
@@ -202,7 +211,7 @@ export const carListings: Listing[] = [
     rating: 4.9,
     price: 750,
     priceUnit: "per day",
-    image: car2,
+    image: mercedesAmgG63,
     attributes: ["SUV", "V8 Biturbo", "Luxury"],
     badges: ["Reserve"],
     assetType: "Cars",
@@ -219,7 +228,7 @@ export const carListings: Listing[] = [
     rating: 5.0,
     price: 1500,
     priceUnit: "per day",
-    image: car1,
+    image: ferrari488Spider,
     attributes: ["Convertible", "V8", "Supercar"],
     badges: ["Guest Favorite"],
     assetType: "Cars",
@@ -236,7 +245,7 @@ export const carListings: Listing[] = [
     rating: 4.9,
     price: 950,
     priceUnit: "per day",
-    image: car2,
+    image: porsche911TurboS,
     attributes: ["Coupe", "Twin-Turbo", "Sports"],
     badges: ["Reserve"],
     assetType: "Cars",
@@ -252,7 +261,7 @@ export const carListings: Listing[] = [
     rating: 5.0,
     price: 1800,
     priceUnit: "per day",
-    image: car1,
+    image: mclaren720s,
     attributes: ["Coupe", "V8", "Supercar"],
     badges: ["Guest Favorite", "Reserve"],
     assetType: "Cars",
@@ -269,7 +278,7 @@ export const carListings: Listing[] = [
     rating: 4.8,
     price: 850,
     priceUnit: "per day",
-    image: car2,
+    image: astonMartinDb11,
     attributes: ["Coupe", "V8", "Grand Tourer"],
     badges: ["Guest Favorite"],
     assetType: "Cars",
@@ -285,7 +294,7 @@ export const carListings: Listing[] = [
     rating: 4.7,
     price: 650,
     priceUnit: "per day",
-    image: car1,
+    image: rangeRoverAutobiography,
     attributes: ["SUV", "V8", "Luxury"],
     badges: ["Reserve"],
     assetType: "Cars",

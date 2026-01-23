@@ -1,4 +1,4 @@
-import { SlidersHorizontal, DollarSign, Users, BedDouble, Car, Ruler, Gauge } from "lucide-react";
+import { DollarSign, Users, BedDouble, Car, Ruler, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type AssetType = "Villas" | "Cars" | "Yachts";
@@ -93,11 +93,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
   };
 
   return (
-    <div className="flex items-center justify-center gap-1 transition-all duration-300">
-      <FilterButton 
-        icon={<SlidersHorizontal className="h-4 w-4" />} 
-        label="Filters" 
-      />
+    <div className="flex items-center justify-center gap-2 md:gap-3 transition-all duration-300">
       {getFiltersForType()}
     </div>
   );
