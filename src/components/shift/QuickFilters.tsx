@@ -19,13 +19,13 @@ const FilterButton = ({ icon, label, active, onClick }: FilterButtonProps) => {
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200",
+        "flex items-center gap-1 md:gap-2 rounded-lg px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-all duration-200",
         active 
           ? "bg-secondary text-foreground" 
           : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
       )}
     >
-      {icon}
+      <span className="[&>svg]:h-3 [&>svg]:w-3 md:[&>svg]:h-4 md:[&>svg]:w-4">{icon}</span>
       <span>{label}</span>
     </button>
   );
