@@ -43,8 +43,8 @@ const Index = () => {
       <Header />
       
       {/* Controls Section */}
-      <section className="border-b border-border-subtle py-4">
-        <div className="container space-y-3 px-6">
+      <section className="border-b border-border-subtle py-2 md:py-4">
+        <div className="container space-y-2 md:space-y-3 px-4 md:px-6">
           {/* City Selector */}
           <CitySelector 
             selectedCity={selectedCity} 
