@@ -1,17 +1,25 @@
 import { Heart, Share2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type AssetType = "Villas" | "Cars" | "Yachts";
+
 export interface Listing {
   id: string;
   title: string;
   location: string;
   guests: number;
+  bedrooms?: number;
+  length?: number;
+  bodyStyle?: string;
+  seats?: number;
+  power?: string;
   rating: number;
   price: number;
   priceUnit: string;
   image: string;
   attributes: string[];
   badges: ("Guest Favorite" | "Reserve")[];
+  assetType?: AssetType;
 }
 
 interface ListingCardProps {
@@ -20,6 +28,45 @@ interface ListingCardProps {
 }
 
 const ListingCard = ({ listing, className }: ListingCardProps) => {
+  // Get price display based on asset type
+  const getPriceDisplay = () => {
+    const assetType = listing.assetType || "Villas";
+    switch (assetType) {
+      case "Yachts":
+        return { price: listing.price, unit: "/ hour" };
+      default: // Villas and Cars use per day
+        return { price: listing.price, unit: "/ day" };
+    }
+  };
+
+  // Get spec chips based on asset type (max 3)
+  const getSpecChips = () => {
+    const assetType = listing.assetType || "Villas";
+    switch (assetType) {
+      case "Cars":
+        return [
+          listing.bodyStyle || listing.attributes[0],
+          `${listing.seats || listing.guests} Seats`,
+          listing.power || listing.attributes[2],
+        ].filter(Boolean).slice(0, 3);
+      case "Yachts":
+        return [
+          `${listing.guests} Guests`,
+          listing.length ? `${listing.length}ft` : listing.attributes[0],
+          "Crew Included",
+        ].filter(Boolean).slice(0, 3);
+      default: // Villas
+        return [
+          `${listing.guests} Guests`,
+          listing.bedrooms ? `${listing.bedrooms} Beds` : null,
+          listing.attributes[0], // Premium amenity
+        ].filter(Boolean).slice(0, 3);
+    }
+  };
+
+  const priceDisplay = getPriceDisplay();
+  const specChips = getSpecChips();
+
   return (
     <div 
       className={cn(
@@ -35,16 +82,16 @@ const ListingCard = ({ listing, className }: ListingCardProps) => {
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         
-        {/* Top Badges */}
+        {/* Top Badges - More subtle styling */}
         <div className="absolute left-3 top-3 flex gap-2">
           {listing.badges.map((badge) => (
             <span
               key={badge}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-sm",
+                "rounded-full px-2.5 py-0.5 text-[11px] font-medium backdrop-blur-sm",
                 badge === "Guest Favorite" 
-                  ? "bg-primary/90 text-primary-foreground" 
-                  : "bg-secondary/80 text-foreground"
+                  ? "bg-primary/60 text-primary-foreground/90" 
+                  : "bg-secondary/60 text-foreground/80"
               )}
             >
               {badge}
@@ -64,30 +111,28 @@ const ListingCard = ({ listing, className }: ListingCardProps) => {
             {listing.title}
           </h3>
           <div className="text-right shrink-0">
-            <span className="text-lg font-bold text-primary">${listing.price}</span>
-            <p className="text-xs text-muted-foreground">{listing.priceUnit}</p>
+            <span className="text-lg font-bold text-primary">${priceDisplay.price}</span>
+            <p className="text-xs text-muted-foreground">{priceDisplay.unit}</p>
           </div>
         </div>
         
-        {/* Location, Guests, Rating */}
+        {/* Location and Rating */}
         <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
           <span>{listing.location}</span>
-          <span>•</span>
-          <span>{listing.guests} guests</span>
           <span className="flex items-center gap-1">
             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
             {listing.rating}
           </span>
         </div>
         
-        {/* Attributes */}
+        {/* Spec Chips */}
         <div className="mt-3 flex flex-wrap gap-2">
-          {listing.attributes.map((attr) => (
+          {specChips.map((spec, index) => (
             <span 
-              key={attr} 
-              className="text-xs text-muted-foreground"
+              key={index} 
+              className="rounded-full bg-secondary/50 px-2.5 py-1 text-xs text-muted-foreground"
             >
-              {attr}
+              {spec}
             </span>
           ))}
         </div>

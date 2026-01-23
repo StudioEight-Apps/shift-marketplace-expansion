@@ -4,6 +4,7 @@ import CitySelector from "@/components/shift/CitySelector";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
 import QuickFilters from "@/components/shift/QuickFilters";
 import ListingsGrid from "@/components/shift/ListingsGrid";
+import EmptyState from "@/components/shift/EmptyState";
 import { villaListings, carListings, yachtListings } from "@/data/listings";
 
 type AssetType = "Villas" | "Cars" | "Yachts";
@@ -25,7 +26,7 @@ const Index = () => {
         allListings = villaListings;
     }
 
-    // Filter by city if not showing all
+    // Filter by city
     if (selectedCity === "NYC") {
       return allListings.filter(l => l.location === "NYC");
     } else if (selectedCity === "LA") {
@@ -42,8 +43,8 @@ const Index = () => {
       <Header />
       
       {/* Controls Section */}
-      <section className="border-b border-border-subtle py-6">
-        <div className="container space-y-5 px-6">
+      <section className="border-b border-border-subtle py-4">
+        <div className="container space-y-3 px-6">
           {/* City Selector */}
           <CitySelector 
             selectedCity={selectedCity} 
@@ -56,15 +57,15 @@ const Index = () => {
             onTypeChange={setSelectedType} 
           />
           
-          {/* Quick Filters */}
-          <QuickFilters />
+          {/* Quick Filters - Dynamic based on asset type */}
+          <QuickFilters assetType={selectedType} />
         </div>
       </section>
       
       {/* Listings Section */}
-      <main className="container px-6 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-foreground">
+      <main className="container px-6 py-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">
             {selectedType} in {selectedCity}
           </h2>
           <span className="text-sm text-muted-foreground">
@@ -72,17 +73,10 @@ const Index = () => {
           </span>
         </div>
         
-        <ListingsGrid listings={listings} />
-        
-        {listings.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-lg text-muted-foreground">
-              No {selectedType.toLowerCase()} available in {selectedCity}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Try selecting a different city
-            </p>
-          </div>
+        {listings.length > 0 ? (
+          <ListingsGrid listings={listings} />
+        ) : (
+          <EmptyState assetType={selectedType} city={selectedCity} />
         )}
       </main>
     </div>
