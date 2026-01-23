@@ -1,7 +1,7 @@
 import { DollarSign, Users, BedDouble, Car, Ruler, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type AssetType = "Villas" | "Cars" | "Yachts";
+type AssetType = "Stays" | "Cars" | "Yachts";
 
 interface FilterButtonProps {
   icon: React.ReactNode;
@@ -72,7 +72,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             />
           </>
         );
-      default: // Villas
+      default: // Stays
         return (
           <>
             <FilterButton 

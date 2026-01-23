@@ -37,7 +37,7 @@ export const villaListings: Listing[] = [
     image: villa1,
     attributes: ["Pool", "Chef", "Ocean View"],
     badges: ["Guest Favorite", "Reserve"],
-    assetType: "Villas",
+    assetType: "Stays",
   },
   {
     id: "v2",
@@ -51,7 +51,7 @@ export const villaListings: Listing[] = [
     image: coconutGroveWaterfront,
     attributes: ["Waterfront", "Dock", "Pool"],
     badges: ["Reserve"],
-    assetType: "Villas",
+    assetType: "Stays",
   },
   {
     id: "v3",
@@ -65,7 +65,7 @@ export const villaListings: Listing[] = [
     image: villa3,
     attributes: ["Ocean View", "Pool", "Cinema"],
     badges: ["Guest Favorite"],
-    assetType: "Villas",
+    assetType: "Stays",
   },
   {
     id: "v4",
@@ -79,7 +79,7 @@ export const villaListings: Listing[] = [
     image: villa4,
     attributes: ["Pool", "City View", "Gym"],
     badges: ["Guest Favorite", "Reserve"],
-    assetType: "Villas",
+    assetType: "Stays",
   },
   {
     id: "v5",
@@ -93,7 +93,7 @@ export const villaListings: Listing[] = [
     image: villa5,
     attributes: ["Skyline View", "Pool", "Concierge"],
     badges: ["Reserve"],
-    assetType: "Villas",
+    assetType: "Stays",
   },
   {
     id: "v6",
@@ -107,7 +107,7 @@ export const villaListings: Listing[] = [
     image: starIslandMansion,
     attributes: ["Pool", "Chef", "Modern"],
     badges: ["Guest Favorite"],
-    assetType: "Villas",
+    assetType: "Stays",
   },
   // Additional LA Villas
   {
@@ -122,7 +122,7 @@ export const villaListings: Listing[] = [
     image: villa1,
     attributes: ["Pool", "City View", "Chef"],
     badges: ["Reserve"],
-    assetType: "Villas",
+    assetType: "Stays",
   },
   // Additional NYC Villas
   {
@@ -137,7 +137,7 @@ export const villaListings: Listing[] = [
     image: centralParkPenthouse,
     attributes: ["Park View", "Concierge", "Terrace"],
     badges: ["Guest Favorite"],
-    assetType: "Villas",
+    assetType: "Stays",
   },
   {
     id: "v9",
@@ -151,7 +151,7 @@ export const villaListings: Listing[] = [
     image: sohoLoft,
     attributes: ["Rooftop", "Designer", "Gym"],
     badges: ["Reserve"],
-    assetType: "Villas",
+    assetType: "Stays",
   },
 ];
 
