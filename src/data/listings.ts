@@ -10,6 +10,8 @@ import yacht1 from "@/assets/yacht-1.jpg";
 import yacht2 from "@/assets/yacht-2.jpg";
 import sohoLoft from "@/assets/soho-loft.jpg";
 import centralParkPenthouse from "@/assets/central-park-penthouse.jpg";
+import starIslandMansion from "@/assets/star-island-mansion.jpg";
+import coconutGroveWaterfront from "@/assets/coconut-grove-waterfront.jpg";
 
 // Car images - accurate make/model
 import lamborghiniUrus from "@/assets/lamborghini-urus.jpg";
@@ -39,15 +41,15 @@ export const villaListings: Listing[] = [
   },
   {
     id: "v2",
-    title: "Tropical Paradise Estate",
+    title: "Coconut Grove Waterfront",
     location: "Miami",
     guests: 12,
     bedrooms: 6,
     rating: 4.8,
     price: 3400,
     priceUnit: "per day",
-    image: villa2,
-    attributes: ["Waterfront", "Private Beach", "Pool"],
+    image: coconutGroveWaterfront,
+    attributes: ["Waterfront", "Dock", "Pool"],
     badges: ["Reserve"],
     assetType: "Villas",
   },
@@ -95,15 +97,15 @@ export const villaListings: Listing[] = [
   },
   {
     id: "v6",
-    title: "Minimal Design Estate",
+    title: "Star Island Mansion",
     location: "Miami",
     guests: 14,
     bedrooms: 7,
     rating: 4.7,
     price: 2100,
     priceUnit: "per day",
-    image: villa2,
-    attributes: ["Pool", "Garden", "Waterfront"],
+    image: starIslandMansion,
+    attributes: ["Pool", "Chef", "Modern"],
     badges: ["Guest Favorite"],
     assetType: "Villas",
   },
