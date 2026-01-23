@@ -8,6 +8,8 @@ import villa4 from "@/assets/villa-4.jpg";
 import villa5 from "@/assets/villa-5.jpg";
 import yacht1 from "@/assets/yacht-1.jpg";
 import yacht2 from "@/assets/yacht-2.jpg";
+import sohoLoft from "@/assets/soho-loft.jpg";
+import centralParkPenthouse from "@/assets/central-park-penthouse.jpg";
 
 // Car images - accurate make/model
 import lamborghiniUrus from "@/assets/lamborghini-urus.jpg";
@@ -130,7 +132,7 @@ export const villaListings: Listing[] = [
     rating: 4.9,
     price: 4800,
     priceUnit: "per day",
-    image: villa3,
+    image: centralParkPenthouse,
     attributes: ["Park View", "Concierge", "Terrace"],
     badges: ["Guest Favorite"],
     assetType: "Villas",
@@ -144,7 +146,7 @@ export const villaListings: Listing[] = [
     rating: 4.7,
     price: 3900,
     priceUnit: "per day",
-    image: villa4,
+    image: sohoLoft,
     attributes: ["Rooftop", "Designer", "Gym"],
     badges: ["Reserve"],
     assetType: "Villas",
