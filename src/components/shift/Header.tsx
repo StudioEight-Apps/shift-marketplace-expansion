@@ -4,16 +4,23 @@ import { Button } from "@/components/ui/button";
 const Header = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border-subtle bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container flex h-16 items-center justify-between px-6">
-        <div className="w-48" /> {/* Spacer for balance */}
-        
+      <div className="container flex h-12 items-center justify-between px-6">
         <Logo />
         
-        <div className="w-48 flex justify-end">
+        <nav className="flex items-center gap-6">
+          <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Concierge
+          </a>
+          <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Partner Up
+          </a>
+          <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Contact Us
+          </a>
           <Button variant="cta" size="sm">
-            Build the Full Experience
+            Create an account
           </Button>
-        </div>
+        </nav>
       </div>
     </header>
   );

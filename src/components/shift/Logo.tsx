@@ -1,14 +1,9 @@
-import { Waves } from "lucide-react";
+import shiftLogo from "@/assets/shift-logo.webp";
 
 const Logo = () => {
   return (
     <div className="flex items-center gap-2">
-      <div className="relative">
-        <Waves className="h-8 w-8 text-primary" strokeWidth={2.5} />
-      </div>
-      <span className="text-xl font-semibold tracking-tight text-foreground">
-        Shift<span className="text-primary">Rentals</span>
-      </span>
+      <img src={shiftLogo} alt="Shift Rentals" className="h-10 w-auto" />
     </div>
   );
 };
