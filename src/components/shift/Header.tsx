@@ -31,18 +31,11 @@ const Header = () => {
             Contact Us
           </a>
           
-          {/* Create account button - hidden on mobile when logged in */}
-          {!isLoggedIn && (
-            <Button variant="cta" size="sm" className="text-xs md:text-sm px-3 md:px-4">
-              Create an account
-            </Button>
-          )}
-          
           {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors">
-                <User className="h-4 w-4 text-foreground" />
+              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary hover:bg-primary/80 transition-colors">
+                <User className="h-4 w-4 text-primary-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-card border-border-subtle">
