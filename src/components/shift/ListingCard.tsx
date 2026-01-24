@@ -25,9 +25,10 @@ export interface Listing {
 interface ListingCardProps {
   listing: Listing;
   className?: string;
+  onClick?: () => void;
 }
 
-const ListingCard = ({ listing, className }: ListingCardProps) => {
+const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
   // Get price display based on asset type
   const getPriceDisplay = () => {
     const assetType = listing.assetType || "Villas";
@@ -73,6 +74,7 @@ const ListingCard = ({ listing, className }: ListingCardProps) => {
         "group relative overflow-hidden rounded-xl bg-card card-hover cursor-pointer",
         className
       )}
+      onClick={onClick}
     >
       {/* Image Container */}
       <div className="relative aspect-[4/3] overflow-hidden">
