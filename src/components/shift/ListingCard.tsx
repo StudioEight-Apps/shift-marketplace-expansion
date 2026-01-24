@@ -17,6 +17,7 @@ export interface Listing {
   price: number;
   priceUnit: string;
   image: string;
+  images?: string[]; // Array of images for gallery
   attributes: string[];
   badges: ("Guest Favorite" | "Reserve")[];
   assetType?: AssetType;

@@ -123,7 +123,7 @@ const ListingDetailContent = () => {
 
       {/* Image Gallery */}
       <ImageGallery 
-        images={[listing.image]} 
+        images={listing.images || [listing.image]} 
         title={listing.title} 
       />
 

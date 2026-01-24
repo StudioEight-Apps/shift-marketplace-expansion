@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { Plus, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTrip } from "@/context/TripContext";
 import { villaListings, carListings, yachtListings } from "@/data/listings";
+import AddOnCard from "./AddOnCard";
 import type { Listing } from "./ListingCard";
 
 interface CompleteYourTripProps {
@@ -12,11 +12,16 @@ interface CompleteYourTripProps {
 
 const CompleteYourTrip = ({ currentListing, city }: CompleteYourTripProps) => {
   const navigate = useNavigate();
-  const { car, setCar, removeCar, stay, setStay, stayDates } = useTrip();
+  const { 
+    car, setCar, removeCar, 
+    carDates, setCarDates,
+    yachtBooking, setYacht, setYachtBooking, removeYacht,
+    stayDates 
+  } = useTrip();
 
   // Determine which asset types to show based on current listing
   const complementaryListings = useMemo(() => {
-    const results: { type: string; items: Listing[] }[] = [];
+    const results: { type: "Cars" | "Yachts" | "Stays"; items: Listing[] }[] = [];
 
     if (currentListing.assetType === "Stays") {
       // Show Cars and Yachts
@@ -43,8 +48,8 @@ const CompleteYourTrip = ({ currentListing, city }: CompleteYourTripProps) => {
 
   if (complementaryListings.length === 0) return null;
 
-  // Handle adding a car to the trip (for Stays detail page)
-  const handleAddCar = (carListing: Listing) => {
+  // Handle toggling a car
+  const handleToggleCar = (carListing: Listing) => {
     if (car?.id === carListing.id) {
       removeCar();
     } else {
@@ -52,15 +57,28 @@ const CompleteYourTrip = ({ currentListing, city }: CompleteYourTripProps) => {
     }
   };
 
-  // Handle clicking on a complementary item (navigate to its detail page)
-  const handleItemClick = (item: Listing, type: string) => {
-    // For cars when viewing a Stay, add to trip instead of navigating
-    if (currentListing.assetType === "Stays" && type === "Cars") {
-      handleAddCar(item);
+  // Handle toggling a yacht
+  const handleToggleYacht = (yachtListing: Listing) => {
+    if (yachtBooking.yacht?.id === yachtListing.id) {
+      removeYacht();
     } else {
-      // Navigate to the detail page
-      navigate(`/listing/${item.id}`);
+      setYacht(yachtListing);
     }
+  };
+
+  // Handle car dates change
+  const handleCarDatesChange = (pickup: Date | null, dropoff: Date | null) => {
+    setCarDates({ pickup, dropoff });
+  };
+
+  // Handle yacht booking change
+  const handleYachtBookingChange = (date: Date | null, startTime: string | null, endTime: string | null) => {
+    setYachtBooking({ startDate: date, startTime, endTime });
+  };
+
+  // Handle clicking on a complementary stay item (navigate)
+  const handleItemClick = (item: Listing) => {
+    navigate(`/listing/${item.id}`);
   };
 
   // Get price unit
@@ -91,43 +109,27 @@ const CompleteYourTrip = ({ currentListing, city }: CompleteYourTripProps) => {
           <div className="relative -mx-6 px-6">
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-dark snap-x snap-mandatory">
               {items.map((item) => {
-                const isSelected = type === "Cars" && car?.id === item.id;
                 const priceUnit = getPriceUnit(type);
                 
-                return (
-                  <div
-                    key={item.id}
-                    className="snap-start flex-shrink-0 w-44"
-                  >
-                    <button
-                      onClick={() => handleItemClick(item, type)}
-                      className={`w-full text-left rounded-xl overflow-hidden bg-secondary/30 border transition-all ${
-                        isSelected 
-                          ? "border-primary ring-1 ring-primary" 
-                          : "border-border-subtle hover:border-primary/50"
-                      }`}
-                    >
-                      {/* Image */}
-                      <div className="relative aspect-[4/3] overflow-hidden">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                        />
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="h-4 w-4 text-primary-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="p-3 space-y-2">
-                        <h4 className="text-sm font-medium text-foreground line-clamp-1">
-                          {item.title}
-                        </h4>
-                        
-                        <div className="flex items-center justify-between">
+                // For Stays, we just navigate
+                if (type === "Stays") {
+                  return (
+                    <div key={item.id} className="snap-start flex-shrink-0 w-44">
+                      <button
+                        onClick={() => handleItemClick(item)}
+                        className="w-full text-left rounded-xl overflow-hidden bg-secondary/30 border border-border-subtle hover:border-primary/50 transition-all"
+                      >
+                        <div className="relative aspect-[4/3] overflow-hidden">
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="p-3 space-y-2">
+                          <h4 className="text-sm font-medium text-foreground line-clamp-1">
+                            {item.title}
+                          </h4>
                           <div>
                             <span className="text-sm font-semibold text-primary">
                               ${item.price.toLocaleString()}
@@ -136,30 +138,54 @@ const CompleteYourTrip = ({ currentListing, city }: CompleteYourTripProps) => {
                               {priceUnit}
                             </span>
                           </div>
-                          
-                          {/* Add button for cars when viewing Stays */}
-                          {currentListing.assetType === "Stays" && type === "Cars" && (
-                            <div className={`flex items-center gap-1 text-xs font-medium ${
-                              isSelected ? "text-primary" : "text-muted-foreground"
-                            }`}>
-                              {isSelected ? (
-                                <>
-                                  <Check className="h-3 w-3" />
-                                  Added
-                                </>
-                              ) : (
-                                <>
-                                  <Plus className="h-3 w-3" />
-                                  Add
-                                </>
-                              )}
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    </button>
-                  </div>
-                );
+                      </button>
+                    </div>
+                  );
+                }
+
+                // For Cars
+                if (type === "Cars") {
+                  const isSelected = car?.id === item.id;
+                  return (
+                    <AddOnCard
+                      key={item.id}
+                      item={item}
+                      type="Cars"
+                      isSelected={isSelected}
+                      priceUnit={priceUnit}
+                      stayCheckIn={stayDates.checkIn}
+                      stayCheckOut={stayDates.checkOut}
+                      carPickup={isSelected ? carDates.pickup : null}
+                      carDropoff={isSelected ? carDates.dropoff : null}
+                      onCarDatesChange={handleCarDatesChange}
+                      onToggle={() => handleToggleCar(item)}
+                    />
+                  );
+                }
+
+                // For Yachts
+                if (type === "Yachts") {
+                  const isSelected = yachtBooking.yacht?.id === item.id;
+                  return (
+                    <AddOnCard
+                      key={item.id}
+                      item={item}
+                      type="Yachts"
+                      isSelected={isSelected}
+                      priceUnit={priceUnit}
+                      stayCheckIn={stayDates.checkIn}
+                      stayCheckOut={stayDates.checkOut}
+                      yachtDate={isSelected ? yachtBooking.startDate : null}
+                      yachtStartTime={isSelected ? yachtBooking.startTime : null}
+                      yachtEndTime={isSelected ? yachtBooking.endTime : null}
+                      onYachtBookingChange={handleYachtBookingChange}
+                      onToggle={() => handleToggleYacht(item)}
+                    />
+                  );
+                }
+
+                return null;
               })}
             </div>
           </div>

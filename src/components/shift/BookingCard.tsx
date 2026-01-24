@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { differenceInDays, differenceInHours } from "date-fns";
+import { differenceInDays, differenceInHours, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useTrip } from "@/context/TripContext";
 import DateRangePicker from "./DateRangePicker";
@@ -22,7 +22,7 @@ const BookingCard = ({
   onDateChange,
   minDate,
 }: BookingCardProps) => {
-  const { car, stayNights, carDays, tripTotal } = useTrip();
+  const { car, carDays, carDates, yachtBooking, yachtHours, yachtTotal, tripTotal } = useTrip();
 
   // Calculate duration and totals
   const duration = useMemo(() => {
@@ -39,8 +39,9 @@ const BookingCard = ({
   }, [listing.price, duration]);
 
   // Check if we have add-ons from "Complete Your Trip"
-  const hasAddOns = car && listing.assetType === "Stays";
-  const addOnTotal = hasAddOns && carDays > 0 ? car.price * carDays : 0;
+  const hasCarAddOn = car && listing.assetType === "Stays" && carDays > 0;
+  const hasYachtAddOn = yachtBooking.yacht && listing.assetType === "Stays" && yachtHours > 0;
+  const carAddOnTotal = hasCarAddOn ? car.price * carDays : 0;
   const grandTotal = listing.assetType === "Stays" ? tripTotal : primaryTotal;
 
   const isValidBooking = currentDates.start && currentDates.end && duration > 0;
@@ -48,6 +49,18 @@ const BookingCard = ({
   const durationLabel = listing.assetType === "Yachts" 
     ? `${duration} ${duration === 1 ? "hour" : "hours"}`
     : `${duration} ${duration === 1 ? priceUnit : priceUnit + "s"}`;
+
+  // Format car dates for display
+  const getCarDatesLabel = () => {
+    if (!carDates.pickup || !carDates.dropoff) return "";
+    return ` (${format(carDates.pickup, "MMM d")} - ${format(carDates.dropoff, "MMM d")})`;
+  };
+
+  // Format yacht booking for display
+  const getYachtLabel = () => {
+    if (!yachtBooking.startDate) return "";
+    return ` · ${format(yachtBooking.startDate, "MMM d")} ${yachtBooking.startTime}-${yachtBooking.endTime}`;
+  };
 
   return (
     <div className="rounded-2xl bg-card border border-border-subtle p-6 space-y-6">
@@ -83,14 +96,36 @@ const BookingCard = ({
             </span>
           </div>
 
-          {/* Add-ons from Complete Your Trip */}
-          {hasAddOns && carDays > 0 && (
+          {/* Car add-on from Complete Your Trip */}
+          {hasCarAddOn && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {car.title} · {carDays} {carDays === 1 ? "day" : "days"}
-              </span>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">
+                  {car.title} · {carDays} {carDays === 1 ? "day" : "days"}
+                </span>
+                <span className="text-xs text-muted-foreground/70">
+                  {getCarDatesLabel()}
+                </span>
+              </div>
               <span className="text-foreground font-medium">
-                ${addOnTotal.toLocaleString()}
+                ${carAddOnTotal.toLocaleString()}
+              </span>
+            </div>
+          )}
+
+          {/* Yacht add-on from Complete Your Trip */}
+          {hasYachtAddOn && (
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">
+                  {yachtBooking.yacht.title} · {yachtHours} {yachtHours === 1 ? "hour" : "hours"}
+                </span>
+                <span className="text-xs text-muted-foreground/70">
+                  {getYachtLabel()}
+                </span>
+              </div>
+              <span className="text-foreground font-medium">
+                ${yachtTotal.toLocaleString()}
               </span>
             </div>
           )}
