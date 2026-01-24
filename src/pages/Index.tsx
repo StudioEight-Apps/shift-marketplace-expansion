@@ -1,22 +1,20 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/shift/Header";
 import CitySelector from "@/components/shift/CitySelector";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
 import QuickFilters from "@/components/shift/QuickFilters";
 import ListingsGrid from "@/components/shift/ListingsGrid";
 import EmptyState from "@/components/shift/EmptyState";
-import ListingDetailModal from "@/components/shift/ListingDetailModal";
-import { TripProvider } from "@/context/TripContext";
 import { villaListings, carListings, yachtListings } from "@/data/listings";
 import type { Listing } from "@/components/shift/ListingCard";
 
 type AssetType = "Stays" | "Cars" | "Yachts";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [selectedCity, setSelectedCity] = useState("Miami");
   const [selectedType, setSelectedType] = useState<AssetType>("Stays");
-  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const listings = useMemo(() => {
     let allListings;
@@ -45,74 +43,55 @@ const Index = () => {
   }, [selectedCity, selectedType]);
 
   const handleListingClick = (listing: Listing) => {
-    // Only open modal for Stays (trip builder is for stays)
-    if (selectedType === "Stays") {
-      setSelectedListing(listing);
-      setIsModalOpen(true);
-    }
-  };
-
-  const handleModalClose = (open: boolean) => {
-    setIsModalOpen(open);
-    if (!open) {
-      setSelectedListing(null);
-    }
+    // Navigate to the listing detail page
+    navigate(`/listing/${listing.id}`);
   };
 
   return (
-    <TripProvider>
-      <div className="min-h-screen bg-background scrollbar-dark">
-        <Header />
-        
-        {/* Controls Section */}
-        <section className="border-b border-border-subtle py-2 md:py-4">
-          <div className="container space-y-2 md:space-y-3 px-4 md:px-6">
-            {/* City Selector */}
-            <CitySelector 
-              selectedCity={selectedCity} 
-              onCityChange={setSelectedCity} 
-            />
-            
-            {/* Asset Type Selector */}
-            <AssetTypeSelector 
-              selectedType={selectedType} 
-              onTypeChange={setSelectedType} 
-            />
-            
-            {/* Quick Filters - Dynamic based on asset type */}
-            <QuickFilters assetType={selectedType} />
-          </div>
-        </section>
-        
-        {/* Listings Section */}
-        <main className="container px-6 py-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">
-              {selectedType} in {selectedCity}
-            </h2>
-            <span className="text-sm text-muted-foreground">
-              {listings.length} {listings.length === 1 ? "listing" : "listings"}
-            </span>
-          </div>
+    <div className="min-h-screen bg-background scrollbar-dark">
+      <Header />
+      
+      {/* Controls Section */}
+      <section className="border-b border-border-subtle py-2 md:py-4">
+        <div className="container space-y-2 md:space-y-3 px-4 md:px-6">
+          {/* City Selector */}
+          <CitySelector 
+            selectedCity={selectedCity} 
+            onCityChange={setSelectedCity} 
+          />
           
-          {listings.length > 0 ? (
-            <ListingsGrid 
-              listings={listings} 
-              onListingClick={handleListingClick}
-            />
-          ) : (
-            <EmptyState assetType={selectedType} city={selectedCity} />
-          )}
-        </main>
-
-        {/* Listing Detail Modal */}
-        <ListingDetailModal
-          listing={selectedListing}
-          open={isModalOpen}
-          onOpenChange={handleModalClose}
-        />
-      </div>
-    </TripProvider>
+          {/* Asset Type Selector */}
+          <AssetTypeSelector 
+            selectedType={selectedType} 
+            onTypeChange={setSelectedType} 
+          />
+          
+          {/* Quick Filters - Dynamic based on asset type */}
+          <QuickFilters assetType={selectedType} />
+        </div>
+      </section>
+      
+      {/* Listings Section */}
+      <main className="container px-6 py-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">
+            {selectedType} in {selectedCity}
+          </h2>
+          <span className="text-sm text-muted-foreground">
+            {listings.length} {listings.length === 1 ? "listing" : "listings"}
+          </span>
+        </div>
+        
+        {listings.length > 0 ? (
+          <ListingsGrid 
+            listings={listings} 
+            onListingClick={handleListingClick}
+          />
+        ) : (
+          <EmptyState assetType={selectedType} city={selectedCity} />
+        )}
+      </main>
+    </div>
   );
 };
 
