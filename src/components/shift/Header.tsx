@@ -25,9 +25,6 @@ const Header = () => {
             Concierge
           </a>
           <a href="#" className="hidden md:block text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Partner Up
-          </a>
-          <a href="#" className="hidden md:block text-sm text-muted-foreground hover:text-foreground transition-colors">
             Contact Us
           </a>
           
@@ -55,9 +52,6 @@ const Header = () => {
                     Concierge
                   </DropdownMenuItem>
                   <DropdownMenuItem className="cursor-pointer">
-                    Partner Up
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
                     Contact Us
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-border-subtle" />
@@ -69,9 +63,6 @@ const Header = () => {
                 <>
                   <DropdownMenuItem className="cursor-pointer">
                     Concierge
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    Partner Up
                   </DropdownMenuItem>
                   <DropdownMenuItem className="cursor-pointer">
                     Contact Us
