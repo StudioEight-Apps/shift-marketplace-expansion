@@ -13,6 +13,12 @@ import centralParkPenthouse from "@/assets/central-park-penthouse.jpg";
 import starIslandMansion from "@/assets/star-island-mansion.jpg";
 import coconutGroveWaterfront from "@/assets/coconut-grove-waterfront.jpg";
 
+// Interior images for galleries
+import interiorLivingRoom from "@/assets/interior-living-room.jpg";
+import interiorBedroom from "@/assets/interior-bedroom.jpg";
+import interiorKitchen from "@/assets/interior-kitchen.jpg";
+import interiorBathroom from "@/assets/interior-bathroom.jpg";
+
 // Car images - accurate make/model
 import lamborghiniUrus from "@/assets/lamborghini-urus.jpg";
 import rollsRoyceGhost from "@/assets/rolls-royce-ghost.jpg";
@@ -45,7 +51,7 @@ export const villaListings: Listing[] = [
     price: 2800,
     priceUnit: "per day",
     image: villa1,
-    images: [villa1, villa2, villa3, villa4, villa5],
+    images: [villa1, interiorLivingRoom, interiorBedroom, interiorKitchen, interiorBathroom],
     attributes: ["Pool", "Chef", "Ocean View"],
     badges: ["Guest Favorite", "Reserve"],
     assetType: "Stays",
@@ -60,7 +66,7 @@ export const villaListings: Listing[] = [
     price: 3400,
     priceUnit: "per day",
     image: coconutGroveWaterfront,
-    images: [coconutGroveWaterfront, villa3, villa1, villa4, villa2],
+    images: [coconutGroveWaterfront, interiorLivingRoom, interiorKitchen, interiorBedroom, interiorBathroom],
     attributes: ["Waterfront", "Dock", "Pool"],
     badges: ["Reserve"],
     assetType: "Stays",
@@ -117,7 +123,7 @@ export const villaListings: Listing[] = [
     price: 2100,
     priceUnit: "per day",
     image: starIslandMansion,
-    images: [starIslandMansion, villa5, coconutGroveWaterfront, villa2, villa3],
+    images: [starIslandMansion, interiorBedroom, interiorLivingRoom, interiorBathroom, interiorKitchen],
     attributes: ["Pool", "Chef", "Modern"],
     badges: ["Guest Favorite"],
     assetType: "Stays",
