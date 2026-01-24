@@ -16,8 +16,8 @@ const ImageGallery = ({ images, title }: ImageGalleryProps) => {
     : [...images, ...Array(5 - images.length).fill(images[0])].slice(0, 5);
 
   return (
-    <div className="w-full px-6 pt-6">
-      <div className="relative grid grid-cols-1 md:grid-cols-4 gap-2 rounded-2xl overflow-hidden aspect-[21/9] md:aspect-[2.5/1]">
+    <div className="w-full max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-6">
+      <div className="relative grid grid-cols-1 md:grid-cols-4 gap-2 rounded-xl overflow-hidden aspect-[16/9] md:aspect-[2.2/1]">
         {/* Hero Image - Left Side (Takes 2 columns) */}
         <div className="relative md:col-span-2 md:row-span-2 h-full">
           <img

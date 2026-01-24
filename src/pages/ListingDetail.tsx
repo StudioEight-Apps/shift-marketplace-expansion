@@ -128,16 +128,16 @@ const ListingDetailContent = () => {
       />
 
       {/* Main Content */}
-      <div className="container px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-16">
           {/* Left Column - Details */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-3 space-y-6">
             {/* Title & Location */}
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+              <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
                 {listing.title}
               </h1>
-              <div className="flex items-center gap-4 text-muted-foreground">
+              <div className="flex items-center gap-4 text-muted-foreground text-sm">
                 <span className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4" />
                   {listing.location}
@@ -149,24 +149,25 @@ const ListingDetailContent = () => {
               </div>
             </div>
 
-            {/* Key Specs */}
-            <div className="flex gap-4 flex-wrap">
+            {/* Key Specs - Inline like Airbnb */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 border-b border-border-subtle">
               {specs.map((spec, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-xl bg-secondary/30 px-5 py-4">
-                  <spec.icon className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-medium text-foreground">{spec.label}</span>
-                </div>
+                <span key={i} className="flex items-center gap-1.5">
+                  <spec.icon className="h-4 w-4" />
+                  {spec.label}
+                  {i < specs.length - 1 && <span className="ml-2">·</span>}
+                </span>
               ))}
             </div>
 
             {/* Highlights */}
-            <div>
-              <h2 className="text-lg font-semibold text-foreground mb-4">Highlights</h2>
+            <div className="py-6 border-b border-border-subtle">
+              <h2 className="text-base font-medium text-foreground mb-3">Highlights</h2>
               <div className="flex flex-wrap gap-2">
                 {listing.attributes.map((attr, i) => (
                   <span
                     key={i}
-                    className="rounded-full bg-secondary/50 px-4 py-2 text-sm text-muted-foreground"
+                    className="rounded-full bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground"
                   >
                     {attr}
                   </span>
@@ -175,9 +176,9 @@ const ListingDetailContent = () => {
             </div>
 
             {/* Description */}
-            <div>
-              <h2 className="text-lg font-semibold text-foreground mb-4">About this {listing.assetType?.slice(0, -1).toLowerCase() || "listing"}</h2>
-              <p className="text-muted-foreground leading-relaxed">
+            <div className="py-6 border-b border-border-subtle">
+              <h2 className="text-base font-medium text-foreground mb-3">About this {listing.assetType?.slice(0, -1).toLowerCase() || "listing"}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 Experience luxury like never before with this exceptional {listing.title.toLowerCase()} in {listing.location}. 
                 Perfect for those seeking an unforgettable experience, this {listing.assetType?.slice(0, -1).toLowerCase() || "listing"} offers 
                 world-class amenities and impeccable attention to detail. A dedicated Shift concierge will ensure 
@@ -187,16 +188,18 @@ const ListingDetailContent = () => {
 
             {/* Complete Your Trip Section - Only for Stays and Cars */}
             {(listing.assetType === "Stays" || listing.assetType === "Cars" || listing.assetType === "Yachts") && (
-              <CompleteYourTrip 
-                currentListing={listing} 
-                city={listing.location}
-              />
+              <div className="pt-6">
+                <CompleteYourTrip 
+                  currentListing={listing} 
+                  city={listing.location}
+                />
+              </div>
             )}
           </div>
 
           {/* Right Column - Booking Card (Sticky) */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-6">
+          <div className="lg:col-span-2">
+            <div className="sticky top-6 max-w-sm ml-auto">
               <BookingCard
                 listing={listing}
                 priceUnit={getPriceUnit()}
