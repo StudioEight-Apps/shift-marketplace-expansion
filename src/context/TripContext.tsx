@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
-import { differenceInDays, isAfter, isBefore, isEqual } from "date-fns";
+import { differenceInDays, differenceInHours, isAfter, isBefore } from "date-fns";
 import type { Listing } from "@/components/shift/ListingCard";
 
 interface StayDates {
@@ -12,11 +12,19 @@ interface CarDates {
   dropoff: Date | null;
 }
 
+interface YachtBooking {
+  yacht: Listing | null;
+  startDate: Date | null;
+  startTime: string | null; // e.g., "10:00"
+  endTime: string | null;   // e.g., "14:00"
+}
+
 interface TripState {
   stay: Listing | null;
   stayDates: StayDates;
   car: Listing | null;
   carDates: CarDates;
+  yachtBooking: YachtBooking;
   city: string;
 }
 
@@ -26,19 +34,34 @@ interface TripContextValue extends TripState {
   setCar: (car: Listing | null) => void;
   setCarDates: (dates: CarDates) => void;
   removeCar: () => void;
+  setYacht: (yacht: Listing | null) => void;
+  setYachtBooking: (booking: Partial<YachtBooking>) => void;
+  removeYacht: () => void;
   clearTrip: () => void;
   stayNights: number;
   carDays: number;
+  yachtHours: number;
   stayTotal: number;
   carTotal: number;
+  yachtTotal: number;
   tripTotal: number;
+  // Validation helpers
+  isDateWithinStay: (date: Date) => boolean;
 }
+
+const initialYachtBooking: YachtBooking = {
+  yacht: null,
+  startDate: null,
+  startTime: null,
+  endTime: null,
+};
 
 const initialState: TripState = {
   stay: null,
   stayDates: { checkIn: null, checkOut: null },
   car: null,
   carDates: { pickup: null, dropoff: null },
+  yachtBooking: initialYachtBooking,
   city: "",
 };
 
@@ -59,6 +82,12 @@ interface TripProviderProps {
 export const TripProvider = ({ children }: TripProviderProps) => {
   const [state, setState] = useState<TripState>(initialState);
 
+  const isDateWithinStay = useCallback((date: Date) => {
+    const { checkIn, checkOut } = state.stayDates;
+    if (!checkIn || !checkOut) return true; // No stay dates set, allow any date
+    return !isBefore(date, checkIn) && !isAfter(date, checkOut);
+  }, [state.stayDates]);
+
   const setStay = useCallback((stay: Listing | null) => {
     setState(prev => ({
       ...prev,
@@ -71,35 +100,43 @@ export const TripProvider = ({ children }: TripProviderProps) => {
     setState(prev => {
       // If car dates are outside new stay dates, adjust them
       let newCarDates = prev.carDates;
+      let newYachtBooking = prev.yachtBooking;
       
-      if (dates.checkIn && dates.checkOut && prev.car) {
-        const { pickup, dropoff } = prev.carDates;
-        
-        // Adjust pickup if it's before check-in or after check-out
-        let newPickup = pickup;
-        if (pickup && (isBefore(pickup, dates.checkIn) || isAfter(pickup, dates.checkOut))) {
-          newPickup = dates.checkIn;
+      if (dates.checkIn && dates.checkOut) {
+        // Adjust car dates if outside stay window
+        if (prev.car) {
+          const { pickup, dropoff } = prev.carDates;
+          let newPickup = pickup;
+          let newDropoff = dropoff;
+          
+          if (pickup && isBefore(pickup, dates.checkIn)) {
+            newPickup = dates.checkIn;
+          }
+          if (dropoff && isAfter(dropoff, dates.checkOut)) {
+            newDropoff = dates.checkOut;
+          }
+          if (newPickup && newDropoff && isAfter(newPickup, newDropoff)) {
+            newPickup = dates.checkIn;
+            newDropoff = dates.checkOut;
+          }
+          
+          newCarDates = { pickup: newPickup, dropoff: newDropoff };
         }
         
-        // Adjust dropoff if it's after check-out or before check-in
-        let newDropoff = dropoff;
-        if (dropoff && (isAfter(dropoff, dates.checkOut) || isBefore(dropoff, dates.checkIn))) {
-          newDropoff = dates.checkOut;
+        // Adjust yacht date if outside stay window
+        if (prev.yachtBooking.yacht && prev.yachtBooking.startDate) {
+          if (isBefore(prev.yachtBooking.startDate, dates.checkIn) || 
+              isAfter(prev.yachtBooking.startDate, dates.checkOut)) {
+            newYachtBooking = { ...prev.yachtBooking, startDate: dates.checkIn };
+          }
         }
-        
-        // Ensure pickup is before dropoff
-        if (newPickup && newDropoff && isAfter(newPickup, newDropoff)) {
-          newPickup = dates.checkIn;
-          newDropoff = dates.checkOut;
-        }
-        
-        newCarDates = { pickup: newPickup, dropoff: newDropoff };
       }
       
       return {
         ...prev,
         stayDates: dates,
         carDates: newCarDates,
+        yachtBooking: newYachtBooking,
       };
     });
   }, []);
@@ -108,7 +145,6 @@ export const TripProvider = ({ children }: TripProviderProps) => {
     setState(prev => ({
       ...prev,
       car,
-      // Default car dates to stay dates when adding a car
       carDates: car ? {
         pickup: prev.stayDates.checkIn,
         dropoff: prev.stayDates.checkOut,
@@ -131,6 +167,32 @@ export const TripProvider = ({ children }: TripProviderProps) => {
     }));
   }, []);
 
+  const setYacht = useCallback((yacht: Listing | null) => {
+    setState(prev => ({
+      ...prev,
+      yachtBooking: yacht ? {
+        yacht,
+        startDate: prev.stayDates.checkIn,
+        startTime: "10:00",
+        endTime: "14:00",
+      } : initialYachtBooking,
+    }));
+  }, []);
+
+  const setYachtBooking = useCallback((booking: Partial<YachtBooking>) => {
+    setState(prev => ({
+      ...prev,
+      yachtBooking: { ...prev.yachtBooking, ...booking },
+    }));
+  }, []);
+
+  const removeYacht = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      yachtBooking: initialYachtBooking,
+    }));
+  }, []);
+
   const clearTrip = useCallback(() => {
     setState(initialState);
   }, []);
@@ -145,8 +207,22 @@ export const TripProvider = ({ children }: TripProviderProps) => {
   const carDays = useMemo(() => {
     const { pickup, dropoff } = state.carDates;
     if (!pickup || !dropoff || !state.car) return 0;
-    return Math.max(0, differenceInDays(dropoff, pickup));
+    return Math.max(1, differenceInDays(dropoff, pickup));
   }, [state.carDates, state.car]);
+
+  const yachtHours = useMemo(() => {
+    const { yacht, startTime, endTime } = state.yachtBooking;
+    if (!yacht || !startTime || !endTime) return 0;
+    
+    // Parse times and calculate hours
+    const [startHour, startMin] = startTime.split(":").map(Number);
+    const [endHour, endMin] = endTime.split(":").map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    return Math.max(1, Math.round((endMinutes - startMinutes) / 60));
+  }, [state.yachtBooking]);
 
   const stayTotal = useMemo(() => {
     if (!state.stay) return 0;
@@ -158,7 +234,12 @@ export const TripProvider = ({ children }: TripProviderProps) => {
     return state.car.price * carDays;
   }, [state.car, carDays]);
 
-  const tripTotal = stayTotal + carTotal;
+  const yachtTotal = useMemo(() => {
+    if (!state.yachtBooking.yacht) return 0;
+    return state.yachtBooking.yacht.price * yachtHours;
+  }, [state.yachtBooking.yacht, yachtHours]);
+
+  const tripTotal = stayTotal + carTotal + yachtTotal;
 
   const value: TripContextValue = {
     ...state,
@@ -167,12 +248,18 @@ export const TripProvider = ({ children }: TripProviderProps) => {
     setCar,
     setCarDates,
     removeCar,
+    setYacht,
+    setYachtBooking,
+    removeYacht,
     clearTrip,
     stayNights,
     carDays,
+    yachtHours,
     stayTotal,
     carTotal,
+    yachtTotal,
     tripTotal,
+    isDateWithinStay,
   };
 
   return (

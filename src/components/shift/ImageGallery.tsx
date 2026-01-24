@@ -10,11 +10,10 @@ interface ImageGalleryProps {
 const ImageGallery = ({ images, title }: ImageGalleryProps) => {
   const navigate = useNavigate();
   
-  // Ensure we have at least 5 images for the grid, repeat if needed
-  const galleryImages = [...images];
-  while (galleryImages.length < 5) {
-    galleryImages.push(images[0]);
-  }
+  // Use provided images, fallback to repeating the first image if needed
+  const galleryImages = images.length >= 5 
+    ? images.slice(0, 5) 
+    : [...images, ...Array(5 - images.length).fill(images[0])].slice(0, 5);
 
   return (
     <div className="w-full px-6 pt-6">
