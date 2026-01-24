@@ -1,12 +1,12 @@
 import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Users, Bed, MapPin, Anchor, Car as CarIcon, Gauge, Calendar } from "lucide-react";
+import { Star, Users, Bed, MapPin, Anchor, Car as CarIcon, Gauge } from "lucide-react";
 import { TripProvider, useTrip } from "@/context/TripContext";
 import { villaListings, carListings, yachtListings } from "@/data/listings";
 import Header from "@/components/shift/Header";
-import DateRangePicker from "@/components/shift/DateRangePicker";
 import CompleteYourTrip from "@/components/shift/CompleteYourTrip";
 import BookingCard from "@/components/shift/BookingCard";
+import ImageGallery from "@/components/shift/ImageGallery";
 import type { Listing } from "@/components/shift/ListingCard";
 
 // All listings combined for lookup
@@ -121,24 +121,11 @@ const ListingDetailContent = () => {
     <div className="min-h-screen bg-background scrollbar-dark">
       <Header />
 
-      {/* Hero Image */}
-      <div className="relative w-full aspect-[21/9] md:aspect-[3/1] overflow-hidden">
-        <img
-          src={listing.image}
-          alt={listing.title}
-          className="w-full h-full object-cover"
-        />
-        {/* Back Button */}
-        <button
-          onClick={() => navigate("/")}
-          className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm font-medium">Back</span>
-        </button>
-        {/* Gradient Overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-32 overlay-gradient" />
-      </div>
+      {/* Image Gallery */}
+      <ImageGallery 
+        images={[listing.image]} 
+        title={listing.title} 
+      />
 
       {/* Main Content */}
       <div className="container px-6 py-8">
