@@ -7,73 +7,79 @@
 
 @layer base {
   :root {
-    /* Core dark luxury palette */
-    --background: 220 15% 6%;
-    --background-elevated: 220 15% 10%;
-    --foreground: 0 0% 98%;
+    /* Core dark luxury palette - refined #0B0B0D base */
+    --background: 240 7% 4%;
+    --background-elevated: 230 8% 7%;
+    --foreground: 0 0% 100%;
     
-    /* Cards and surfaces */
-    --card: 220 15% 10%;
-    --card-foreground: 0 0% 98%;
-    --card-hover: 220 15% 14%;
+    /* Cards and surfaces - #121316 base */
+    --card: 230 10% 9%;
+    --card-foreground: 0 0% 100%;
+    --card-hover: 230 10% 11%;
     
-    --popover: 220 15% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 230 10% 10%;
+    --popover-foreground: 0 0% 100%;
     
     /* Electric blue accent - the signature color */
     --primary: 195 100% 50%;
-    --primary-foreground: 220 15% 6%;
+    --primary-foreground: 240 7% 4%;
     --primary-glow: 195 100% 60%;
     
     /* Secondary controls */
-    --secondary: 220 15% 18%;
-    --secondary-foreground: 0 0% 85%;
-    --secondary-hover: 220 15% 24%;
+    --secondary: 230 10% 14%;
+    --secondary-foreground: 0 0% 75%;
+    --secondary-hover: 230 10% 18%;
     
-    /* Muted elements */
-    --muted: 220 10% 20%;
-    --muted-foreground: 220 10% 60%;
+    /* Muted elements - 60% white opacity equivalent */
+    --muted: 230 8% 16%;
+    --muted-foreground: 0 0% 60%;
     
     /* Accent for badges and highlights */
-    --accent: 220 15% 22%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 230 10% 16%;
+    --accent-foreground: 0 0% 100%;
     
     /* Danger/destructive */
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
     
-    /* Borders and inputs */
-    --border: 220 15% 20%;
-    --border-subtle: 220 15% 15%;
-    --input: 220 15% 18%;
+    /* Borders and inputs - rgba(255,255,255,0.06) equivalent */
+    --border: 0 0% 100% / 0.06;
+    --border-subtle: 0 0% 100% / 0.04;
+    --input: 230 10% 12%;
     --ring: 195 100% 50%;
     
-    /* Radius */
-    --radius: 0.75rem;
+    /* Radius - 14px for cards */
+    --radius: 0.875rem;
     --radius-lg: 1rem;
-    --radius-xl: 1.5rem;
+    --radius-xl: 1.25rem;
     --radius-full: 9999px;
     
     /* Sidebar */
-    --sidebar-background: 220 15% 8%;
-    --sidebar-foreground: 0 0% 85%;
+    --sidebar-background: 230 8% 5%;
+    --sidebar-foreground: 0 0% 75%;
     --sidebar-primary: 195 100% 50%;
-    --sidebar-primary-foreground: 220 15% 6%;
-    --sidebar-accent: 220 15% 15%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 15% 15%;
+    --sidebar-primary-foreground: 240 7% 4%;
+    --sidebar-accent: 230 10% 12%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100% / 0.06;
     --sidebar-ring: 195 100% 50%;
     
     /* Gradients */
-    --gradient-dark: linear-gradient(180deg, hsl(220 15% 8%) 0%, hsl(220 15% 4%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(220 15% 12%) 0%, hsl(220 15% 8%) 100%);
-    --gradient-header: linear-gradient(180deg, hsl(220 15% 10%) 0%, hsl(220 15% 6%) 100%);
-    --gradient-overlay: linear-gradient(180deg, transparent 0%, hsla(220, 15%, 4%, 0.95) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(240 7% 5%) 0%, hsl(240 7% 3%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(230 10% 10%) 0%, hsl(230 10% 8%) 100%);
+    --gradient-header: linear-gradient(180deg, hsl(230 8% 7%) 0%, hsl(240 7% 4%) 100%);
+    --gradient-overlay: linear-gradient(180deg, transparent 0%, hsla(240, 7%, 4%, 0.95) 100%);
     
-    /* Shadows */
-    --shadow-card: 0 4px 24px -4px hsla(0, 0%, 0%, 0.4);
-    --shadow-elevated: 0 8px 32px -8px hsla(0, 0%, 0%, 0.6);
-    --shadow-glow: 0 0 20px -5px hsl(195 100% 50% / 0.3);
+    /* Shadows - refined elevation system */
+    --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-elevated: 0 16px 40px rgba(0, 0, 0, 0.55);
+    --shadow-glow: 0 0 24px -6px hsl(195 100% 50% / 0.25);
+    
+    /* Spacing tokens */
+    --grid-gap-desktop: 1.5rem;
+    --grid-gap-tablet: 1.25rem;
+    --grid-gap-mobile: 1rem;
+    --section-spacing: 4rem;
   }
 
   .dark {
