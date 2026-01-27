@@ -15,22 +15,18 @@ const allListings = [...villaListings, ...carListings, ...yachtListings];
 const ListingDetailContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { setStay, setCar, stayDates, setStayDates, carDates, setCarDates } = useTrip();
+  const { setStay, stayDates, setStayDates } = useTrip();
 
   const listing = useMemo(() => {
     return allListings.find(l => l.id === id) || null;
   }, [id]);
 
-  // Set the primary booking item in context
+  // Set the primary booking item in context (only Stays are trip containers)
   useEffect(() => {
-    if (listing) {
-      if (listing.assetType === "Stays") {
-        setStay(listing);
-      } else if (listing.assetType === "Cars") {
-        setCar(listing);
-      }
+    if (listing && listing.assetType === "Stays") {
+      setStay(listing);
     }
-  }, [listing, setStay, setCar]);
+  }, [listing, setStay]);
 
   if (!listing) {
     return (
@@ -65,17 +61,9 @@ const ListingDetailContent = () => {
     }
   };
 
-  // Get date labels based on asset type
+  // Get date labels based on asset type - only relevant for Stays now
   const getDateLabels = () => {
-    switch (listing.assetType) {
-      case "Cars":
-        return { start: "Pick-up", end: "Drop-off" };
-      case "Yachts":
-        return { start: "Start", end: "End" };
-      case "Stays":
-      default:
-        return { start: "Check-in", end: "Check-out" };
-    }
+    return { start: "Check-in", end: "Check-out" };
   };
 
   // Get specs based on asset type
@@ -104,17 +92,11 @@ const ListingDetailContent = () => {
   const dateLabels = getDateLabels();
   const specs = getSpecs();
 
-  // Determine current dates based on asset type
-  const currentDates = listing.assetType === "Cars" 
-    ? { start: carDates.pickup, end: carDates.dropoff }
-    : { start: stayDates.checkIn, end: stayDates.checkOut };
+  // For Stays, use stayDates as the trip container dates
+  const currentDates = { start: stayDates.checkIn, end: stayDates.checkOut };
 
   const handleDateChange = (start: Date | null, end: Date | null) => {
-    if (listing.assetType === "Cars") {
-      setCarDates({ pickup: start, dropoff: end });
-    } else {
-      setStayDates({ checkIn: start, checkOut: end });
-    }
+    setStayDates({ checkIn: start, checkOut: end });
   };
 
   return (

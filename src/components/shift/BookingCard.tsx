@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { differenceInDays, differenceInHours, format } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useTrip } from "@/context/TripContext";
 import DateRangePicker from "./DateRangePicker";
+import CompactAddOnRail from "./CompactAddOnRail";
 import type { Listing } from "./ListingCard";
 
 interface BookingCardProps {
@@ -22,66 +23,65 @@ const BookingCard = ({
   onDateChange,
   minDate,
 }: BookingCardProps) => {
-  const { car, carDays, carDates, yachtBooking, yachtHours, yachtTotal, tripTotal } = useTrip();
+  const { car, carDays, carDates, yachtBooking, yachtHours, yachtTotal, tripTotal, stayNights } = useTrip();
 
+  const isStay = listing.assetType === "Stays";
+  
   // Calculate duration and totals
   const duration = useMemo(() => {
     if (!currentDates.start || !currentDates.end) return 0;
-    
-    if (listing.assetType === "Yachts") {
-      return Math.max(0, differenceInHours(currentDates.end, currentDates.start));
-    }
     return Math.max(0, differenceInDays(currentDates.end, currentDates.start));
-  }, [currentDates, listing.assetType]);
+  }, [currentDates]);
 
   const primaryTotal = useMemo(() => {
     return listing.price * duration;
   }, [listing.price, duration]);
 
   // Check if we have add-ons from "Complete Your Trip"
-  const hasCarAddOn = car && listing.assetType === "Stays" && carDays > 0;
-  const hasYachtAddOn = yachtBooking.yacht && listing.assetType === "Stays" && yachtHours > 0;
+  const hasCarAddOn = car && isStay && carDays > 0;
+  const hasYachtAddOn = yachtBooking.yacht && isStay && yachtHours > 0;
   const carAddOnTotal = hasCarAddOn ? car.price * carDays : 0;
-  const grandTotal = listing.assetType === "Stays" ? tripTotal : primaryTotal;
+  const grandTotal = isStay ? tripTotal : primaryTotal;
 
   const isValidBooking = currentDates.start && currentDates.end && duration > 0;
+  const hasDatesSelected = currentDates.start && currentDates.end;
 
-  const durationLabel = listing.assetType === "Yachts" 
-    ? `${duration} ${duration === 1 ? "hour" : "hours"}`
-    : `${duration} ${duration === 1 ? priceUnit : priceUnit + "s"}`;
+  const durationLabel = `${duration} ${duration === 1 ? priceUnit : priceUnit + "s"}`;
 
   // Format car dates for display
   const getCarDatesLabel = () => {
     if (!carDates.pickup || !carDates.dropoff) return "";
-    return ` (${format(carDates.pickup, "MMM d")} - ${format(carDates.dropoff, "MMM d")})`;
+    return `${format(carDates.pickup, "MMM d")} – ${format(carDates.dropoff, "MMM d")}`;
   };
 
   // Format yacht booking for display
   const getYachtLabel = () => {
     if (!yachtBooking.startDate) return "";
-    return ` · ${format(yachtBooking.startDate, "MMM d")} ${yachtBooking.startTime}-${yachtBooking.endTime}`;
+    return `${format(yachtBooking.startDate, "MMM d")} · ${yachtBooking.startTime}–${yachtBooking.endTime}`;
   };
 
   return (
-    <div className="rounded-2xl bg-card border border-border-subtle p-6 space-y-6">
+    <div className="rounded-2xl bg-card border border-border-subtle p-6 space-y-5">
       {/* Price */}
       <div className="flex items-baseline gap-1">
         <span className="text-3xl font-bold text-primary">${listing.price.toLocaleString()}</span>
         <span className="text-muted-foreground">/ {priceUnit}</span>
       </div>
 
-      {/* Date Selector */}
-      <div>
-        <h3 className="text-sm font-medium text-foreground mb-3">Select Dates</h3>
-        <DateRangePicker
-          startDate={currentDates.start}
-          endDate={currentDates.end}
-          onDateChange={onDateChange}
-          startLabel={dateLabels.start}
-          endLabel={dateLabels.end}
-          minDate={minDate}
-        />
-      </div>
+      {/* Date Selector - Only for Stays (primary trip container) */}
+      {isStay && (
+        <div>
+          <h3 className="text-sm font-medium text-foreground mb-3">Select Dates</h3>
+          <DateRangePicker
+            startDate={currentDates.start}
+            endDate={currentDates.end}
+            onDateChange={onDateChange}
+            startLabel={dateLabels.start}
+            endLabel={dateLabels.end}
+            minDate={minDate}
+          />
+        </div>
+      )}
 
       {/* Summary */}
       {isValidBooking && (
@@ -96,7 +96,7 @@ const BookingCard = ({
             </span>
           </div>
 
-          {/* Car add-on from Complete Your Trip */}
+          {/* Car add-on */}
           {hasCarAddOn && (
             <div className="flex items-center justify-between text-sm">
               <div className="flex flex-col">
@@ -113,7 +113,7 @@ const BookingCard = ({
             </div>
           )}
 
-          {/* Yacht add-on from Complete Your Trip */}
+          {/* Yacht add-on */}
           {hasYachtAddOn && (
             <div className="flex items-center justify-between text-sm">
               <div className="flex flex-col">
@@ -152,6 +152,14 @@ const BookingCard = ({
       <p className="text-xs text-muted-foreground text-center">
         No charge yet. A representative will confirm availability.
       </p>
+
+      {/* Compact Add-On Rail - Only show for Stays after dates selected */}
+      {isStay && hasDatesSelected && (
+        <div className="pt-4 border-t border-border-subtle">
+          <h3 className="text-sm font-medium text-foreground mb-3">Complete Your Trip</h3>
+          <CompactAddOnRail city={listing.location} variant="compact" />
+        </div>
+      )}
     </div>
   );
 };
