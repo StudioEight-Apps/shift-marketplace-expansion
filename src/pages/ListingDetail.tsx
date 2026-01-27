@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Star, Users, Bed, MapPin, Anchor, Car as CarIcon, Gauge } from "lucide-react";
 import { TripProvider, useTrip } from "@/context/TripContext";
@@ -17,6 +17,12 @@ const ListingDetailContent = () => {
   const navigate = useNavigate();
   const { setStay, stayDates, setStayDates } = useTrip();
 
+  // Standalone date state for Cars and Yachts (not tied to trip container)
+  const [standaloneDates, setStandaloneDates] = useState<{ start: Date | null; end: Date | null }>({
+    start: null,
+    end: null,
+  });
+
   const listing = useMemo(() => {
     return allListings.find(l => l.id === id) || null;
   }, [id]);
@@ -27,6 +33,11 @@ const ListingDetailContent = () => {
       setStay(listing);
     }
   }, [listing, setStay]);
+
+  // Reset standalone dates when listing changes
+  useEffect(() => {
+    setStandaloneDates({ start: null, end: null });
+  }, [id]);
 
   if (!listing) {
     return (
@@ -61,9 +72,17 @@ const ListingDetailContent = () => {
     }
   };
 
-  // Get date labels based on asset type - only relevant for Stays now
+  // Get date labels based on asset type
   const getDateLabels = () => {
-    return { start: "Check-in", end: "Check-out" };
+    switch (listing.assetType) {
+      case "Cars":
+        return { start: "Pick-up", end: "Drop-off" };
+      case "Yachts":
+        return { start: "Start Date", end: "End Date" };
+      case "Stays":
+      default:
+        return { start: "Check-in", end: "Check-out" };
+    }
   };
 
   // Get specs based on asset type
@@ -92,11 +111,18 @@ const ListingDetailContent = () => {
   const dateLabels = getDateLabels();
   const specs = getSpecs();
 
-  // For Stays, use stayDates as the trip container dates
-  const currentDates = { start: stayDates.checkIn, end: stayDates.checkOut };
+  // For Stays, use stayDates (trip container). For Cars/Yachts, use standalone dates
+  const isStay = listing.assetType === "Stays";
+  const currentDates = isStay 
+    ? { start: stayDates.checkIn, end: stayDates.checkOut }
+    : standaloneDates;
 
   const handleDateChange = (start: Date | null, end: Date | null) => {
-    setStayDates({ checkIn: start, checkOut: end });
+    if (isStay) {
+      setStayDates({ checkIn: start, checkOut: end });
+    } else {
+      setStandaloneDates({ start, end });
+    }
   };
 
   return (
@@ -168,8 +194,8 @@ const ListingDetailContent = () => {
               </p>
             </div>
 
-            {/* Complete Your Trip Section - Only for Stays and Cars */}
-            {(listing.assetType === "Stays" || listing.assetType === "Cars" || listing.assetType === "Yachts") && (
+            {/* Complete Your Trip Section - Only for Stays */}
+            {listing.assetType === "Stays" && (
               <div className="pt-6">
                 <CompleteYourTrip 
                   currentListing={listing} 
