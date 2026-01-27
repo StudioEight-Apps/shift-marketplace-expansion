@@ -41,6 +41,19 @@ const DateRangePicker = ({
     : undefined;
 
   const handleSelect = (range: DateRange | undefined) => {
+    // If user clicks a new start date (before or on current start), reset the range
+    if (range?.from && startDate && range.from.getTime() !== startDate.getTime() && !range.to) {
+      // This is a fresh start date selection - clear both and set new start
+      onDateChange(range.from, null);
+      return;
+    }
+    
+    // If user clicks same day twice, treat it as wanting to change the start
+    if (range?.from && range?.to && range.from.getTime() === range.to.getTime()) {
+      onDateChange(range.from, null);
+      return;
+    }
+    
     onDateChange(range?.from || null, range?.to || null);
     if (range?.from && range?.to) {
       setOpen(false);
