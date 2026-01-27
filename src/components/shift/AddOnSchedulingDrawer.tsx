@@ -95,8 +95,16 @@ const AddOnSchedulingDrawer = ({
     return generateDurationOptions(stayDuration);
   }, [stayDuration]);
 
-  // Calculate car end date based on duration
+  // Calculate car end date based on duration (exclusive - last highlighted day is start + days - 1)
   const carEndDate = useMemo(() => {
+    if (!carStartDate || !selectedDuration || !validCheckIn || !validCheckOut) return null;
+    const days = selectedDuration === -1 ? stayDuration : selectedDuration;
+    // End date is exclusive (return day), so highlight ends at start + days - 1
+    return addDays(carStartDate, days - 1);
+  }, [carStartDate, selectedDuration, stayDuration, validCheckIn, validCheckOut]);
+
+  // The actual return/dropoff date (day after last billed day)
+  const carDropoffDate = useMemo(() => {
     if (!carStartDate || !selectedDuration || !validCheckIn || !validCheckOut) return null;
     const days = selectedDuration === -1 ? stayDuration : selectedDuration;
     return addDays(carStartDate, days);
@@ -128,12 +136,12 @@ const AddOnSchedulingDrawer = ({
   };
 
   const handleConfirm = () => {
-    if (type === "Cars" && carStartDate && carEndDate) {
+    if (type === "Cars" && carStartDate && carDropoffDate) {
       const days = selectedDuration === -1 ? stayDuration : selectedDuration!;
       onConfirm({
         type: "car",
         pickup: carStartDate,
-        dropoff: carEndDate,
+        dropoff: carDropoffDate,
         days,
       });
     } else if (type === "Yachts" && yachtDate && yachtStartTime && yachtEndTime && yachtHours) {
@@ -162,10 +170,10 @@ const AddOnSchedulingDrawer = ({
     ? carStartDate && carEndDate
     : yachtDate && yachtStartTime && yachtHours;
 
-  // Get summary text
+  // Get summary text - show pickup to dropoff (exclusive end date)
   const getSummaryText = () => {
-    if (type === "Cars" && carStartDate && carEndDate) {
-      return `Scheduled for ${format(carStartDate, "MMM d")} – ${format(carEndDate, "MMM d")}`;
+    if (type === "Cars" && carStartDate && carDropoffDate) {
+      return `Scheduled for ${format(carStartDate, "MMM d")} – ${format(carDropoffDate, "MMM d")}`;
     }
     if (type === "Yachts" && yachtDate && yachtHours) {
       return `Scheduled for ${format(yachtDate, "MMM d")}, ${yachtHours} hours`;
@@ -234,22 +242,30 @@ const AddOnSchedulingDrawer = ({
 
           {step === "intent" && type === "Yachts" && (
             <div className="space-y-6">
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <h4 className="text-sm font-medium text-foreground">Which day during your stay?</h4>
+                
+                {/* Stay context label */}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="w-3 h-3 rounded-sm bg-muted/50 border border-border-subtle" />
+                  <span>Your stay: {format(validCheckIn, "MMM d")} – {format(validCheckOut, "MMM d")}</span>
+                </div>
+
                 <Calendar
                   mode="single"
                   selected={yachtDate || undefined}
                   onSelect={(date) => date && handleYachtDaySelect(date)}
                   defaultMonth={validCheckIn}
-                  disabled={(date) => date < validCheckIn || date > validCheckOut}
+                  disabled={(date) => date < validCheckIn || date >= validCheckOut}
                   modifiers={{ 
-                    stayWindow: { from: validCheckIn, to: validCheckOut },
+                    stayWindow: { from: validCheckIn, to: addDays(validCheckOut, -1) },
                     stayStart: validCheckIn,
-                    stayEnd: validCheckOut,
+                    stayEnd: addDays(validCheckOut, -1),
+                    selectedDay: yachtDate || undefined,
                   }}
                   modifiersStyles={{
                     stayWindow: { 
-                      backgroundColor: "hsl(var(--primary) / 0.15)",
+                      backgroundColor: "hsl(var(--muted) / 0.4)",
                     },
                     stayStart: {
                       borderTopLeftRadius: "9999px",
@@ -258,6 +274,11 @@ const AddOnSchedulingDrawer = ({
                     stayEnd: {
                       borderTopRightRadius: "9999px",
                       borderBottomRightRadius: "9999px",
+                    },
+                    selectedDay: {
+                      backgroundColor: "hsl(var(--primary))",
+                      color: "hsl(var(--primary-foreground))",
+                      borderRadius: "9999px",
                     },
                   }}
                   className="rounded-lg border border-border-subtle bg-background/50 p-3 pointer-events-auto"
@@ -305,6 +326,20 @@ const AddOnSchedulingDrawer = ({
                 {actualDays} {actualDays === 1 ? "day" : "days"} rental
               </div>
 
+              {/* Stay context label */}
+              <div className="flex items-center gap-4 text-xs">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="w-3 h-3 rounded-sm bg-muted/50 border border-border-subtle" />
+                  <span>Your stay</span>
+                </div>
+                {carStartDate && carEndDate && (
+                  <div className="flex items-center gap-2 text-foreground">
+                    <div className="w-3 h-3 rounded-sm bg-primary" />
+                    <span>Rental days</span>
+                  </div>
+                )}
+              </div>
+
               <Calendar
                 mode="single"
                 selected={carStartDate || undefined}
@@ -313,20 +348,22 @@ const AddOnSchedulingDrawer = ({
                 disabled={(date) => {
                   // Disable dates outside stay window
                   if (date < validCheckIn) return true;
-                  // Ensure there's room for the full duration
-                  const endDate = addDays(date, actualDays);
-                  if (endDate > validCheckOut) return true;
+                  // Ensure there's room for the full duration (dropoff can be on checkout day)
+                  const dropoffDate = addDays(date, actualDays);
+                  if (dropoffDate > validCheckOut) return true;
                   return false;
                 }}
                 modifiers={{ 
-                  stayWindow: { from: validCheckIn, to: validCheckOut },
+                  stayWindow: { from: validCheckIn, to: addDays(validCheckOut, -1) },
                   stayStart: validCheckIn,
-                  stayEnd: validCheckOut,
+                  stayEnd: addDays(validCheckOut, -1),
                   rentalRange: carStartDate && carEndDate ? { from: carStartDate, to: carEndDate } : undefined,
+                  rentalStart: carStartDate || undefined,
+                  rentalEnd: carEndDate || undefined,
                 }}
                 modifiersStyles={{
                   stayWindow: { 
-                    backgroundColor: "hsl(var(--primary) / 0.08)",
+                    backgroundColor: "hsl(var(--muted) / 0.4)",
                   },
                   stayStart: {
                     borderTopLeftRadius: "9999px",
@@ -337,13 +374,22 @@ const AddOnSchedulingDrawer = ({
                     borderBottomRightRadius: "9999px",
                   },
                   rentalRange: {
-                    backgroundColor: "hsl(var(--primary) / 0.25)",
+                    backgroundColor: "hsl(var(--primary))",
+                    color: "hsl(var(--primary-foreground))",
+                  },
+                  rentalStart: {
+                    borderTopLeftRadius: "9999px",
+                    borderBottomLeftRadius: "9999px",
+                  },
+                  rentalEnd: {
+                    borderTopRightRadius: "9999px",
+                    borderBottomRightRadius: "9999px",
                   },
                 }}
                 className="rounded-lg border border-border-subtle bg-background/50 p-3 pointer-events-auto"
               />
 
-              {carStartDate && carEndDate && (
+              {carStartDate && carDropoffDate && (
                 <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 animate-in fade-in">
                   <div className="flex items-center gap-2 text-sm">
                     <CalendarIcon className="h-4 w-4 text-primary" />
