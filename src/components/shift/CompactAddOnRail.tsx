@@ -104,12 +104,6 @@ const CompactAddOnRail = ({ city, variant = "compact" }: CompactAddOnRailProps) 
   return (
     <>
       <div className="space-y-4">
-        {/* Value proposition */}
-        {variant === "full" && (
-          <p className="text-sm text-primary/80 font-medium">
-            Get 10% off a car or yacht booking when you book with your stay.
-          </p>
-        )}
 
         {/* Cars Section */}
         {(availableCars.length > 0 || car) && (

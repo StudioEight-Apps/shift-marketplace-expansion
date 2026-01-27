@@ -18,8 +18,8 @@ const CompleteYourTrip = ({ currentListing, city }: CompleteYourTripProps) => {
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-semibold text-foreground">Complete Your Trip</h2>
-        <p className="text-sm text-primary/80 mt-1">
-          Get 10% off a car or yacht booking when added to your stay.
+        <p className="text-sm text-muted-foreground mt-1">
+          Add a car or yacht to your stay.
         </p>
       </div>
 
