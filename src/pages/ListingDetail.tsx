@@ -6,6 +6,7 @@ import { villaListings, carListings, yachtListings } from "@/data/listings";
 import Header from "@/components/shift/Header";
 import CompleteYourTrip from "@/components/shift/CompleteYourTrip";
 import BookingCard from "@/components/shift/BookingCard";
+import YachtBookingCard from "@/components/shift/YachtBookingCard";
 import ImageGallery from "@/components/shift/ImageGallery";
 import type { Listing } from "@/components/shift/ListingCard";
 
@@ -17,14 +18,18 @@ const ListingDetailContent = () => {
   const navigate = useNavigate();
   const { setStay, stayDates, setStayDates } = useTrip();
 
-  // Standalone date state for Cars and Yachts (not tied to trip container)
+  // Standalone date state for Cars (not tied to trip container)
   const [standaloneDates, setStandaloneDates] = useState<{ start: Date | null; end: Date | null }>({
     start: null,
     end: null,
   });
 
+  // Standalone yacht state
+  const [yachtDate, setYachtDate] = useState<Date | null>(null);
+  const [yachtHours, setYachtHours] = useState<number | null>(null);
+
   const listing = useMemo(() => {
-    return allListings.find(l => l.id === id) || null;
+    return allListings.find((l) => l.id === id) || null;
   }, [id]);
 
   // Set the primary booking item in context (only Stays are trip containers)
@@ -37,6 +42,8 @@ const ListingDetailContent = () => {
   // Reset standalone dates when listing changes
   useEffect(() => {
     setStandaloneDates({ start: null, end: null });
+    setYachtDate(null);
+    setYachtHours(null);
   }, [id]);
 
   if (!listing) {
@@ -45,10 +52,7 @@ const ListingDetailContent = () => {
         <Header />
         <div className="container px-6 py-12 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Listing Not Found</h1>
-          <button
-            onClick={() => navigate("/")}
-            className="text-primary hover:underline"
-          >
+          <button onClick={() => navigate("/")} className="text-primary hover:underline">
             Return to listings
           </button>
         </div>
@@ -77,8 +81,6 @@ const ListingDetailContent = () => {
     switch (listing.assetType) {
       case "Cars":
         return { start: "Pick-up", end: "Drop-off" };
-      case "Yachts":
-        return { start: "Start Date", end: "End Date" };
       case "Stays":
       default:
         return { start: "Check-in", end: "Check-out" };
@@ -93,7 +95,7 @@ const ListingDetailContent = () => {
           { icon: Users, label: `${listing.seats || listing.guests} Seats`, value: "" },
           { icon: Gauge, label: listing.power || "", value: "" },
           { icon: CarIcon, label: listing.bodyStyle || "", value: "" },
-        ].filter(s => s.label);
+        ].filter((s) => s.label);
       case "Yachts":
         return [
           { icon: Users, label: `${listing.guests} Guests`, value: "" },
@@ -111,9 +113,12 @@ const ListingDetailContent = () => {
   const dateLabels = getDateLabels();
   const specs = getSpecs();
 
-  // For Stays, use stayDates (trip container). For Cars/Yachts, use standalone dates
+  // For Stays, use stayDates (trip container). For Cars, use standalone dates
   const isStay = listing.assetType === "Stays";
-  const currentDates = isStay 
+  const isCar = listing.assetType === "Cars";
+  const isYacht = listing.assetType === "Yachts";
+
+  const currentDates = isStay
     ? { start: stayDates.checkIn, end: stayDates.checkOut }
     : standaloneDates;
 
@@ -130,10 +135,7 @@ const ListingDetailContent = () => {
       <Header />
 
       {/* Image Gallery */}
-      <ImageGallery 
-        images={listing.images || [listing.image]} 
-        title={listing.title} 
-      />
+      <ImageGallery images={listing.images || [listing.image]} title={listing.title} />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8">
@@ -181,22 +183,22 @@ const ListingDetailContent = () => {
 
             {/* Description */}
             <div className="py-6 border-b border-border-subtle">
-              <h2 className="text-base font-medium text-foreground mb-3">About this {listing.assetType?.slice(0, -1).toLowerCase() || "listing"}</h2>
+              <h2 className="text-base font-medium text-foreground mb-3">
+                About this {listing.assetType?.slice(0, -1).toLowerCase() || "listing"}
+              </h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Experience luxury like never before with this exceptional {listing.title.toLowerCase()} in {listing.location}. 
-                Perfect for those seeking an unforgettable experience, this {listing.assetType?.slice(0, -1).toLowerCase() || "listing"} offers 
-                world-class amenities and impeccable attention to detail. A dedicated Shift concierge will ensure 
-                every aspect of your booking exceeds expectations.
+                Experience luxury like never before with this exceptional{" "}
+                {listing.title.toLowerCase()} in {listing.location}. Perfect for those seeking an
+                unforgettable experience, this {listing.assetType?.slice(0, -1).toLowerCase() || "listing"}{" "}
+                offers world-class amenities and impeccable attention to detail. A dedicated Shift
+                concierge will ensure every aspect of your booking exceeds expectations.
               </p>
             </div>
 
             {/* Complete Your Trip Section - Only for Stays */}
             {listing.assetType === "Stays" && (
               <div className="pt-6">
-                <CompleteYourTrip 
-                  currentListing={listing} 
-                  city={listing.location}
-                />
+                <CompleteYourTrip currentListing={listing} city={listing.location} />
               </div>
             )}
           </div>
@@ -204,14 +206,25 @@ const ListingDetailContent = () => {
           {/* Right Column - Booking Card (Sticky) */}
           <div className="lg:col-span-2">
             <div className="sticky top-6 max-w-sm ml-auto">
-              <BookingCard
-                listing={listing}
-                priceUnit={getPriceUnit()}
-                dateLabels={dateLabels}
-                currentDates={currentDates}
-                onDateChange={handleDateChange}
-                minDate={today}
-              />
+              {isYacht ? (
+                <YachtBookingCard
+                  listing={listing}
+                  selectedDate={yachtDate}
+                  selectedHours={yachtHours}
+                  onDateChange={setYachtDate}
+                  onHoursChange={setYachtHours}
+                  minDate={today}
+                />
+              ) : (
+                <BookingCard
+                  listing={listing}
+                  priceUnit={getPriceUnit()}
+                  dateLabels={dateLabels}
+                  currentDates={currentDates}
+                  onDateChange={handleDateChange}
+                  minDate={today}
+                />
+              )}
             </div>
           </div>
         </div>
