@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { format, addDays, differenceInDays } from "date-fns";
-import { Calendar as CalendarIcon, Clock, Check, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Check, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -40,13 +40,8 @@ interface YachtSchedule {
 
 type Step = "intent" | "schedule" | "confirm";
 
-const durationOptions = [
-  { value: 1, label: "1 day" },
-  { value: 2, label: "2 days" },
-  { value: 3, label: "3 days" },
-  { value: 5, label: "5 days" },
-  { value: -1, label: "Entire stay" },
-];
+// Duration options will be generated dynamically based on stay length
+const baseDurationOptions = [1, 2, 3, 5, 7, 10, 14];
 
 const yachtHourOptions = [
   { value: 4, label: "4 hours" },
@@ -86,6 +81,18 @@ const AddOnSchedulingDrawer = ({
   }
 
   const stayDuration = differenceInDays(validCheckOut, validCheckIn);
+
+  // Generate dynamic duration options based on stay length
+  const durationOptions = useMemo(() => {
+    const options = baseDurationOptions
+      .filter(days => days <= stayDuration)
+      .map(days => ({ value: days, label: days === 1 ? "1 day" : `${days} days` }));
+    
+    // Always add "Entire stay" option
+    options.push({ value: -1, label: `Entire stay (${stayDuration} days)` });
+    
+    return options;
+  }, [stayDuration]);
 
   // Calculate car end date based on duration
   const carEndDate = useMemo(() => {
@@ -172,8 +179,18 @@ const AddOnSchedulingDrawer = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md bg-card border-border overflow-y-auto">
         <SheetHeader className="pb-4 border-b border-border-subtle">
-          <SheetTitle className="text-foreground">Add to your stay</SheetTitle>
-          <SheetDescription className="text-muted-foreground">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => onOpenChange(false)}
+              className="p-2 -ml-2 rounded-full hover:bg-secondary/50 transition-colors"
+              aria-label="Close drawer"
+            >
+              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+            </button>
+            <SheetTitle className="text-foreground text-center flex-1">Add to your stay</SheetTitle>
+            <div className="w-9" /> {/* Spacer for centering */}
+          </div>
+          <SheetDescription className="text-muted-foreground text-center">
             {format(validCheckIn, "MMM d")} – {format(validCheckOut, "MMM d")}
           </SheetDescription>
         </SheetHeader>
@@ -197,23 +214,19 @@ const AddOnSchedulingDrawer = ({
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-foreground">How many days will you need the car?</h4>
               <div className="flex flex-wrap gap-2">
-                {durationOptions.map((option) => {
-                  // Filter out options longer than stay
-                  if (option.value !== -1 && option.value > stayDuration) return null;
-                  return (
-                    <button
-                      key={option.value}
-                      onClick={() => handleDurationSelect(option.value)}
-                      className={cn(
-                        "px-4 py-2.5 rounded-full text-sm font-medium transition-all",
-                        "bg-secondary/50 text-foreground hover:bg-secondary",
-                        "border border-border-subtle hover:border-primary/50"
-                      )}
-                    >
-                      {option.value === -1 ? `Entire stay (${stayDuration} days)` : option.label}
-                    </button>
-                  );
-                })}
+                {durationOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleDurationSelect(option.value)}
+                    className={cn(
+                      "px-4 py-2.5 rounded-full text-sm font-medium transition-all",
+                      "bg-secondary/50 text-foreground hover:bg-secondary",
+                      "border border-border-subtle hover:border-primary/50"
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -226,13 +239,25 @@ const AddOnSchedulingDrawer = ({
                   mode="single"
                   selected={yachtDate || undefined}
                   onSelect={(date) => date && handleYachtDaySelect(date)}
+                  defaultMonth={validCheckIn}
                   disabled={(date) => date < validCheckIn || date > validCheckOut}
-                  modifiers={{ stayWindow: { from: validCheckIn, to: validCheckOut } }}
+                  modifiers={{ 
+                    stayWindow: { from: validCheckIn, to: validCheckOut },
+                    stayStart: validCheckIn,
+                    stayEnd: validCheckOut,
+                  }}
                   modifiersStyles={{
                     stayWindow: { 
-                      backgroundColor: "hsl(var(--primary) / 0.1)",
-                      borderRadius: 0,
-                    }
+                      backgroundColor: "hsl(var(--primary) / 0.15)",
+                    },
+                    stayStart: {
+                      borderTopLeftRadius: "9999px",
+                      borderBottomLeftRadius: "9999px",
+                    },
+                    stayEnd: {
+                      borderTopRightRadius: "9999px",
+                      borderBottomRightRadius: "9999px",
+                    },
                   }}
                   className="rounded-lg border border-border-subtle bg-background/50 p-3 pointer-events-auto"
                 />
@@ -248,8 +273,9 @@ const AddOnSchedulingDrawer = ({
                         onClick={() => handleYachtHoursSelect(option.value)}
                         className={cn(
                           "px-4 py-2.5 rounded-full text-sm font-medium transition-all",
-                          "bg-secondary/50 text-foreground hover:bg-secondary",
-                          "border border-border-subtle hover:border-primary/50"
+                          yachtHours === option.value
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-secondary/50 text-foreground hover:bg-secondary border border-border-subtle hover:border-primary/50"
                         )}
                       >
                         {option.label}
@@ -282,6 +308,7 @@ const AddOnSchedulingDrawer = ({
                 mode="single"
                 selected={carStartDate || undefined}
                 onSelect={(date) => date && setCarStartDate(date)}
+                defaultMonth={validCheckIn}
                 disabled={(date) => {
                   // Disable dates outside stay window
                   if (date < validCheckIn) return true;
@@ -290,12 +317,27 @@ const AddOnSchedulingDrawer = ({
                   if (endDate > validCheckOut) return true;
                   return false;
                 }}
-                modifiers={{ stayWindow: { from: validCheckIn, to: validCheckOut } }}
+                modifiers={{ 
+                  stayWindow: { from: validCheckIn, to: validCheckOut },
+                  stayStart: validCheckIn,
+                  stayEnd: validCheckOut,
+                  rentalRange: carStartDate && carEndDate ? { from: carStartDate, to: carEndDate } : undefined,
+                }}
                 modifiersStyles={{
                   stayWindow: { 
-                    backgroundColor: "hsl(var(--primary) / 0.1)",
-                    borderRadius: 0,
-                  }
+                    backgroundColor: "hsl(var(--primary) / 0.08)",
+                  },
+                  stayStart: {
+                    borderTopLeftRadius: "9999px",
+                    borderBottomLeftRadius: "9999px",
+                  },
+                  stayEnd: {
+                    borderTopRightRadius: "9999px",
+                    borderBottomRightRadius: "9999px",
+                  },
+                  rentalRange: {
+                    backgroundColor: "hsl(var(--primary) / 0.25)",
+                  },
                 }}
                 className="rounded-lg border border-border-subtle bg-background/50 p-3 pointer-events-auto"
               />
