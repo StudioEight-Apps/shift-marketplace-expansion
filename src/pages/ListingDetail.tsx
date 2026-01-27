@@ -157,30 +157,26 @@ const ListingDetailContent = () => {
               </div>
             </div>
 
-            {/* Key Specs - Inline like Airbnb */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 border-b border-border-subtle">
+            {/* Core Specs Row (capacity + standout features in one glance) */}
+            <div className="flex flex-wrap items-center gap-2 py-4 border-b border-border-subtle">
               {specs.map((spec, i) => (
-                <span key={i} className="flex items-center gap-1.5">
-                  <spec.icon className="h-4 w-4" />
+                <span
+                  key={`spec-${i}`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground"
+                >
+                  <spec.icon className="h-3.5 w-3.5" />
                   {spec.label}
-                  {i < specs.length - 1 && <span className="ml-2">·</span>}
                 </span>
               ))}
-            </div>
 
-            {/* Highlights */}
-            <div className="py-6 border-b border-border-subtle">
-              <h2 className="text-base font-medium text-foreground mb-3">Highlights</h2>
-              <div className="flex flex-wrap gap-2">
-                {listing.attributes.map((attr, i) => (
-                  <span
-                    key={i}
-                    className="rounded-full bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground"
-                  >
-                    {attr}
-                  </span>
-                ))}
-              </div>
+              {listing.attributes.map((attr, i) => (
+                <span
+                  key={`highlight-${i}`}
+                  className="inline-flex items-center rounded-full bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground"
+                >
+                  {attr}
+                </span>
+              ))}
             </div>
 
             {/* Description */}

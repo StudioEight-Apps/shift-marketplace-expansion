@@ -33,6 +33,7 @@ const DateRangePicker = ({
   className,
 }: DateRangePickerProps) => {
   const [open, setOpen] = useState(false);
+  const [activeField, setActiveField] = useState<"start" | "end">("start");
 
   const dateRange: DateRange | undefined = startDate && endDate
     ? { from: startDate, to: endDate }
@@ -40,24 +41,35 @@ const DateRangePicker = ({
     ? { from: startDate, to: undefined }
     : undefined;
 
-  const handleSelect = (range: DateRange | undefined) => {
-    // If user clicks a new start date (before or on current start), reset the range
-    if (range?.from && startDate && range.from.getTime() !== startDate.getTime() && !range.to) {
-      // This is a fresh start date selection - clear both and set new start
-      onDateChange(range.from, null);
+  const handleDayClick = (day: Date) => {
+    // Respect the same disabled logic the calendar uses
+    if (disabled(day)) return;
+
+    // Treat the two inputs as two separate "editing modes":
+    // - When editing start: always update start (never "locks" to the previous start)
+    // - When editing end: update end, and close once both dates are set
+    if (activeField === "start") {
+      const nextStart = day;
+      const nextEnd = endDate && endDate < nextStart ? null : endDate;
+      onDateChange(nextStart, nextEnd);
       return;
     }
-    
-    // If user clicks same day twice, treat it as wanting to change the start
-    if (range?.from && range?.to && range.from.getTime() === range.to.getTime()) {
-      onDateChange(range.from, null);
+
+    // activeField === "end"
+    if (!startDate) {
+      // If user starts with the end field, treat first click as setting start.
+      onDateChange(day, null);
       return;
     }
-    
-    onDateChange(range?.from || null, range?.to || null);
-    if (range?.from && range?.to) {
-      setOpen(false);
+
+    if (day < startDate) {
+      // If they pick an end date earlier than start, treat it as a new start.
+      onDateChange(day, null);
+      return;
     }
+
+    onDateChange(startDate, day);
+    setOpen(false);
   };
 
   const disabled = (date: Date) => {
@@ -80,6 +92,9 @@ const DateRangePicker = ({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
+            onClick={() => {
+              setActiveField("start");
+            }}
             className={cn(
               "justify-start text-left font-normal h-auto py-3 px-4 bg-secondary/30 border-border-subtle hover:bg-secondary/50",
               !startDate && "text-muted-foreground"
@@ -97,32 +112,35 @@ const DateRangePicker = ({
           </Button>
         </PopoverTrigger>
 
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "justify-start text-left font-normal h-auto py-3 px-4 bg-secondary/30 border-border-subtle hover:bg-secondary/50",
-              !endDate && "text-muted-foreground"
-            )}
-          >
-            <div className="flex flex-col items-start gap-1 w-full">
-              <span className="text-xs text-muted-foreground">{endLabel}</span>
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">
-                  {endDate ? format(endDate, "MMM d, yyyy") : "Select date"}
-                </span>
-              </div>
+        {/* Not a PopoverTrigger on purpose: switching fields shouldn't toggle/close the popover. */}
+        <Button
+          variant="outline"
+          onClick={() => {
+            setActiveField("end");
+            setOpen(true);
+          }}
+          className={cn(
+            "justify-start text-left font-normal h-auto py-3 px-4 bg-secondary/30 border-border-subtle hover:bg-secondary/50",
+            !endDate && "text-muted-foreground"
+          )}
+        >
+          <div className="flex flex-col items-start gap-1 w-full">
+            <span className="text-xs text-muted-foreground">{endLabel}</span>
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                {endDate ? format(endDate, "MMM d, yyyy") : "Select date"}
+              </span>
             </div>
-          </Button>
-        </PopoverTrigger>
+          </div>
+        </Button>
       </div>
       
       <PopoverContent className="w-auto p-0 bg-card border-border-subtle" align="start">
         <Calendar
           mode="range"
           selected={dateRange}
-          onSelect={handleSelect}
+          onDayClick={(day) => handleDayClick(day)}
           disabled={disabled}
           numberOfMonths={1}
           initialFocus
