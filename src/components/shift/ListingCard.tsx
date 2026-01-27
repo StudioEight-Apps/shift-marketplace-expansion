@@ -1,4 +1,4 @@
-import { Heart, Share2, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type AssetType = "Stays" | "Cars" | "Yachts";
@@ -72,84 +72,70 @@ const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
   return (
     <div 
       className={cn(
-        "group relative overflow-hidden rounded-xl bg-card card-hover cursor-pointer",
+        "group relative overflow-hidden rounded-lg bg-card card-hover cursor-pointer",
         className
       )}
       onClick={onClick}
     >
-      {/* Image Container */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      {/* Image Container - 16:10 aspect ratio */}
+      <div className="relative aspect-[16/10] overflow-hidden">
         <img
           src={listing.image}
           alt={listing.title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         
-        {/* Top Badges - More subtle styling */}
-        <div className="absolute left-3 top-3 flex gap-2">
-          {listing.badges.map((badge) => (
-            <span
-              key={badge}
-              className={cn(
-                "rounded-full px-2.5 py-0.5 text-[11px] font-medium backdrop-blur-sm",
-                badge === "Guest Favorite" 
-                  ? "bg-primary/60 text-primary-foreground/90" 
-                  : "bg-secondary/60 text-foreground/80"
-              )}
-            >
-              {badge}
-            </span>
-          ))}
-        </div>
+        {/* Top Badge - Single primary badge only */}
+        {listing.badges.length > 0 && (
+          <span
+            className={cn(
+              "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm",
+              listing.badges[0] === "Guest Favorite" 
+                ? "bg-primary/60 text-primary-foreground/90" 
+                : "bg-secondary/60 text-foreground/80"
+            )}
+          >
+            {listing.badges[0]}
+          </span>
+        )}
         
         {/* Bottom Gradient Overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-32 overlay-gradient" />
+        <div className="absolute inset-x-0 bottom-0 h-16 overlay-gradient" />
       </div>
       
-      {/* Content */}
-      <div className="p-4">
+      {/* Content - Tightened padding */}
+      <div className="p-3">
         {/* Title and Price Row */}
-        <div className="flex items-start justify-between gap-4">
-          <h3 className="text-lg font-semibold text-foreground leading-tight">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-sm font-semibold text-foreground leading-tight line-clamp-1">
             {listing.title}
           </h3>
           <div className="text-right shrink-0">
-            <span className="text-lg font-bold text-primary">${priceDisplay.price}</span>
-            <p className="text-xs text-muted-foreground">{priceDisplay.unit}</p>
+            <span className="text-sm font-bold text-primary">${priceDisplay.price}</span>
+            <span className="text-[10px] text-muted-foreground">{priceDisplay.unit}</span>
           </div>
         </div>
         
-        {/* Location and Rating */}
-        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+        {/* Location and Rating - Compact */}
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
           <span>{listing.location}</span>
-          <span className="flex items-center gap-1">
-            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+          <span className="text-border">•</span>
+          <span className="flex items-center gap-0.5">
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
             {listing.rating}
           </span>
         </div>
         
-        {/* Spec Chips */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {specChips.map((spec, index) => (
+        {/* Essential Spec Chips - Max 2 */}
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {specChips.slice(0, 2).map((spec, index) => (
             <span 
               key={index} 
-              className="rounded-full bg-secondary/50 px-2.5 py-1 text-xs text-muted-foreground"
+              className="rounded-full bg-secondary/50 px-2 py-0.5 text-[10px] text-muted-foreground"
             >
               {spec}
             </span>
           ))}
-        </div>
-        
-        {/* Actions */}
-        <div className="mt-4 flex items-center gap-4 border-t border-border-subtle pt-4">
-          <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <Heart className="h-4 w-4" />
-            Save
-          </button>
-          <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <Share2 className="h-4 w-4" />
-            Share
-          </button>
         </div>
       </div>
     </div>
