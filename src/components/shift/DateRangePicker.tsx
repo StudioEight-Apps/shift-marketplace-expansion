@@ -48,8 +48,16 @@ const DateRangePicker = ({
   };
 
   const disabled = (date: Date) => {
-    if (minDate && date < minDate) return true;
-    if (maxDate && date > maxDate) return true;
+    // Normalize dates to start of day for proper comparison
+    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (minDate) {
+      const minStart = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+      if (dateStart < minStart) return true;
+    }
+    if (maxDate) {
+      const maxStart = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate());
+      if (dateStart > maxStart) return true;
+    }
     return false;
   };
 
