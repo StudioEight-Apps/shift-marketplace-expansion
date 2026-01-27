@@ -7,7 +7,7 @@ interface ListingsGridProps {
 
 const ListingsGrid = ({ listings, onListingClick }: ListingsGridProps) => {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
       {listings.map((listing) => (
         <ListingCard 
           key={listing.id} 

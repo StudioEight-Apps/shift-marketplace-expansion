@@ -72,27 +72,30 @@ const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
   return (
     <div 
       className={cn(
-        "group relative overflow-hidden rounded-lg bg-card card-hover cursor-pointer",
+        "group relative overflow-hidden bg-card cursor-pointer transition-all duration-300 ease-out",
+        "rounded-[14px] shadow-card hover:shadow-elevated hover:bg-card-hover",
+        "hover:-translate-y-1",
         className
       )}
       onClick={onClick}
     >
-      {/* Image Container - 16:10 aspect ratio */}
-      <div className="relative aspect-[16/10] overflow-hidden">
+      {/* Image Container - 16:10 aspect ratio at ~58% of card height */}
+      <div className="relative aspect-[16/10] overflow-hidden rounded-t-[14px]">
         <img
           src={listing.image}
           alt={listing.title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         
-        {/* Top Badge - Single primary badge only */}
+        {/* Top Badge - Single badge, subdued styling */}
         {listing.badges.length > 0 && (
           <span
             className={cn(
-              "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm",
+              "absolute left-2.5 top-2.5 rounded-full px-2 py-0.5 text-[9px] font-medium",
+              "bg-black/50 backdrop-blur-md border border-white/10",
               listing.badges[0] === "Guest Favorite" 
-                ? "bg-primary/60 text-primary-foreground/90" 
-                : "bg-secondary/60 text-foreground/80"
+                ? "text-primary/90" 
+                : "text-white/70"
             )}
           >
             {listing.badges[0]}
@@ -100,38 +103,38 @@ const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
         )}
         
         {/* Bottom Gradient Overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-16 overlay-gradient" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-card via-card/60 to-transparent" />
       </div>
       
-      {/* Content - Tightened padding */}
-      <div className="p-3">
+      {/* Content - Refined spacing */}
+      <div className="p-3.5">
         {/* Title and Price Row */}
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold text-foreground leading-tight line-clamp-1">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-[13px] font-semibold text-foreground leading-tight line-clamp-1">
             {listing.title}
           </h3>
           <div className="text-right shrink-0">
-            <span className="text-sm font-bold text-primary">${priceDisplay.price}</span>
-            <span className="text-[10px] text-muted-foreground">{priceDisplay.unit}</span>
+            <span className="text-[13px] font-semibold text-primary/85">${priceDisplay.price}</span>
+            <span className="text-[9px] text-muted-foreground ml-0.5">{priceDisplay.unit}</span>
           </div>
         </div>
         
-        {/* Location and Rating - Compact */}
-        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        {/* Location and Rating - Muted hierarchy */}
+        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <span>{listing.location}</span>
-          <span className="text-border">•</span>
+          <span className="opacity-40">•</span>
           <span className="flex items-center gap-0.5">
-            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+            <Star className="h-2.5 w-2.5 fill-amber-400/80 text-amber-400/80" />
             {listing.rating}
           </span>
         </div>
         
-        {/* Essential Spec Chips - Max 2 */}
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        {/* Essential Spec Pills - Max 2, subdued */}
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
           {specChips.slice(0, 2).map((spec, index) => (
             <span 
               key={index} 
-              className="rounded-full bg-secondary/50 px-2 py-0.5 text-[10px] text-muted-foreground"
+              className="rounded-full bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 text-[9px] text-muted-foreground"
             >
               {spec}
             </span>

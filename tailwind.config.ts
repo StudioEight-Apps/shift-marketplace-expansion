@@ -74,9 +74,14 @@ export default {
         full: "var(--radius-full)",
       },
       boxShadow: {
-        card: "var(--shadow-card)",
-        elevated: "var(--shadow-elevated)",
-        glow: "var(--shadow-glow)",
+        card: "0 8px 24px rgba(0, 0, 0, 0.45)",
+        elevated: "0 16px 40px rgba(0, 0, 0, 0.55)",
+        glow: "0 0 24px -6px hsl(195 100% 50% / 0.25)",
+      },
+      gap: {
+        'grid-desktop': '1.5rem',
+        'grid-tablet': '1.25rem',
+        'grid-mobile': '1rem',
       },
       keyframes: {
         "accordion-down": {
