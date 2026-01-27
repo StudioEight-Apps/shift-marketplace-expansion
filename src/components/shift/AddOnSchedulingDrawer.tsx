@@ -76,14 +76,23 @@ const AddOnSchedulingDrawer = ({
   const [yachtHours, setYachtHours] = useState<number | null>(null);
   const [yachtStartTime, setYachtStartTime] = useState<string | null>(null);
 
-  const stayDuration = differenceInDays(stayCheckOut, stayCheckIn);
+  // Validate dates are valid before using them
+  const validCheckIn = stayCheckIn instanceof Date && !isNaN(stayCheckIn.getTime()) ? stayCheckIn : null;
+  const validCheckOut = stayCheckOut instanceof Date && !isNaN(stayCheckOut.getTime()) ? stayCheckOut : null;
+
+  // Don't render if we don't have valid dates
+  if (!validCheckIn || !validCheckOut) {
+    return null;
+  }
+
+  const stayDuration = differenceInDays(validCheckOut, validCheckIn);
 
   // Calculate car end date based on duration
   const carEndDate = useMemo(() => {
-    if (!carStartDate || !selectedDuration) return null;
+    if (!carStartDate || !selectedDuration || !validCheckIn || !validCheckOut) return null;
     const days = selectedDuration === -1 ? stayDuration : selectedDuration;
     return addDays(carStartDate, days);
-  }, [carStartDate, selectedDuration, stayDuration]);
+  }, [carStartDate, selectedDuration, stayDuration, validCheckIn, validCheckOut]);
 
   // Calculate yacht end time
   const yachtEndTime = useMemo(() => {
@@ -96,7 +105,7 @@ const AddOnSchedulingDrawer = ({
   const handleDurationSelect = (duration: number) => {
     setSelectedDuration(duration);
     // Default to check-in date
-    setCarStartDate(stayCheckIn);
+    setCarStartDate(validCheckIn);
     setStep("schedule");
   };
 
@@ -165,7 +174,7 @@ const AddOnSchedulingDrawer = ({
         <SheetHeader className="pb-4 border-b border-border-subtle">
           <SheetTitle className="text-foreground">Add to your stay</SheetTitle>
           <SheetDescription className="text-muted-foreground">
-            {format(stayCheckIn, "MMM d")} – {format(stayCheckOut, "MMM d")}
+            {format(validCheckIn, "MMM d")} – {format(validCheckOut, "MMM d")}
           </SheetDescription>
         </SheetHeader>
 
@@ -217,8 +226,8 @@ const AddOnSchedulingDrawer = ({
                   mode="single"
                   selected={yachtDate || undefined}
                   onSelect={(date) => date && handleYachtDaySelect(date)}
-                  disabled={(date) => date < stayCheckIn || date > stayCheckOut}
-                  modifiers={{ stayWindow: { from: stayCheckIn, to: stayCheckOut } }}
+                  disabled={(date) => date < validCheckIn || date > validCheckOut}
+                  modifiers={{ stayWindow: { from: validCheckIn, to: validCheckOut } }}
                   modifiersStyles={{
                     stayWindow: { 
                       backgroundColor: "hsl(var(--primary) / 0.1)",
@@ -275,13 +284,13 @@ const AddOnSchedulingDrawer = ({
                 onSelect={(date) => date && setCarStartDate(date)}
                 disabled={(date) => {
                   // Disable dates outside stay window
-                  if (date < stayCheckIn) return true;
+                  if (date < validCheckIn) return true;
                   // Ensure there's room for the full duration
                   const endDate = addDays(date, actualDays);
-                  if (endDate > stayCheckOut) return true;
+                  if (endDate > validCheckOut) return true;
                   return false;
                 }}
-                modifiers={{ stayWindow: { from: stayCheckIn, to: stayCheckOut } }}
+                modifiers={{ stayWindow: { from: validCheckIn, to: validCheckOut } }}
                 modifiersStyles={{
                   stayWindow: { 
                     backgroundColor: "hsl(var(--primary) / 0.1)",
