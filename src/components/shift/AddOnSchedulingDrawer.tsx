@@ -40,8 +40,16 @@ interface YachtSchedule {
 
 type Step = "intent" | "schedule" | "confirm";
 
-// Duration options will be generated dynamically based on stay length
-const baseDurationOptions = [1, 2, 3, 5, 7, 10, 14];
+// Generate all day options from 1 up to stayDuration (no gaps)
+const generateDurationOptions = (stayDuration: number) => {
+  const options = [];
+  for (let i = 1; i <= stayDuration; i++) {
+    options.push({ value: i, label: i === 1 ? "1 day" : `${i} days` });
+  }
+  // Always add "Entire stay" as a distinct option
+  options.push({ value: -1, label: `Entire stay (${stayDuration} days)` });
+  return options;
+};
 
 const yachtHourOptions = [
   { value: 4, label: "4 hours" },
@@ -82,16 +90,9 @@ const AddOnSchedulingDrawer = ({
 
   const stayDuration = differenceInDays(validCheckOut, validCheckIn);
 
-  // Generate dynamic duration options based on stay length
+  // Generate all duration options (1 through stayDuration, no skipping)
   const durationOptions = useMemo(() => {
-    const options = baseDurationOptions
-      .filter(days => days <= stayDuration)
-      .map(days => ({ value: days, label: days === 1 ? "1 day" : `${days} days` }));
-    
-    // Always add "Entire stay" option
-    options.push({ value: -1, label: `Entire stay (${stayDuration} days)` });
-    
-    return options;
+    return generateDurationOptions(stayDuration);
   }, [stayDuration]);
 
   // Calculate car end date based on duration
