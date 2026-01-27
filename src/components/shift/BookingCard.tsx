@@ -3,7 +3,6 @@ import { differenceInDays, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useTrip } from "@/context/TripContext";
 import DateRangePicker from "./DateRangePicker";
-import CompactAddOnRail from "./CompactAddOnRail";
 import type { Listing } from "./ListingCard";
 
 interface BookingCardProps {
@@ -37,14 +36,14 @@ const BookingCard = ({
     return listing.price * duration;
   }, [listing.price, duration]);
 
-  // Check if we have add-ons from "Complete Your Trip"
+  // Check if we have add-ons from "Complete Your Trip" (only for Stays)
   const hasCarAddOn = car && isStay && carDays > 0;
   const hasYachtAddOn = yachtBooking.yacht && isStay && yachtHours > 0;
   const carAddOnTotal = hasCarAddOn ? car.price * carDays : 0;
   const grandTotal = isStay ? tripTotal : primaryTotal;
 
+  // For standalone bookings (cars/yachts), require dates; for stays, same logic
   const isValidBooking = currentDates.start && currentDates.end && duration > 0;
-  const hasDatesSelected = currentDates.start && currentDates.end;
 
   const durationLabel = `${duration} ${duration === 1 ? priceUnit : priceUnit + "s"}`;
 
@@ -68,20 +67,18 @@ const BookingCard = ({
         <span className="text-muted-foreground">/ {priceUnit}</span>
       </div>
 
-      {/* Date Selector - Only for Stays (primary trip container) */}
-      {isStay && (
-        <div>
-          <h3 className="text-sm font-medium text-foreground mb-3">Select Dates</h3>
-          <DateRangePicker
-            startDate={currentDates.start}
-            endDate={currentDates.end}
-            onDateChange={onDateChange}
-            startLabel={dateLabels.start}
-            endLabel={dateLabels.end}
-            minDate={minDate}
-          />
-        </div>
-      )}
+      {/* Date Selector - All asset types get independent calendars */}
+      <div>
+        <h3 className="text-sm font-medium text-foreground mb-3">Select Dates</h3>
+        <DateRangePicker
+          startDate={currentDates.start}
+          endDate={currentDates.end}
+          onDateChange={onDateChange}
+          startLabel={dateLabels.start}
+          endLabel={dateLabels.end}
+          minDate={minDate}
+        />
+      </div>
 
       {/* Summary */}
       {isValidBooking && (
@@ -152,14 +149,6 @@ const BookingCard = ({
       <p className="text-xs text-muted-foreground text-center">
         No charge yet. A representative will confirm availability.
       </p>
-
-      {/* Compact Add-On Rail - Only show for Stays after dates selected */}
-      {isStay && hasDatesSelected && (
-        <div className="pt-4 border-t border-border-subtle">
-          <h3 className="text-sm font-medium text-foreground mb-3">Complete Your Trip</h3>
-          <CompactAddOnRail city={listing.location} variant="compact" />
-        </div>
-      )}
     </div>
   );
 };
