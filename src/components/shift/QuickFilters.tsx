@@ -37,6 +37,61 @@ const defaultFilters: FilterState = {
 const carBrands = ["Ferrari", "Lamborghini", "Porsche", "Mercedes", "BMW", "Bentley", "Rolls-Royce", "McLaren", "Aston Martin", "Range Rover"];
 const bodyStyles = ["Convertible", "Coupe", "SUV", "Sedan", "Sports Car"];
 
+// Label Generator Functions
+const formatPrice = (value: number): string => {
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
+  }
+  return `$${value}`;
+};
+
+const getPriceLabel = (
+  price: [number, number] | null,
+  maxCeiling: number,
+  assetType: AssetType
+): string | undefined => {
+  if (!price) return undefined;
+  const [min, max] = price;
+  const suffix = assetType === "Yachts" ? "/hr" : "/day";
+  
+  if (min === 0 && max < maxCeiling) {
+    return `Under ${formatPrice(max)}${suffix}`;
+  }
+  if (min > 0 && max >= maxCeiling) {
+    return `${formatPrice(min)}+${suffix}`;
+  }
+  if (min === 0 && max >= maxCeiling) {
+    return undefined; // Full range = no filter
+  }
+  return `${formatPrice(min)}-${formatPrice(max)}`;
+};
+
+const getMultiSelectLabel = (
+  selected: string[],
+  singular: string,
+  plural: string
+): string | undefined => {
+  if (selected.length === 0) return undefined;
+  if (selected.length === 1) return selected[0];
+  return `${selected.length} ${plural}`;
+};
+
+const getLengthLabel = (length: [number, number] | null): string | undefined => {
+  if (!length) return undefined;
+  const [min, max] = length;
+  
+  if (min === 30 && max >= 150) {
+    return undefined; // Full range = no filter
+  }
+  if (min === 30 && max < 150) {
+    return `Under ${max} ft`;
+  }
+  if (min > 30 && max >= 150) {
+    return `${min}+ ft`;
+  }
+  return `${min}-${max} ft`;
+};
+
 // Counter Component
 const Counter = ({ 
   value, 
@@ -234,14 +289,18 @@ const BodyStyleList = ({
 const FilterPill = ({ 
   icon, 
   label, 
+  activeLabel,
   isActive,
   children 
 }: { 
   icon: React.ReactNode; 
   label: string; 
+  activeLabel?: string;
   isActive: boolean;
   children: React.ReactNode;
 }) => {
+  const displayLabel = isActive && activeLabel ? activeLabel : label;
+  
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -254,7 +313,7 @@ const FilterPill = ({
           )}
         >
           <span className="[&>svg]:h-3 [&>svg]:w-3 md:[&>svg]:h-4 md:[&>svg]:w-4">{icon}</span>
-          <span>{label}</span>
+          <span className="max-w-[100px] truncate">{displayLabel}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent 
@@ -302,6 +361,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<DollarSign className="h-4 w-4" />} 
               label="Price"
+              activeLabel={getPriceLabel(filters.price, 2000, "Cars")}
               isActive={filters.price !== null}
             >
               <PriceRangeSlider
@@ -326,6 +386,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<Car className="h-4 w-4" />} 
               label="Brand"
+              activeLabel={getMultiSelectLabel(filters.brand, "brand", "brands")}
               isActive={filters.brand.length > 0}
             >
               <BrandGrid
@@ -346,6 +407,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<Users className="h-4 w-4" />} 
               label="Seats"
+              activeLabel={filters.seats ? `${filters.seats}+ seats` : undefined}
               isActive={filters.seats !== null}
             >
               <Counter
@@ -369,6 +431,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<Gauge className="h-4 w-4" />} 
               label="Body Style"
+              activeLabel={getMultiSelectLabel(filters.bodyStyle, "style", "styles")}
               isActive={filters.bodyStyle.length > 0}
             >
               <BodyStyleList
@@ -394,6 +457,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<DollarSign className="h-4 w-4" />} 
               label="Price"
+              activeLabel={getPriceLabel(filters.price, 50000, "Yachts")}
               isActive={filters.price !== null}
             >
               <PriceRangeSlider
@@ -418,6 +482,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<Users className="h-4 w-4" />} 
               label="Guests"
+              activeLabel={filters.guests ? `${filters.guests}+ guests` : undefined}
               isActive={filters.guests !== null}
             >
               <Counter
@@ -441,6 +506,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<Ruler className="h-4 w-4" />} 
               label="Length"
+              activeLabel={getLengthLabel(filters.length)}
               isActive={filters.length !== null}
             >
               <LengthRangeSlider
@@ -466,6 +532,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<DollarSign className="h-4 w-4" />} 
               label="Price"
+              activeLabel={getPriceLabel(filters.price, 10000, "Stays")}
               isActive={filters.price !== null}
             >
               <PriceRangeSlider
@@ -490,6 +557,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<Users className="h-4 w-4" />} 
               label="Guests"
+              activeLabel={filters.guests ? `${filters.guests}+ guests` : undefined}
               isActive={filters.guests !== null}
             >
               <Counter
@@ -513,6 +581,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
             <FilterPill 
               icon={<BedDouble className="h-4 w-4" />} 
               label="Beds"
+              activeLabel={filters.beds ? `${filters.beds}+ beds` : undefined}
               isActive={filters.beds !== null}
             >
               <Counter
