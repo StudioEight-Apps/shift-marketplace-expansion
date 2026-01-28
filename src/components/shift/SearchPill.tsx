@@ -40,7 +40,7 @@ const SearchPill = ({
   
   // Format date display
   const getDateLabel = () => {
-    if (!startDate) return "When";
+    if (!startDate) return "Add dates";
     if (isSingleDayMode || !endDate) {
       return format(startDate, "MMM d");
     }
