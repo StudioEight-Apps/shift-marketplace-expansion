@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
-import { User, Sun, Moon } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext";
+import { User } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,12 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
 
 const Header = () => {
   // Simulating logged out state - this would come from auth context
   const [isLoggedIn] = useState(false);
-  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border-subtle bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -46,7 +44,7 @@ const Header = () => {
                 <User className="h-4 w-4 text-primary-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-card border-border-subtle">
+            <DropdownMenuContent align="end" className="w-52 bg-card border-border-subtle">
               {isLoggedIn ? (
                 <>
                   <DropdownMenuItem className="cursor-pointer">
@@ -66,22 +64,8 @@ const Header = () => {
                     Contact Us
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-border-subtle" />
-                  {/* Theme toggle */}
-                  <div className="flex items-center justify-between px-2 py-1.5">
-                    <div className="flex items-center gap-2">
-                      {theme === "dark" ? (
-                        <Moon className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Sun className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span className="text-sm">Light Mode</span>
-                    </div>
-                    <Switch
-                      checked={theme === "light"}
-                      onCheckedChange={toggleTheme}
-                      className="scale-75"
-                    />
-                  </div>
+                  {/* Theme toggle - 3 state */}
+                  <ThemeToggle />
                   <DropdownMenuSeparator className="bg-border-subtle" />
                   <DropdownMenuItem className="cursor-pointer text-destructive">
                     Log out
@@ -96,22 +80,8 @@ const Header = () => {
                     Contact Us
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-border-subtle md:hidden" />
-                  {/* Theme toggle */}
-                  <div className="flex items-center justify-between px-2 py-1.5">
-                    <div className="flex items-center gap-2">
-                      {theme === "dark" ? (
-                        <Moon className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Sun className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span className="text-sm">Light Mode</span>
-                    </div>
-                    <Switch
-                      checked={theme === "light"}
-                      onCheckedChange={toggleTheme}
-                      className="scale-75"
-                    />
-                  </div>
+                  {/* Theme toggle - 3 state */}
+                  <ThemeToggle />
                 </>
               )}
             </DropdownMenuContent>

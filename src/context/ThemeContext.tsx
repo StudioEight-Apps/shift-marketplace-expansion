@@ -1,16 +1,17 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-type Theme = "dark" | "light";
+type ThemeMode = "dark" | "light" | "system";
+type ResolvedTheme = "dark" | "light";
 
 interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
+  mode: ThemeMode;
+  resolvedTheme: ResolvedTheme;
+  setMode: (mode: ThemeMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const getSystemTheme = (): Theme => {
+const getSystemTheme = (): ResolvedTheme => {
   if (typeof window !== "undefined" && window.matchMedia) {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
@@ -18,48 +19,57 @@ const getSystemTheme = (): Theme => {
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem("shift-theme");
-    if (stored === "dark" || stored === "light") {
+  const [mode, setModeState] = useState<ThemeMode>(() => {
+    const stored = localStorage.getItem("shift-theme-mode");
+    if (stored === "dark" || stored === "light" || stored === "system") {
       return stored;
     }
     // Default to system preference
-    return getSystemTheme();
+    return "system";
   });
 
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
+    if (mode === "system") {
+      return getSystemTheme();
+    }
+    return mode;
+  });
+
+  // Listen for system theme changes
   useEffect(() => {
-    // Listen for system theme changes
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {
-      // Only update if user hasn't manually set a preference
-      const stored = localStorage.getItem("shift-theme");
-      if (!stored) {
-        setThemeState(e.matches ? "dark" : "light");
+      if (mode === "system") {
+        setResolvedTheme(e.matches ? "dark" : "light");
       }
     };
 
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
+  }, [mode]);
 
+  // Update resolved theme when mode changes
+  useEffect(() => {
+    if (mode === "system") {
+      setResolvedTheme(getSystemTheme());
+    } else {
+      setResolvedTheme(mode);
+    }
+  }, [mode]);
+
+  // Apply theme class to document
   useEffect(() => {
     document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(theme);
-  }, [theme]);
+    document.documentElement.classList.add(resolvedTheme);
+  }, [resolvedTheme]);
 
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    localStorage.setItem("shift-theme", newTheme);
-    setThemeState(newTheme);
-  };
-
-  const setTheme = (newTheme: Theme) => {
-    localStorage.setItem("shift-theme", newTheme);
-    setThemeState(newTheme);
+  const setMode = (newMode: ThemeMode) => {
+    localStorage.setItem("shift-theme-mode", newMode);
+    setModeState(newMode);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ mode, resolvedTheme, setMode }}>
       {children}
     </ThemeContext.Provider>
   );

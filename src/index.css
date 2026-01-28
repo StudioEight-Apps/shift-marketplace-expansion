@@ -87,15 +87,15 @@
   }
 
   .light {
-    /* Airbnb-inspired light theme */
-    --background: 0 0% 100%;
-    --background-elevated: 0 0% 98%;
+    /* Airbnb-inspired light theme with subtle premium gradient */
+    --background: 0 0% 98.5%;
+    --background-elevated: 0 0% 100%;
     --foreground: 220 15% 15%;
     
     /* Cards and surfaces */
     --card: 0 0% 100%;
     --card-foreground: 220 15% 15%;
-    --card-hover: 0 0% 96%;
+    --card-hover: 0 0% 99%;
     
     --popover: 0 0% 100%;
     --popover-foreground: 220 15% 15%;
@@ -122,32 +122,32 @@
     --destructive: 0 84% 50%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Borders and inputs */
-    --border: 220 10% 88%;
-    --border-subtle: 220 10% 92%;
-    --input: 220 10% 94%;
+    /* Borders and inputs - high transparency for minimal look */
+    --border: 0 0% 0% / 0.06;
+    --border-subtle: 0 0% 0% / 0.04;
+    --input: 220 10% 96%;
     --ring: 195 100% 40%;
     
     /* Sidebar */
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 0 0% 99%;
     --sidebar-foreground: 220 15% 25%;
     --sidebar-primary: 195 100% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 10% 94%;
     --sidebar-accent-foreground: 220 15% 15%;
-    --sidebar-border: 220 10% 90%;
+    --sidebar-border: 0 0% 0% / 0.06;
     --sidebar-ring: 195 100% 40%;
     
-    /* Gradients - subtle warm white gradient like Airbnb */
-    --gradient-dark: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(30 20% 98%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 99%) 100%);
+    /* Gradients - subtle warm white gradient like Wander/Airbnb */
+    --gradient-dark: linear-gradient(180deg, hsl(40 10% 97%) 0%, hsl(0 0% 100%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 100%) 100%);
     --gradient-header: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 99%) 100%);
     --gradient-overlay: linear-gradient(180deg, transparent 0%, hsla(0, 0%, 100%, 0.95) 100%);
     
-    /* Shadows - softer for light mode */
-    --shadow-card: 0 2px 12px -2px hsla(220, 15%, 15%, 0.08);
-    --shadow-elevated: 0 4px 20px -4px hsla(220, 15%, 15%, 0.12);
-    --shadow-glow: 0 0 20px -5px hsl(195 100% 40% / 0.2);
+    /* Shadows - softer with larger blur for light mode */
+    --shadow-card: 0 4px 20px -4px hsla(220, 15%, 15%, 0.06), 0 2px 8px -2px hsla(220, 15%, 15%, 0.04);
+    --shadow-elevated: 0 8px 32px -8px hsla(220, 15%, 15%, 0.1), 0 4px 16px -4px hsla(220, 15%, 15%, 0.06);
+    --shadow-glow: 0 0 24px -6px hsl(195 100% 40% / 0.15);
   }
 }
 
