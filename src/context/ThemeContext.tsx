@@ -10,23 +10,51 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const getSystemTheme = (): Theme => {
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return "dark";
+};
+
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     const stored = localStorage.getItem("shift-theme");
-    return (stored as Theme) || "dark";
+    if (stored === "dark" || stored === "light") {
+      return stored;
+    }
+    // Default to system preference
+    return getSystemTheme();
   });
 
   useEffect(() => {
-    localStorage.setItem("shift-theme", theme);
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      // Only update if user hasn't manually set a preference
+      const stored = localStorage.getItem("shift-theme");
+      if (!stored) {
+        setThemeState(e.matches ? "dark" : "light");
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
+    const newTheme = theme === "dark" ? "light" : "dark";
+    localStorage.setItem("shift-theme", newTheme);
+    setThemeState(newTheme);
   };
 
   const setTheme = (newTheme: Theme) => {
+    localStorage.setItem("shift-theme", newTheme);
     setThemeState(newTheme);
   };
 
