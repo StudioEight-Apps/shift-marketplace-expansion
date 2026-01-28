@@ -130,8 +130,8 @@ const SearchPill = ({
               </span>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-card border-border-subtle" align="center">
-            <div className="p-3">
+          <PopoverContent className="w-auto p-0 bg-card border-border-subtle mx-4" align="center" sideOffset={8}>
+            <div className="p-3 pb-0">
               <p className="text-xs text-muted-foreground mb-2 text-center">
                 {isSingleDayMode ? "Select a date" : "Select check-in and check-out"}
               </p>
