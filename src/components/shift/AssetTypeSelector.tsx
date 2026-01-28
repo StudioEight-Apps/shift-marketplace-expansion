@@ -26,7 +26,7 @@ const AssetTypeSelector = ({
           className={cn(
             "rounded-full px-4 md:px-8 py-1.5 md:py-2.5 text-xs md:text-sm font-medium transition-all duration-200",
             selectedType === type
-              ? "bg-primary text-primary-foreground shadow-glow"
+              ? "bg-foreground text-background"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
