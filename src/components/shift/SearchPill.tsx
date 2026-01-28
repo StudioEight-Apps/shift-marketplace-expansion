@@ -32,6 +32,7 @@ const SearchPill = ({
 }: SearchPillProps) => {
   const [cityOpen, setCityOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
+  const [displayMonth, setDisplayMonth] = useState<Date>(startDate || new Date());
   
   const selectedCity = cities.find(c => c.id === selectedCityId);
   const isSingleDayMode = selectedType === "Cars" || selectedType === "Yachts";
@@ -49,6 +50,9 @@ const SearchPill = ({
 
   // Handle date selection based on mode
   const handleDayClick = (day: Date) => {
+    // Update display month to the selected day's month
+    setDisplayMonth(day);
+    
     if (isSingleDayMode) {
       onDateChange(day, null);
       setDateOpen(false);
@@ -137,6 +141,8 @@ const SearchPill = ({
                 mode="single"
                 selected={startDate || undefined}
                 onDayClick={handleDayClick}
+                month={displayMonth}
+                onMonthChange={setDisplayMonth}
                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                 numberOfMonths={1}
                 initialFocus
@@ -147,6 +153,8 @@ const SearchPill = ({
                 mode="range"
                 selected={dateRange}
                 onDayClick={handleDayClick}
+                month={displayMonth}
+                onMonthChange={setDisplayMonth}
                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                 numberOfMonths={1}
                 initialFocus
