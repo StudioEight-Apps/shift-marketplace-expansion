@@ -19,17 +19,12 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border-subtle bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container flex h-12 md:h-14 items-center justify-between px-4 md:px-6">
-        {/* Left spacer for centering */}
-        <div className="flex-1" />
-        
-        {/* Centered Logo */}
-        <div className="flex items-center justify-center">
-          <Logo />
-        </div>
+      <div className="container flex h-14 md:h-16 items-center justify-between px-4 md:px-6">
+        {/* Logo - Left aligned, more prominent */}
+        <Logo />
         
         {/* Right navigation */}
-        <nav className="flex flex-1 items-center justify-end gap-4 md:gap-6">
+        <nav className="flex items-center gap-4 md:gap-6">
           {/* Desktop links */}
           <Link 
             to="#" 
