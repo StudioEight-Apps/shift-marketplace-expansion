@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/shift/Header";
-import CitySelector, { cities } from "@/components/shift/CitySelector";
+import { cities } from "@/components/shift/CitySelector";
+import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
 import QuickFilters from "@/components/shift/QuickFilters";
 import ListingsGrid from "@/components/shift/ListingsGrid";
@@ -29,6 +30,8 @@ const Index = () => {
   const navigate = useNavigate();
   const [selectedCityId, setSelectedCityId] = useState("miami");
   const [selectedType, setSelectedType] = useState<AssetType>("Stays");
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
   const selectedCity = cities.find(c => c.id === selectedCityId);
   const cityHasYachts = selectedCity?.hasYachts ?? false;
@@ -39,6 +42,13 @@ const Index = () => {
       setSelectedType("Stays");
     }
   }, [cityHasYachts, selectedType]);
+
+  // Reset dates when switching between single-day and range modes
+  useEffect(() => {
+    if (selectedType === "Cars" || selectedType === "Yachts") {
+      setEndDate(null);
+    }
+  }, [selectedType]);
 
   const listings = useMemo(() => {
     let allListings;
@@ -71,35 +81,37 @@ const Index = () => {
     setSelectedCityId(cityId);
   };
 
-  const displayCityName = selectedCity 
-    ? `${selectedCity.name}, ${selectedCity.state}` 
-    : "Miami, FL";
+  const handleDateChange = (start: Date | null, end: Date | null) => {
+    setStartDate(start);
+    setEndDate(end);
+  };
 
   return (
     <div className="min-h-screen bg-background scrollbar-dark">
       <Header />
       
-      {/* Primary Navigation - Centered row with City + Asset Type */}
-      <section className="border-b border-border-subtle py-4 md:py-6">
-        <div className="container px-4 md:px-6">
-          {/* Single centered row with city dropdown and asset type tabs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
-            <CitySelector 
-              selectedCityId={selectedCityId} 
-              onCityChange={handleCityChange} 
-            />
-            
-            <AssetTypeSelector 
-              selectedType={selectedType} 
-              onTypeChange={setSelectedType}
-              showYachts={cityHasYachts}
-            />
-          </div>
+      {/* 3-Tier Navigation Stack */}
+      <section className="border-b border-border-subtle py-6 md:py-8">
+        <div className="container px-4 md:px-6 flex flex-col items-center gap-8">
+          {/* Tier 1: Floating Search Pill */}
+          <SearchPill
+            selectedCityId={selectedCityId}
+            onCityChange={handleCityChange}
+            selectedType={selectedType}
+            startDate={startDate}
+            endDate={endDate}
+            onDateChange={handleDateChange}
+          />
           
-          {/* Quick Filters - Dynamic based on asset type */}
-          <div className="mt-4 md:mt-6">
-            <QuickFilters assetType={selectedType} />
-          </div>
+          {/* Tier 2: Category Selector */}
+          <AssetTypeSelector 
+            selectedType={selectedType} 
+            onTypeChange={setSelectedType}
+            showYachts={cityHasYachts}
+          />
+          
+          {/* Tier 3: Dynamic Quick Filters */}
+          <QuickFilters assetType={selectedType} />
         </div>
       </section>
       
