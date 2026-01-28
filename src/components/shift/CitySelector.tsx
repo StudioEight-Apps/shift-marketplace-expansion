@@ -1,30 +1,61 @@
-import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface CitySelectorProps {
-  selectedCity: string;
-  onCityChange: (city: string) => void;
+export interface City {
+  id: string;
+  name: string;
+  state: string;
+  hasYachts: boolean;
 }
 
-const cities = ["NYC", "Miami", "LA"];
+export const cities: City[] = [
+  { id: "aspen", name: "Aspen", state: "CO", hasYachts: false },
+  { id: "austin", name: "Austin", state: "TX", hasYachts: false },
+  { id: "hamptons", name: "The Hamptons", state: "NY", hasYachts: true },
+  { id: "las-vegas", name: "Las Vegas", state: "NV", hasYachts: false },
+  { id: "los-angeles", name: "Los Angeles", state: "CA", hasYachts: true },
+  { id: "miami", name: "Miami", state: "FL", hasYachts: true },
+  { id: "nashville", name: "Nashville", state: "TN", hasYachts: false },
+  { id: "new-york", name: "New York City", state: "NY", hasYachts: true },
+  { id: "park-city", name: "Park City", state: "UT", hasYachts: false },
+  { id: "scottsdale", name: "Scottsdale", state: "AZ", hasYachts: false },
+];
 
-const CitySelector = ({ selectedCity, onCityChange }: CitySelectorProps) => {
+interface CitySelectorProps {
+  selectedCityId: string;
+  onCityChange: (cityId: string) => void;
+}
+
+const CitySelector = ({ selectedCityId, onCityChange }: CitySelectorProps) => {
+  const selectedCity = cities.find(c => c.id === selectedCityId);
+  
   return (
-    <div className="flex items-center justify-center gap-0.5 md:gap-1">
-      {cities.map((city) => (
-        <button
-          key={city}
-          onClick={() => onCityChange(city)}
-          className={cn(
-            "px-3 md:px-5 py-1 md:py-1.5 text-xs md:text-sm font-medium rounded-full transition-all duration-200",
-            selectedCity === city 
-              ? "text-primary border border-primary/50 bg-primary/5" 
-              : "text-muted-foreground hover:text-foreground border border-transparent"
-          )}
-        >
-          {city}
-        </button>
-      ))}
-    </div>
+    <Select value={selectedCityId} onValueChange={onCityChange}>
+      <SelectTrigger 
+        className="w-auto min-w-[140px] gap-2 border-border bg-secondary/30 hover:bg-secondary/50 transition-colors rounded-full px-4 py-2 h-9 text-sm font-medium"
+      >
+        <SelectValue>
+          {selectedCity ? `${selectedCity.name}, ${selectedCity.state}` : "Select City"}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent className="bg-card border-border-subtle">
+        {cities.map((city) => (
+          <SelectItem 
+            key={city.id} 
+            value={city.id}
+            className="cursor-pointer"
+          >
+            {city.name}, {city.state}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 };
 
