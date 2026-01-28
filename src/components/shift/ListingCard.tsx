@@ -102,8 +102,6 @@ const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
           </span>
         )}
         
-        {/* Bottom Gradient Overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-card via-card/60 to-transparent" />
       </div>
       
       {/* Content - Refined spacing */}
@@ -114,7 +112,7 @@ const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
             {listing.title}
           </h3>
           <div className="text-right shrink-0">
-            <span className="text-[13px] font-semibold text-primary/85">${priceDisplay.price}</span>
+            <span className="text-[13px] font-semibold text-foreground">${priceDisplay.price}</span>
             <span className="text-[9px] text-muted-foreground ml-0.5">{priceDisplay.unit}</span>
           </div>
         </div>
@@ -124,7 +122,7 @@ const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
           <span>{listing.location}</span>
           <span className="opacity-40">•</span>
           <span className="flex items-center gap-0.5">
-            <Star className="h-2.5 w-2.5 fill-amber-400/80 text-amber-400/80" />
+            <Star className="h-2.5 w-2.5 fill-current text-muted-foreground" />
             {listing.rating}
           </span>
         </div>
