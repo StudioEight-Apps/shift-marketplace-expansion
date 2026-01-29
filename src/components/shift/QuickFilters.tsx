@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
-import { DollarSign, Users, BedDouble, Car, Ruler, Gauge, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { DollarSign, Users, BedDouble, Car, Ruler, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 
 type AssetType = "Stays" | "Cars" | "Yachts";
 
@@ -34,8 +33,65 @@ const defaultFilters: FilterState = {
   length: null,
 };
 
-const carBrands = ["Ferrari", "Lamborghini", "Porsche", "Mercedes", "BMW", "Bentley", "Rolls-Royce", "McLaren", "Aston Martin", "Range Rover"];
-const bodyStyles = ["Convertible", "Coupe", "SUV", "Sedan", "Sports Car"];
+// Brand data with logos (using brand initials as placeholder for actual logos)
+const carBrands = [
+  { name: "Ferrari", logo: "FE" },
+  { name: "Lamborghini", logo: "LM" },
+  { name: "Porsche", logo: "PR" },
+  { name: "Mercedes", logo: "MB" },
+  { name: "McLaren", logo: "MC" },
+  { name: "Bentley", logo: "BT" },
+  { name: "Rolls-Royce", logo: "RR" },
+  { name: "Aston Martin", logo: "AM" },
+  { name: "BMW", logo: "BM" },
+  { name: "Range Rover", logo: "RR" },
+];
+
+// Body style icons using thin-line SVG paths
+const bodyStyleIcons: Record<string, React.ReactNode> = {
+  "Convertible": (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 17h14v-3l-2-5H7L5 14v3z" />
+      <circle cx="7.5" cy="17" r="1.5" />
+      <circle cx="16.5" cy="17" r="1.5" />
+      <path d="M5 9h6" />
+    </svg>
+  ),
+  "Coupe": (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 17h14v-3l-2-5H9L5 13v4z" />
+      <circle cx="7.5" cy="17" r="1.5" />
+      <circle cx="16.5" cy="17" r="1.5" />
+      <path d="M9 9h6l2 4" />
+    </svg>
+  ),
+  "SUV": (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 17h14v-6l-1-3H6L5 11v6z" />
+      <circle cx="7.5" cy="17" r="1.5" />
+      <circle cx="16.5" cy="17" r="1.5" />
+      <path d="M6 8h12v3H6z" />
+    </svg>
+  ),
+  "Sedan": (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 17h16v-3l-2-5H6L4 14v3z" />
+      <circle cx="7" cy="17" r="1.5" />
+      <circle cx="17" cy="17" r="1.5" />
+      <path d="M6 9h12l1.5 4" />
+    </svg>
+  ),
+  "Supercar": (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 16h18v-2l-3-5H6L3 14v2z" />
+      <circle cx="6.5" cy="16" r="1.5" />
+      <circle cx="17.5" cy="16" r="1.5" />
+      <path d="M6 9h12l2 4" />
+    </svg>
+  ),
+};
+
+const bodyStyles = ["SUV", "Sedan", "Coupe", "Convertible", "Supercar"];
 
 // Label Generator Functions
 const formatPrice = (value: number): string => {
@@ -61,7 +117,7 @@ const getPriceLabel = (
     return `${formatPrice(min)}+${suffix}`;
   }
   if (min === 0 && max >= maxCeiling) {
-    return undefined; // Full range = no filter
+    return undefined;
   }
   return `${formatPrice(min)}-${formatPrice(max)}`;
 };
@@ -80,19 +136,13 @@ const getLengthLabel = (length: [number, number] | null): string | undefined => 
   if (!length) return undefined;
   const [min, max] = length;
   
-  if (min === 30 && max >= 150) {
-    return undefined; // Full range = no filter
-  }
-  if (min === 30 && max < 150) {
-    return `Under ${max} ft`;
-  }
-  if (min > 30 && max >= 150) {
-    return `${min}+ ft`;
-  }
+  if (min === 30 && max >= 150) return undefined;
+  if (min === 30 && max < 150) return `Under ${max} ft`;
+  if (min > 30 && max >= 150) return `${min}+ ft`;
   return `${min}-${max} ft`;
 };
 
-// Counter Component
+// Refined Counter Component
 const Counter = ({ 
   value, 
   onChange, 
@@ -109,103 +159,201 @@ const Counter = ({
   const currentValue = value ?? min;
   
   return (
-    <div className="flex items-center justify-between py-2">
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between py-3">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-4">
         <button
           onClick={() => onChange(currentValue <= min ? null : currentValue - 1)}
-          className="h-8 w-8 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+          className="h-9 w-9 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-30"
           disabled={value === null}
         >
-          -
+          <span className="text-lg font-light">−</span>
         </button>
-        <span className="w-8 text-center text-sm font-medium text-foreground">
+        <span className="w-10 text-center text-base font-medium text-foreground tabular-nums">
           {value ?? "Any"}
         </span>
         <button
           onClick={() => onChange(Math.min(currentValue + 1, max))}
-          className="h-8 w-8 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors"
+          className="h-9 w-9 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
         >
-          +
+          <span className="text-lg font-light">+</span>
         </button>
       </div>
     </div>
   );
 };
 
-// Price Range Slider Component
-const PriceRangeSlider = ({ 
+// Luxury Price Input Component (numeric-first)
+const PriceInputs = ({ 
   value, 
   onChange,
-  min = 0,
-  max = 5000,
-  step = 100,
-  prefix = "$"
+  maxCeiling,
+  step = 100
 }: { 
   value: [number, number] | null; 
   onChange: (val: [number, number] | null) => void;
-  min?: number;
-  max?: number;
+  maxCeiling: number;
   step?: number;
-  prefix?: string;
 }) => {
-  const currentValue = value ?? [min, max];
+  const [localMin, setLocalMin] = useState<string>(value?.[0]?.toString() ?? "");
+  const [localMax, setLocalMax] = useState<string>(value?.[1]?.toString() ?? "");
+  const minRef = useRef<HTMLInputElement>(null);
+  const maxRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setLocalMin(value?.[0]?.toString() ?? "");
+    setLocalMax(value?.[1]?.toString() ?? "");
+  }, [value]);
+
+  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^0-9]/g, "");
+    setLocalMin(val);
+  };
+
+  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^0-9]/g, "");
+    setLocalMax(val);
+  };
+
+  const handleBlur = () => {
+    const min = parseInt(localMin) || 0;
+    const max = parseInt(localMax) || maxCeiling;
+    
+    if (min === 0 && max >= maxCeiling) {
+      onChange(null);
+    } else {
+      onChange([Math.min(min, max), Math.max(min, max)]);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleBlur();
+      (e.target as HTMLInputElement).blur();
+    }
+  };
   
   return (
-    <div className="py-2 space-y-4">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Min</span>
-        <span className="font-medium text-foreground">{prefix}{currentValue[0].toLocaleString()}</span>
+    <div className="space-y-4 py-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground uppercase tracking-wide">Min</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+            <Input
+              ref={minRef}
+              type="text"
+              inputMode="numeric"
+              value={localMin}
+              onChange={handleMinChange}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              placeholder="0"
+              className="pl-7 h-11 bg-background border-border/40 text-foreground placeholder:text-muted-foreground/50 focus:border-foreground/20"
+            />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground uppercase tracking-wide">Max</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+            <Input
+              ref={maxRef}
+              type="text"
+              inputMode="numeric"
+              value={localMax}
+              onChange={handleMaxChange}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              placeholder={maxCeiling >= 10000 ? `${maxCeiling / 1000}k+` : `${maxCeiling}+`}
+              className="pl-7 h-11 bg-background border-border/40 text-foreground placeholder:text-muted-foreground/50 focus:border-foreground/20"
+            />
+          </div>
+        </div>
       </div>
-      <Slider
-        value={currentValue}
-        onValueChange={(val) => onChange(val as [number, number])}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full"
-      />
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Max</span>
-        <span className="font-medium text-foreground">{prefix}{currentValue[1].toLocaleString()}{currentValue[1] === max ? "+" : ""}</span>
-      </div>
+      <p className="text-xs text-muted-foreground/70 text-center">
+        {maxCeiling >= 10000 ? `Up to $${maxCeiling / 1000}k+` : `Up to $${maxCeiling}+`}
+      </p>
     </div>
   );
 };
 
-// Length Range Slider Component
-const LengthRangeSlider = ({ 
+// Refined Length Input Component
+const LengthInputs = ({ 
   value, 
   onChange 
 }: { 
   value: [number, number] | null; 
   onChange: (val: [number, number] | null) => void;
 }) => {
-  const currentValue = value ?? [30, 150];
+  const [localMin, setLocalMin] = useState<string>(value?.[0]?.toString() ?? "");
+  const [localMax, setLocalMax] = useState<string>(value?.[1]?.toString() ?? "");
+
+  useEffect(() => {
+    setLocalMin(value?.[0]?.toString() ?? "");
+    setLocalMax(value?.[1]?.toString() ?? "");
+  }, [value]);
+
+  const handleBlur = () => {
+    const min = parseInt(localMin) || 30;
+    const max = parseInt(localMax) || 150;
+    
+    if (min <= 30 && max >= 150) {
+      onChange(null);
+    } else {
+      onChange([Math.min(min, max), Math.max(min, max)]);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleBlur();
+      (e.target as HTMLInputElement).blur();
+    }
+  };
   
   return (
-    <div className="py-2 space-y-4">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Min</span>
-        <span className="font-medium text-foreground">{currentValue[0]} ft</span>
+    <div className="space-y-4 py-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground uppercase tracking-wide">Min</label>
+          <div className="relative">
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={localMin}
+              onChange={(e) => setLocalMin(e.target.value.replace(/[^0-9]/g, ""))}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              placeholder="30"
+              className="pr-8 h-11 bg-background border-border/40 text-foreground placeholder:text-muted-foreground/50 focus:border-foreground/20"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">ft</span>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground uppercase tracking-wide">Max</label>
+          <div className="relative">
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={localMax}
+              onChange={(e) => setLocalMax(e.target.value.replace(/[^0-9]/g, ""))}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              placeholder="150+"
+              className="pr-8 h-11 bg-background border-border/40 text-foreground placeholder:text-muted-foreground/50 focus:border-foreground/20"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">ft</span>
+          </div>
+        </div>
       </div>
-      <Slider
-        value={currentValue}
-        onValueChange={(val) => onChange(val as [number, number])}
-        min={30}
-        max={150}
-        step={5}
-        className="w-full"
-      />
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Max</span>
-        <span className="font-medium text-foreground">{currentValue[1]} ft{currentValue[1] === 150 ? "+" : ""}</span>
-      </div>
+      <p className="text-xs text-muted-foreground/70 text-center">30 ft – 150+ ft</p>
     </div>
   );
 };
 
-// Multi-select Brand Grid
+// Brand Grid with Logos
 const BrandGrid = ({ 
   selected, 
   onChange 
@@ -222,31 +370,42 @@ const BrandGrid = ({
   };
   
   return (
-    <div className="grid grid-cols-2 gap-2 py-2">
+    <div className="grid grid-cols-2 gap-1.5 py-2 max-h-[280px] overflow-y-auto scrollbar-dark">
       {carBrands.map(brand => (
-        <label
-          key={brand}
+        <button
+          key={brand.name}
+          onClick={() => toggleBrand(brand.name)}
           className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm",
-            selected.includes(brand) 
-              ? "bg-secondary text-foreground font-medium" 
-              : "hover:bg-secondary/50 text-muted-foreground"
+            "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 text-left",
+            selected.includes(brand.name) 
+              ? "bg-foreground/10 ring-1 ring-foreground/20" 
+              : "hover:bg-secondary/50"
           )}
         >
-          <Checkbox 
-            checked={selected.includes(brand)}
-            onCheckedChange={() => toggleBrand(brand)}
-            className="h-4 w-4"
-          />
-          {brand}
-        </label>
+          <div className={cn(
+            "w-8 h-8 rounded flex items-center justify-center text-xs font-medium transition-colors",
+            selected.includes(brand.name)
+              ? "bg-foreground/10 text-foreground"
+              : "bg-secondary/60 text-muted-foreground"
+          )}>
+            {brand.logo}
+          </div>
+          <span className={cn(
+            "text-sm transition-colors",
+            selected.includes(brand.name) 
+              ? "text-foreground font-medium" 
+              : "text-muted-foreground"
+          )}>
+            {brand.name}
+          </span>
+        </button>
       ))}
     </div>
   );
 };
 
-// Body Style List
-const BodyStyleList = ({ 
+// Body Style Pills
+const BodyStylePills = ({ 
   selected, 
   onChange 
 }: { 
@@ -262,24 +421,26 @@ const BodyStyleList = ({
   };
   
   return (
-    <div className="space-y-1 py-2">
+    <div className="flex flex-wrap gap-2 py-2">
       {bodyStyles.map(style => (
-        <label
+        <button
           key={style}
+          onClick={() => toggleStyle(style)}
           className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors",
+            "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-150",
             selected.includes(style) 
-              ? "bg-secondary text-foreground font-medium" 
-              : "hover:bg-secondary/50 text-muted-foreground"
+              ? "bg-foreground text-background font-medium" 
+              : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
           )}
         >
-          <Checkbox 
-            checked={selected.includes(style)}
-            onCheckedChange={() => toggleStyle(style)}
-            className="h-4 w-4"
-          />
+          <span className={cn(
+            "transition-colors",
+            selected.includes(style) ? "text-background" : "text-muted-foreground"
+          )}>
+            {bodyStyleIcons[style]}
+          </span>
           <span className="text-sm">{style}</span>
-        </label>
+        </button>
       ))}
     </div>
   );
@@ -291,13 +452,15 @@ const FilterPill = ({
   label, 
   activeLabel,
   isActive,
-  children 
+  children,
+  wide = false
 }: { 
   icon: React.ReactNode; 
   label: string; 
   activeLabel?: string;
   isActive: boolean;
   children: React.ReactNode;
+  wide?: boolean;
 }) => {
   const displayLabel = isActive && activeLabel ? activeLabel : label;
   
@@ -306,25 +469,25 @@ const FilterPill = ({
       <PopoverTrigger asChild>
         <button
           className={cn(
-            "flex items-center gap-1 md:gap-2 rounded-lg px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm transition-all duration-200",
+            "flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all duration-200",
             isActive 
-              ? "bg-secondary/80 text-foreground font-semibold" 
-              : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground font-medium"
+              ? "bg-foreground text-background font-medium" 
+              : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
           )}
         >
-          <span className="[&>svg]:h-3 [&>svg]:w-3 md:[&>svg]:h-4 md:[&>svg]:w-4">{icon}</span>
-          <span className="max-w-[100px] truncate">{displayLabel}</span>
+          <span className="[&>svg]:h-4 [&>svg]:w-4 opacity-70">{icon}</span>
+          <span className="max-w-[120px] truncate">{displayLabel}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-64 p-4 bg-card border-border-subtle shadow-lg" 
+        className={cn(
+          "p-5 bg-card border-border/40 shadow-elevated",
+          wide ? "w-80" : "w-72"
+        )}
         align="center" 
-        sideOffset={8}
+        sideOffset={12}
       >
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-foreground mb-3">{label}</h4>
-          {children}
-        </div>
+        {children}
       </PopoverContent>
     </Popover>
   );
@@ -358,101 +521,66 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
     setFilters(defaultFilters);
   };
 
+  const renderClearButton = (onClear: () => void, count?: number) => (
+    <Button 
+      variant="ghost" 
+      size="sm" 
+      className="w-full mt-3 text-muted-foreground hover:text-foreground"
+      onClick={onClear}
+    >
+      {count ? `Clear (${count})` : "Clear"}
+    </Button>
+  );
+
   const getFiltersForType = () => {
     switch (assetType) {
       case "Cars":
         return (
           <>
             <FilterPill 
-              icon={<DollarSign className="h-4 w-4" />} 
+              icon={<DollarSign />} 
               label="Price"
               activeLabel={getPriceLabel(filters.price, 2000, "Cars")}
               isActive={filters.price !== null}
             >
-              <PriceRangeSlider
+              <PriceInputs
                 value={filters.price}
                 onChange={(val) => updateFilter("price", val)}
-                min={0}
-                max={2000}
+                maxCeiling={2000}
                 step={50}
-                prefix="$"
               />
-              {filters.price && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("price", null)}
-                >
-                  Clear
-                </Button>
-              )}
+              {filters.price && renderClearButton(() => updateFilter("price", null))}
             </FilterPill>
             <FilterPill 
-              icon={<Car className="h-4 w-4" />} 
+              icon={<Car />} 
               label="Brand"
               activeLabel={getMultiSelectLabel(filters.brand, "brand", "brands")}
               isActive={filters.brand.length > 0}
+              wide
             >
               <BrandGrid
                 selected={filters.brand}
                 onChange={(val) => updateFilter("brand", val)}
               />
-              {filters.brand.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("brand", [])}
-                >
-                  Clear ({filters.brand.length} selected)
-                </Button>
-              )}
+              {filters.brand.length > 0 && renderClearButton(() => updateFilter("brand", []), filters.brand.length)}
             </FilterPill>
             <FilterPill 
-              icon={<Users className="h-4 w-4" />} 
-              label="Seats"
-              activeLabel={filters.seats ? `${filters.seats}+ seats` : undefined}
-              isActive={filters.seats !== null}
-            >
-              <Counter
-                value={filters.seats}
-                onChange={(val) => updateFilter("seats", val)}
-                min={2}
-                max={8}
-                label="Minimum seats"
-              />
-              {filters.seats && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("seats", null)}
-                >
-                  Clear
-                </Button>
-              )}
-            </FilterPill>
-            <FilterPill 
-              icon={<Gauge className="h-4 w-4" />} 
+              icon={
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="M7 9h4M13 9h4M7 13h4M13 13h4" />
+                </svg>
+              } 
               label="Body Style"
               activeLabel={getMultiSelectLabel(filters.bodyStyle, "style", "styles")}
               isActive={filters.bodyStyle.length > 0}
+              wide
             >
-              <BodyStyleList
+              <BodyStylePills
                 selected={filters.bodyStyle}
                 onChange={(val) => updateFilter("bodyStyle", val)}
               />
-              {filters.bodyStyle.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("bodyStyle", [])}
-                >
-                  Clear ({filters.bodyStyle.length} selected)
-                </Button>
-              )}
+              {filters.bodyStyle.length > 0 && renderClearButton(() => updateFilter("bodyStyle", []), filters.bodyStyle.length)}
             </FilterPill>
           </>
         );
@@ -460,32 +588,21 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         return (
           <>
             <FilterPill 
-              icon={<DollarSign className="h-4 w-4" />} 
+              icon={<DollarSign />} 
               label="Price"
               activeLabel={getPriceLabel(filters.price, 50000, "Yachts")}
               isActive={filters.price !== null}
             >
-              <PriceRangeSlider
+              <PriceInputs
                 value={filters.price}
                 onChange={(val) => updateFilter("price", val)}
-                min={0}
-                max={50000}
+                maxCeiling={50000}
                 step={1000}
-                prefix="$"
               />
-              {filters.price && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("price", null)}
-                >
-                  Clear
-                </Button>
-              )}
+              {filters.price && renderClearButton(() => updateFilter("price", null))}
             </FilterPill>
             <FilterPill 
-              icon={<Users className="h-4 w-4" />} 
+              icon={<Users />} 
               label="Guests"
               activeLabel={filters.guests ? `${filters.guests}+ guests` : undefined}
               isActive={filters.guests !== null}
@@ -497,37 +614,19 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
                 max={20}
                 label="Minimum guests"
               />
-              {filters.guests && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("guests", null)}
-                >
-                  Clear
-                </Button>
-              )}
+              {filters.guests && renderClearButton(() => updateFilter("guests", null))}
             </FilterPill>
             <FilterPill 
-              icon={<Ruler className="h-4 w-4" />} 
+              icon={<Ruler />} 
               label="Length"
               activeLabel={getLengthLabel(filters.length)}
               isActive={filters.length !== null}
             >
-              <LengthRangeSlider
+              <LengthInputs
                 value={filters.length}
                 onChange={(val) => updateFilter("length", val)}
               />
-              {filters.length && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("length", null)}
-                >
-                  Clear
-                </Button>
-              )}
+              {filters.length && renderClearButton(() => updateFilter("length", null))}
             </FilterPill>
           </>
         );
@@ -535,32 +634,21 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         return (
           <>
             <FilterPill 
-              icon={<DollarSign className="h-4 w-4" />} 
+              icon={<DollarSign />} 
               label="Price"
               activeLabel={getPriceLabel(filters.price, 10000, "Stays")}
               isActive={filters.price !== null}
             >
-              <PriceRangeSlider
+              <PriceInputs
                 value={filters.price}
                 onChange={(val) => updateFilter("price", val)}
-                min={0}
-                max={10000}
+                maxCeiling={10000}
                 step={100}
-                prefix="$"
               />
-              {filters.price && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("price", null)}
-                >
-                  Clear
-                </Button>
-              )}
+              {filters.price && renderClearButton(() => updateFilter("price", null))}
             </FilterPill>
             <FilterPill 
-              icon={<Users className="h-4 w-4" />} 
+              icon={<Users />} 
               label="Guests"
               activeLabel={filters.guests ? `${filters.guests}+ guests` : undefined}
               isActive={filters.guests !== null}
@@ -572,19 +660,10 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
                 max={16}
                 label="Minimum guests"
               />
-              {filters.guests && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("guests", null)}
-                >
-                  Clear
-                </Button>
-              )}
+              {filters.guests && renderClearButton(() => updateFilter("guests", null))}
             </FilterPill>
             <FilterPill 
-              icon={<BedDouble className="h-4 w-4" />} 
+              icon={<BedDouble />} 
               label="Beds"
               activeLabel={filters.beds ? `${filters.beds}+ beds` : undefined}
               isActive={filters.beds !== null}
@@ -596,16 +675,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
                 max={10}
                 label="Minimum beds"
               />
-              {filters.beds && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full mt-2 text-muted-foreground"
-                  onClick={() => updateFilter("beds", null)}
-                >
-                  Clear
-                </Button>
-              )}
+              {filters.beds && renderClearButton(() => updateFilter("beds", null))}
             </FilterPill>
           </>
         );
@@ -613,14 +683,14 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
   };
 
   return (
-    <div className="flex items-center justify-center gap-2 md:gap-3 transition-all duration-300">
+    <div className="flex items-center justify-center gap-2 transition-all duration-300">
       {getFiltersForType()}
       {hasActiveFilters() && (
         <button
           onClick={resetFilters}
-          className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors ml-2"
+          className="flex items-center gap-1.5 ml-3 px-3 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
         >
-          <X className="h-3 w-3" />
+          <X className="h-3.5 w-3.5" />
           <span>Reset</span>
         </button>
       )}
