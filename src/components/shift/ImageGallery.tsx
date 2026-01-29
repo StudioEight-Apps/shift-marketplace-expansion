@@ -25,9 +25,9 @@ const ImageGallery = ({ images, title }: ImageGalleryProps) => {
             alt={title}
             className="w-full h-full object-cover"
           />
-          {/* Gradient Overlay for text legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/30 via-transparent to-transparent" />
+          {/* Gradient Overlay for text legibility - dark mode only */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent dark:block hidden" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/30 via-transparent to-transparent dark:block hidden" />
           
           {/* Back Button */}
           <button
