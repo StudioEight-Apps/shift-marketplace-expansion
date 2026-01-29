@@ -174,7 +174,7 @@ const ListingDetailContent = () => {
               {listing.attributes.map((attr, i) => (
                 <span
                   key={`highlight-${i}`}
-                  className="inline-flex items-center rounded-full bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground"
+                  className="inline-flex items-center rounded-full bg-secondary/40 px-3 py-1.5 text-xs font-medium text-foreground"
                 >
                   {attr}
                 </span>
