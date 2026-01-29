@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
-import { DollarSign, Users, BedDouble, Car, Ruler, X } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { DollarSign, Users, BedDouble, Car, Ruler, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type AssetType = "Stays" | "Cars" | "Yachts";
+
+type FilterType = "price" | "guests" | "beds" | "brand" | "bodyStyle" | "length" | null;
 
 interface FilterState {
   price: [number, number] | null;
@@ -39,7 +41,7 @@ const PRICE_SNAP_VALUES = [500, 1000, 2000, 3000, 5000, 7500, 10000];
 // Distribution weights for heatline (purely visual)
 const PRICE_DISTRIBUTION = [0.15, 0.25, 0.35, 0.5, 0.7, 0.45, 0.3];
 
-// Brand data with logos (using brand initials as placeholder for actual logos)
+// Brand data with logos
 const carBrands = [
   { name: "Ferrari", logo: "FE" },
   { name: "Lamborghini", logo: "LM" },
@@ -53,7 +55,7 @@ const carBrands = [
   { name: "Range Rover", logo: "RR" },
 ];
 
-// Body style icons using thin-line SVG paths
+// Body style icons
 const bodyStyleIcons: Record<string, React.ReactNode> = {
   "Convertible": (
     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -129,7 +131,7 @@ const getPriceChipLabel = (
   const unit = getPriceUnit(assetType);
   
   if (min === PRICE_SNAP_VALUES[0] && max >= 10000) {
-    return undefined; // Full range, no label needed
+    return undefined;
   }
   
   const minLabel = formatPriceValue(min, true);
@@ -142,88 +144,190 @@ const getPriceChipLabel = (
   return `${minLabel}–${maxLabel} ${unit}`;
 };
 
-const getMultiSelectLabel = (
-  selected: string[],
-  singular: string,
-  plural: string
-): string | undefined => {
-  if (selected.length === 0) return undefined;
-  if (selected.length === 1) return selected[0];
-  return `${selected.length} ${plural}`;
+// Filter Modal Component
+const FilterModal = ({
+  isOpen,
+  onClose,
+  title,
+  onApply,
+  onClear,
+  showClear,
+  children,
+  wide = false
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  onApply: () => void;
+  onClear: () => void;
+  showClear: boolean;
+  children: React.ReactNode;
+  wide?: boolean;
+}) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onApply();
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onApply();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onApply]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      ref={modalRef}
+      className={cn(
+        "absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-card border border-border/40 rounded-xl shadow-elevated z-50",
+        wide ? "w-80" : "w-72"
+      )}
+    >
+      {/* Modal Header */}
+      <div className="px-4 py-3 border-b border-border/30">
+        <h3 className="text-sm font-medium text-foreground">{title}</h3>
+      </div>
+
+      {/* Modal Content */}
+      <div className="p-4">
+        {children}
+      </div>
+
+      {/* Modal Footer */}
+      <div className="px-4 py-3 border-t border-border/30 flex items-center justify-between">
+        {showClear ? (
+          <button
+            onClick={onClear}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
+        ) : (
+          <div />
+        )}
+        <Button
+          size="sm"
+          onClick={onApply}
+          className="bg-foreground text-background hover:bg-foreground/90 rounded-full px-6"
+        >
+          Apply
+        </Button>
+      </div>
+    </div>
+  );
 };
 
-const getLengthLabel = (length: [number, number] | null): string | undefined => {
-  if (!length) return undefined;
-  const [min, max] = length;
-  
-  if (min === 30 && max >= 150) return undefined;
-  if (min === 30 && max < 150) return `Under ${max} ft`;
-  if (min > 30 && max >= 150) return `${min}+ ft`;
-  return `${min}-${max} ft`;
+// Filter Button Component
+const FilterButton = ({
+  icon,
+  label,
+  isActive,
+  isOpen,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  isActive: boolean;
+  isOpen: boolean;
+  onClick: () => void;
+}) => {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "relative flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all duration-200",
+        isOpen
+          ? "bg-foreground text-background font-medium ring-2 ring-foreground/20"
+          : isActive
+            ? "bg-foreground text-background font-medium"
+            : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+      )}
+    >
+      <span className="[&>svg]:h-4 [&>svg]:w-4 opacity-70">{icon}</span>
+      <span className="max-w-[140px] truncate">{label}</span>
+      {isActive && !isOpen && (
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background" />
+      )}
+    </button>
+  );
 };
 
-// Refined Counter Component
-const Counter = ({ 
-  value, 
-  onChange, 
-  min = 1, 
+// Counter Component
+const Counter = ({
+  value,
+  onChange,
+  min = 1,
   max = 10,
-  label 
-}: { 
-  value: number | null; 
-  onChange: (val: number | null) => void; 
-  min?: number; 
+  label
+}: {
+  value: number | null;
+  onChange: (val: number | null) => void;
+  min?: number;
   max?: number;
   label: string;
 }) => {
   const currentValue = value ?? min;
-  
+
   return (
-    <div className="flex items-center justify-between py-3">
+    <div className="flex flex-col items-center gap-4 py-4">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
         <button
           onClick={() => onChange(currentValue <= min ? null : currentValue - 1)}
-          className="h-9 w-9 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-30"
+          className="h-10 w-10 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-30"
           disabled={value === null}
         >
-          <span className="text-lg font-light">−</span>
+          <span className="text-xl font-light">−</span>
         </button>
-        <span className="w-10 text-center text-base font-medium text-foreground tabular-nums">
+        <span className="w-16 text-center text-2xl font-medium text-foreground tabular-nums">
           {value ?? "Any"}
         </span>
         <button
           onClick={() => onChange(Math.min(currentValue + 1, max))}
-          className="h-9 w-9 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+          className="h-10 w-10 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
         >
-          <span className="text-lg font-light">+</span>
+          <span className="text-xl font-light">+</span>
         </button>
       </div>
     </div>
   );
 };
 
-// Price Slider with snap values and heatline
-const PriceSlider = ({ 
-  value, 
+// Price Slider Component
+const PriceSlider = ({
+  value,
   onChange,
-  assetType,
-  isOpen
-}: { 
-  value: [number, number] | null; 
+  assetType
+}: {
+  value: [number, number] | null;
   onChange: (val: [number, number] | null) => void;
   assetType: AssetType;
-  isOpen: boolean;
 }) => {
   const snapValues = PRICE_SNAP_VALUES;
   const minIndex = value ? snapValues.indexOf(value[0]) : 0;
   const maxIndex = value ? snapValues.indexOf(value[1]) : snapValues.length - 1;
-  
+
   const [localMin, setLocalMin] = useState(minIndex >= 0 ? minIndex : 0);
   const [localMax, setLocalMax] = useState(maxIndex >= 0 ? maxIndex : snapValues.length - 1);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Sync with external value
   useEffect(() => {
     if (!isDragging) {
       const newMinIndex = value ? snapValues.indexOf(value[0]) : 0;
@@ -247,8 +351,7 @@ const PriceSlider = ({
     setIsDragging(false);
     const minVal = snapValues[localMin];
     const maxVal = snapValues[localMax];
-    
-    // If full range selected, set to null
+
     if (localMin === 0 && localMax === snapValues.length - 1) {
       onChange(null);
     } else {
@@ -264,10 +367,8 @@ const PriceSlider = ({
   const displayMin = formatPriceValue(snapValues[localMin]);
   const displayMax = formatPriceValue(snapValues[localMax]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="pt-4 pb-2 px-1">
+    <div className="pt-2 pb-2">
       {/* Distribution heatline backdrop */}
       <div className="relative h-6 mb-2">
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-[2px] h-full">
@@ -283,11 +384,9 @@ const PriceSlider = ({
 
       {/* Slider track */}
       <div className="relative h-4 flex items-center">
-        {/* Track background */}
         <div className="absolute inset-x-0 h-[3px] bg-secondary rounded-full" />
-        
-        {/* Active range */}
-        <div 
+
+        <div
           className="absolute h-[3px] bg-foreground/60 rounded-full"
           style={{
             left: `${getPositionPercent(localMin)}%`,
@@ -295,7 +394,6 @@ const PriceSlider = ({
           }}
         />
 
-        {/* Min handle */}
         <input
           type="range"
           min={0}
@@ -329,10 +427,8 @@ const PriceSlider = ({
             [&::-moz-range-thumb]:border-background
             [&::-moz-range-thumb]:shadow-sm
             [&::-moz-range-thumb]:cursor-grab"
-          style={{ pointerEvents: 'auto' }}
         />
 
-        {/* Max handle */}
         <input
           type="range"
           min={0}
@@ -366,7 +462,6 @@ const PriceSlider = ({
             [&::-moz-range-thumb]:border-background
             [&::-moz-range-thumb]:shadow-sm
             [&::-moz-range-thumb]:cursor-grab"
-          style={{ pointerEvents: 'auto' }}
         />
       </div>
 
@@ -380,87 +475,136 @@ const PriceSlider = ({
   );
 };
 
-// Refined Length Input Component
-const LengthInputs = ({ 
-  value, 
-  onChange 
-}: { 
-  value: [number, number] | null; 
+// Length Slider Component
+const LengthSlider = ({
+  value,
+  onChange
+}: {
+  value: [number, number] | null;
   onChange: (val: [number, number] | null) => void;
 }) => {
-  const [localMin, setLocalMin] = useState<string>(value?.[0]?.toString() ?? "");
-  const [localMax, setLocalMax] = useState<string>(value?.[1]?.toString() ?? "");
+  const lengthValues = [30, 50, 75, 100, 125, 150];
+  const minIndex = value ? lengthValues.indexOf(value[0]) : 0;
+  const maxIndex = value ? lengthValues.indexOf(value[1]) : lengthValues.length - 1;
+
+  const [localMin, setLocalMin] = useState(minIndex >= 0 ? minIndex : 0);
+  const [localMax, setLocalMax] = useState(maxIndex >= 0 ? maxIndex : lengthValues.length - 1);
 
   useEffect(() => {
-    setLocalMin(value?.[0]?.toString() ?? "");
-    setLocalMax(value?.[1]?.toString() ?? "");
+    const newMinIndex = value ? lengthValues.findIndex(v => v >= (value[0] || 30)) : 0;
+    const newMaxIndex = value ? lengthValues.findIndex(v => v >= (value[1] || 150)) : lengthValues.length - 1;
+    setLocalMin(newMinIndex >= 0 ? newMinIndex : 0);
+    setLocalMax(newMaxIndex >= 0 ? newMaxIndex : lengthValues.length - 1);
   }, [value]);
 
-  const handleBlur = () => {
-    const min = parseInt(localMin) || 30;
-    const max = parseInt(localMax) || 150;
-    
-    if (min <= 30 && max >= 150) {
+  const handleMinChange = (index: number) => {
+    const clampedIndex = Math.min(index, localMax);
+    setLocalMin(clampedIndex);
+    updateValue(clampedIndex, localMax);
+  };
+
+  const handleMaxChange = (index: number) => {
+    const clampedIndex = Math.max(index, localMin);
+    setLocalMax(clampedIndex);
+    updateValue(localMin, clampedIndex);
+  };
+
+  const updateValue = (minIdx: number, maxIdx: number) => {
+    if (minIdx === 0 && maxIdx === lengthValues.length - 1) {
       onChange(null);
     } else {
-      onChange([Math.min(min, max), Math.max(min, max)]);
+      onChange([lengthValues[minIdx], lengthValues[maxIdx]]);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleBlur();
-      (e.target as HTMLInputElement).blur();
-    }
+  const getPositionPercent = (index: number) => {
+    return (index / (lengthValues.length - 1)) * 100;
   };
-  
+
+  const displayMin = `${lengthValues[localMin]} ft`;
+  const displayMax = localMax === lengthValues.length - 1 ? "150+ ft" : `${lengthValues[localMax]} ft`;
+
   return (
-    <div className="space-y-4 py-2">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground uppercase tracking-wide">Min</label>
-          <div className="relative">
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={localMin}
-              onChange={(e) => setLocalMin(e.target.value.replace(/[^0-9]/g, ""))}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              placeholder="30"
-              className="pr-8 h-11 bg-background border-border/40 text-foreground placeholder:text-muted-foreground/50 focus:border-foreground/20"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">ft</span>
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground uppercase tracking-wide">Max</label>
-          <div className="relative">
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={localMax}
-              onChange={(e) => setLocalMax(e.target.value.replace(/[^0-9]/g, ""))}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              placeholder="150+"
-              className="pr-8 h-11 bg-background border-border/40 text-foreground placeholder:text-muted-foreground/50 focus:border-foreground/20"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">ft</span>
-          </div>
-        </div>
+    <div className="pt-2 pb-2">
+      {/* Slider track */}
+      <div className="relative h-4 flex items-center mt-4">
+        <div className="absolute inset-x-0 h-[3px] bg-secondary rounded-full" />
+
+        <div
+          className="absolute h-[3px] bg-foreground/60 rounded-full"
+          style={{
+            left: `${getPositionPercent(localMin)}%`,
+            right: `${100 - getPositionPercent(localMax)}%`
+          }}
+        />
+
+        <input
+          type="range"
+          min={0}
+          max={lengthValues.length - 1}
+          step={1}
+          value={localMin}
+          onChange={(e) => handleMinChange(parseInt(e.target.value))}
+          className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer z-10
+            [&::-webkit-slider-thumb]:appearance-none
+            [&::-webkit-slider-thumb]:w-3.5
+            [&::-webkit-slider-thumb]:h-3.5
+            [&::-webkit-slider-thumb]:rounded-full
+            [&::-webkit-slider-thumb]:bg-foreground
+            [&::-webkit-slider-thumb]:border-2
+            [&::-webkit-slider-thumb]:border-background
+            [&::-webkit-slider-thumb]:shadow-sm
+            [&::-webkit-slider-thumb]:cursor-grab
+            [&::-moz-range-thumb]:w-3.5
+            [&::-moz-range-thumb]:h-3.5
+            [&::-moz-range-thumb]:rounded-full
+            [&::-moz-range-thumb]:bg-foreground
+            [&::-moz-range-thumb]:border-2
+            [&::-moz-range-thumb]:border-background"
+        />
+
+        <input
+          type="range"
+          min={0}
+          max={lengthValues.length - 1}
+          step={1}
+          value={localMax}
+          onChange={(e) => handleMaxChange(parseInt(e.target.value))}
+          className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer z-20
+            [&::-webkit-slider-thumb]:appearance-none
+            [&::-webkit-slider-thumb]:w-3.5
+            [&::-webkit-slider-thumb]:h-3.5
+            [&::-webkit-slider-thumb]:rounded-full
+            [&::-webkit-slider-thumb]:bg-foreground
+            [&::-webkit-slider-thumb]:border-2
+            [&::-webkit-slider-thumb]:border-background
+            [&::-webkit-slider-thumb]:shadow-sm
+            [&::-webkit-slider-thumb]:cursor-grab
+            [&::-moz-range-thumb]:w-3.5
+            [&::-moz-range-thumb]:h-3.5
+            [&::-moz-range-thumb]:rounded-full
+            [&::-moz-range-thumb]:bg-foreground
+            [&::-moz-range-thumb]:border-2
+            [&::-moz-range-thumb]:border-background"
+        />
       </div>
-      <p className="text-xs text-muted-foreground/70 text-center">30 ft – 150+ ft</p>
+
+      {/* Live range display */}
+      <div className="text-center mt-4">
+        <span className="text-sm font-medium text-foreground tabular-nums">
+          {displayMin} – {displayMax}
+        </span>
+      </div>
     </div>
   );
 };
 
-// Brand Grid with Logos
-const BrandGrid = ({ 
-  selected, 
-  onChange 
-}: { 
-  selected: string[]; 
+// Brand Grid Component
+const BrandGrid = ({
+  selected,
+  onChange
+}: {
+  selected: string[];
   onChange: (brands: string[]) => void;
 }) => {
   const toggleBrand = (brand: string) => {
@@ -470,32 +614,37 @@ const BrandGrid = ({
       onChange([...selected, brand]);
     }
   };
-  
+
   return (
-    <div className="grid grid-cols-2 gap-1.5 py-2 max-h-[280px] overflow-y-auto scrollbar-dark">
+    <div className="grid grid-cols-2 gap-2 max-h-[280px] overflow-y-auto scrollbar-dark">
       {carBrands.map(brand => (
         <button
           key={brand.name}
           onClick={() => toggleBrand(brand.name)}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 text-left",
-            selected.includes(brand.name) 
-              ? "bg-foreground/10 ring-1 ring-foreground/20" 
+            selected.includes(brand.name)
+              ? "bg-foreground/10 ring-1 ring-foreground/20"
               : "hover:bg-secondary/50"
           )}
         >
           <div className={cn(
-            "w-8 h-8 rounded flex items-center justify-center text-xs font-medium transition-colors",
+            "w-8 h-8 rounded flex items-center justify-center text-xs font-medium transition-colors relative",
             selected.includes(brand.name)
               ? "bg-foreground/10 text-foreground"
               : "bg-secondary/60 text-muted-foreground"
           )}>
             {brand.logo}
+            {selected.includes(brand.name) && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full flex items-center justify-center">
+                <Check className="w-2.5 h-2.5 text-background" />
+              </div>
+            )}
           </div>
           <span className={cn(
             "text-sm transition-colors",
-            selected.includes(brand.name) 
-              ? "text-foreground font-medium" 
+            selected.includes(brand.name)
+              ? "text-foreground font-medium"
               : "text-muted-foreground"
           )}>
             {brand.name}
@@ -506,12 +655,12 @@ const BrandGrid = ({
   );
 };
 
-// Body Style Pills
-const BodyStylePills = ({ 
-  selected, 
-  onChange 
-}: { 
-  selected: string[]; 
+// Body Style List Component
+const BodyStyleList = ({
+  selected,
+  onChange
+}: {
+  selected: string[];
   onChange: (styles: string[]) => void;
 }) => {
   const toggleStyle = (style: string) => {
@@ -521,313 +670,387 @@ const BodyStylePills = ({
       onChange([...selected, style]);
     }
   };
-  
+
   return (
-    <div className="flex flex-wrap gap-2 py-2">
+    <div className="space-y-1">
       {bodyStyles.map(style => (
         <button
           key={style}
           onClick={() => toggleStyle(style)}
           className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-150",
-            selected.includes(style) 
-              ? "bg-foreground text-background font-medium" 
-              : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-150 text-left",
+            selected.includes(style)
+              ? "bg-foreground/10"
+              : "hover:bg-secondary/50"
           )}
         >
+          <Checkbox
+            checked={selected.includes(style)}
+            className="data-[state=checked]:bg-foreground data-[state=checked]:border-foreground"
+          />
           <span className={cn(
             "transition-colors",
-            selected.includes(style) ? "text-background" : "text-muted-foreground"
+            selected.includes(style) ? "text-muted-foreground" : "text-muted-foreground"
           )}>
             {bodyStyleIcons[style]}
           </span>
-          <span className="text-sm">{style}</span>
+          <span className={cn(
+            "text-sm transition-colors",
+            selected.includes(style)
+              ? "text-foreground font-medium"
+              : "text-muted-foreground"
+          )}>
+            {style}
+          </span>
         </button>
       ))}
     </div>
   );
 };
 
-// Price Filter Pill with inline slider (no popover)
-const PriceFilterPill = ({ 
-  value,
-  onChange,
-  assetType
-}: { 
-  value: [number, number] | null;
-  onChange: (val: [number, number] | null) => void;
-  assetType: AssetType;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const chipLabel = getPriceChipLabel(value, assetType);
-  const isActive = value !== null;
-
-  const handleClear = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange(null);
-    setIsOpen(false);
-  };
-  
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all duration-200",
-          isActive 
-            ? "bg-foreground text-background font-medium" 
-            : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-        )}
-      >
-        <DollarSign className="h-4 w-4 opacity-70" />
-        <span className="max-w-[140px] truncate">{chipLabel || "Price"}</span>
-        {isActive && (
-          <button
-            onClick={handleClear}
-            className="ml-1 p-0.5 rounded-full hover:bg-background/20 transition-colors"
-            aria-label="Clear price filter"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        )}
-      </button>
-      
-      {isOpen && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-72 bg-card border border-border/40 rounded-xl shadow-elevated p-4 z-50">
-          <PriceSlider
-            value={value}
-            onChange={onChange}
-            assetType={assetType}
-            isOpen={isOpen}
-          />
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Filter Pill Component (for non-price filters)
-const FilterPill = ({ 
-  icon, 
-  label, 
-  activeLabel,
-  isActive,
-  children,
-  wide = false,
-  onClear
-}: { 
-  icon: React.ReactNode; 
-  label: string; 
-  activeLabel?: string;
-  isActive: boolean;
-  children: React.ReactNode;
-  wide?: boolean;
-  onClear?: () => void;
-}) => {
-  const displayLabel = isActive && activeLabel ? activeLabel : label;
-  
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          className={cn(
-            "flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all duration-200",
-            isActive 
-              ? "bg-foreground text-background font-medium" 
-              : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-          )}
-        >
-          <span className="[&>svg]:h-4 [&>svg]:w-4 opacity-70">{icon}</span>
-          <span className="max-w-[120px] truncate">{displayLabel}</span>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent 
-        className={cn(
-          "p-5 bg-card border-border/40 shadow-elevated",
-          wide ? "w-80" : "w-72"
-        )}
-        align="center" 
-        sideOffset={12}
-      >
-        {children}
-      </PopoverContent>
-    </Popover>
-  );
-};
-
+// Main QuickFilters Component
 const QuickFilters = ({ assetType }: QuickFiltersProps) => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [openFilter, setOpenFilter] = useState<FilterType>(null);
+  const [tempFilters, setTempFilters] = useState<FilterState>(defaultFilters);
 
   // Reset filters when asset type changes
   useEffect(() => {
     setFilters(defaultFilters);
+    setOpenFilter(null);
   }, [assetType]);
 
-  const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const hasActiveFilters = () => {
-    return (
-      filters.price !== null ||
-      filters.guests !== null ||
-      filters.beds !== null ||
-      filters.brand.length > 0 ||
-      filters.bodyStyle.length > 0 ||
-      filters.seats !== null ||
-      filters.length !== null
-    );
-  };
-
-  const resetFilters = () => {
-    setFilters(defaultFilters);
-  };
-
-  const renderClearButton = (onClear: () => void, count?: number) => (
-    <Button 
-      variant="ghost" 
-      size="sm" 
-      className="w-full mt-3 text-muted-foreground hover:text-foreground"
-      onClick={onClear}
-    >
-      {count ? `Clear (${count})` : "Clear"}
-    </Button>
-  );
-
-  const getFiltersForType = () => {
-    switch (assetType) {
-      case "Cars":
-        return (
-          <>
-            <PriceFilterPill
-              value={filters.price}
-              onChange={(val) => updateFilter("price", val)}
-              assetType="Cars"
-            />
-            <FilterPill 
-              icon={<Car />} 
-              label="Brand"
-              activeLabel={getMultiSelectLabel(filters.brand, "brand", "brands")}
-              isActive={filters.brand.length > 0}
-              wide
-            >
-              <BrandGrid
-                selected={filters.brand}
-                onChange={(val) => updateFilter("brand", val)}
-              />
-              {filters.brand.length > 0 && renderClearButton(() => updateFilter("brand", []), filters.brand.length)}
-            </FilterPill>
-            <FilterPill 
-              icon={
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-                  <path d="M7 9h4M13 9h4M7 13h4M13 13h4" />
-                </svg>
-              } 
-              label="Body Style"
-              activeLabel={getMultiSelectLabel(filters.bodyStyle, "style", "styles")}
-              isActive={filters.bodyStyle.length > 0}
-              wide
-            >
-              <BodyStylePills
-                selected={filters.bodyStyle}
-                onChange={(val) => updateFilter("bodyStyle", val)}
-              />
-              {filters.bodyStyle.length > 0 && renderClearButton(() => updateFilter("bodyStyle", []), filters.bodyStyle.length)}
-            </FilterPill>
-          </>
-        );
-      case "Yachts":
-        return (
-          <>
-            <PriceFilterPill
-              value={filters.price}
-              onChange={(val) => updateFilter("price", val)}
-              assetType="Yachts"
-            />
-            <FilterPill 
-              icon={<Users />} 
-              label="Guests"
-              activeLabel={filters.guests ? `${filters.guests}+ guests` : undefined}
-              isActive={filters.guests !== null}
-            >
-              <Counter
-                value={filters.guests}
-                onChange={(val) => updateFilter("guests", val)}
-                min={1}
-                max={20}
-                label="Minimum guests"
-              />
-              {filters.guests && renderClearButton(() => updateFilter("guests", null))}
-            </FilterPill>
-            <FilterPill 
-              icon={<Ruler />} 
-              label="Length"
-              activeLabel={getLengthLabel(filters.length)}
-              isActive={filters.length !== null}
-            >
-              <LengthInputs
-                value={filters.length}
-                onChange={(val) => updateFilter("length", val)}
-              />
-              {filters.length && renderClearButton(() => updateFilter("length", null))}
-            </FilterPill>
-          </>
-        );
-      default: // Stays
-        return (
-          <>
-            <PriceFilterPill
-              value={filters.price}
-              onChange={(val) => updateFilter("price", val)}
-              assetType="Stays"
-            />
-            <FilterPill 
-              icon={<Users />} 
-              label="Guests"
-              activeLabel={filters.guests ? `${filters.guests}+ guests` : undefined}
-              isActive={filters.guests !== null}
-            >
-              <Counter
-                value={filters.guests}
-                onChange={(val) => updateFilter("guests", val)}
-                min={1}
-                max={16}
-                label="Minimum guests"
-              />
-              {filters.guests && renderClearButton(() => updateFilter("guests", null))}
-            </FilterPill>
-            <FilterPill 
-              icon={<BedDouble />} 
-              label="Beds"
-              activeLabel={filters.beds ? `${filters.beds}+ beds` : undefined}
-              isActive={filters.beds !== null}
-            >
-              <Counter
-                value={filters.beds}
-                onChange={(val) => updateFilter("beds", val)}
-                min={1}
-                max={10}
-                label="Minimum beds"
-              />
-              {filters.beds && renderClearButton(() => updateFilter("beds", null))}
-            </FilterPill>
-          </>
-        );
+  const openFilterModal = (filterType: FilterType) => {
+    if (openFilter === filterType) {
+      // If clicking the same filter, close it and apply
+      applyTempFilters();
+    } else {
+      // Close current and open new
+      if (openFilter) {
+        applyTempFilters();
+      }
+      setTempFilters(filters);
+      setOpenFilter(filterType);
     }
   };
 
+  const applyTempFilters = () => {
+    setFilters(tempFilters);
+    setOpenFilter(null);
+  };
+
+  const clearCurrentFilter = () => {
+    switch (openFilter) {
+      case "price":
+        setTempFilters(prev => ({ ...prev, price: null }));
+        break;
+      case "guests":
+        setTempFilters(prev => ({ ...prev, guests: null }));
+        break;
+      case "beds":
+        setTempFilters(prev => ({ ...prev, beds: null }));
+        break;
+      case "brand":
+        setTempFilters(prev => ({ ...prev, brand: [] }));
+        break;
+      case "bodyStyle":
+        setTempFilters(prev => ({ ...prev, bodyStyle: [] }));
+        break;
+      case "length":
+        setTempFilters(prev => ({ ...prev, length: null }));
+        break;
+    }
+  };
+
+  const getActiveFilterCount = (): number => {
+    let count = 0;
+    if (filters.price !== null) count++;
+    if (filters.guests !== null) count++;
+    if (filters.beds !== null) count++;
+    if (filters.brand.length > 0) count++;
+    if (filters.bodyStyle.length > 0) count++;
+    if (filters.length !== null) count++;
+    return count;
+  };
+
+  const resetAllFilters = () => {
+    setFilters(defaultFilters);
+    setTempFilters(defaultFilters);
+    setOpenFilter(null);
+  };
+
+  const activeCount = getActiveFilterCount();
+
+  const getPriceLabel = () => {
+    const label = getPriceChipLabel(filters.price, assetType);
+    return label || "Price";
+  };
+
+  const renderStaysFilters = () => (
+    <>
+      {/* Price Filter */}
+      <div className="relative">
+        <FilterButton
+          icon={<DollarSign />}
+          label={getPriceLabel()}
+          isActive={filters.price !== null}
+          isOpen={openFilter === "price"}
+          onClick={() => openFilterModal("price")}
+        />
+        <FilterModal
+          isOpen={openFilter === "price"}
+          onClose={() => setOpenFilter(null)}
+          title="Price Range"
+          onApply={applyTempFilters}
+          onClear={clearCurrentFilter}
+          showClear={tempFilters.price !== null}
+        >
+          <PriceSlider
+            value={tempFilters.price}
+            onChange={(val) => setTempFilters(prev => ({ ...prev, price: val }))}
+            assetType={assetType}
+          />
+        </FilterModal>
+      </div>
+
+      {/* Guests Filter */}
+      <div className="relative">
+        <FilterButton
+          icon={<Users />}
+          label={filters.guests ? `${filters.guests}+ guests` : "Guests"}
+          isActive={filters.guests !== null}
+          isOpen={openFilter === "guests"}
+          onClick={() => openFilterModal("guests")}
+        />
+        <FilterModal
+          isOpen={openFilter === "guests"}
+          onClose={() => setOpenFilter(null)}
+          title="Number of Guests"
+          onApply={applyTempFilters}
+          onClear={clearCurrentFilter}
+          showClear={tempFilters.guests !== null}
+        >
+          <Counter
+            value={tempFilters.guests}
+            onChange={(val) => setTempFilters(prev => ({ ...prev, guests: val }))}
+            min={1}
+            max={16}
+            label="Minimum guests"
+          />
+        </FilterModal>
+      </div>
+
+      {/* Beds Filter */}
+      <div className="relative">
+        <FilterButton
+          icon={<BedDouble />}
+          label={filters.beds ? `${filters.beds}+ beds` : "Beds"}
+          isActive={filters.beds !== null}
+          isOpen={openFilter === "beds"}
+          onClick={() => openFilterModal("beds")}
+        />
+        <FilterModal
+          isOpen={openFilter === "beds"}
+          onClose={() => setOpenFilter(null)}
+          title="Number of Beds"
+          onApply={applyTempFilters}
+          onClear={clearCurrentFilter}
+          showClear={tempFilters.beds !== null}
+        >
+          <Counter
+            value={tempFilters.beds}
+            onChange={(val) => setTempFilters(prev => ({ ...prev, beds: val }))}
+            min={1}
+            max={10}
+            label="Minimum beds"
+          />
+        </FilterModal>
+      </div>
+    </>
+  );
+
+  const renderCarsFilters = () => (
+    <>
+      {/* Price Filter */}
+      <div className="relative">
+        <FilterButton
+          icon={<DollarSign />}
+          label={getPriceLabel()}
+          isActive={filters.price !== null}
+          isOpen={openFilter === "price"}
+          onClick={() => openFilterModal("price")}
+        />
+        <FilterModal
+          isOpen={openFilter === "price"}
+          onClose={() => setOpenFilter(null)}
+          title="Price Range"
+          onApply={applyTempFilters}
+          onClear={clearCurrentFilter}
+          showClear={tempFilters.price !== null}
+        >
+          <PriceSlider
+            value={tempFilters.price}
+            onChange={(val) => setTempFilters(prev => ({ ...prev, price: val }))}
+            assetType={assetType}
+          />
+        </FilterModal>
+      </div>
+
+      {/* Brand Filter */}
+      <div className="relative">
+        <FilterButton
+          icon={<Car />}
+          label={filters.brand.length > 0 ? `${filters.brand.length} brands` : "Brand"}
+          isActive={filters.brand.length > 0}
+          isOpen={openFilter === "brand"}
+          onClick={() => openFilterModal("brand")}
+        />
+        <FilterModal
+          isOpen={openFilter === "brand"}
+          onClose={() => setOpenFilter(null)}
+          title="Select Brands"
+          onApply={applyTempFilters}
+          onClear={clearCurrentFilter}
+          showClear={tempFilters.brand.length > 0}
+          wide
+        >
+          <BrandGrid
+            selected={tempFilters.brand}
+            onChange={(val) => setTempFilters(prev => ({ ...prev, brand: val }))}
+          />
+        </FilterModal>
+      </div>
+
+      {/* Body Style Filter */}
+      <div className="relative">
+        <FilterButton
+          icon={
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M7 9h4M13 9h4M7 13h4M13 13h4" />
+            </svg>
+          }
+          label={filters.bodyStyle.length > 0 ? `${filters.bodyStyle.length} styles` : "Body Style"}
+          isActive={filters.bodyStyle.length > 0}
+          isOpen={openFilter === "bodyStyle"}
+          onClick={() => openFilterModal("bodyStyle")}
+        />
+        <FilterModal
+          isOpen={openFilter === "bodyStyle"}
+          onClose={() => setOpenFilter(null)}
+          title="Body Style"
+          onApply={applyTempFilters}
+          onClear={clearCurrentFilter}
+          showClear={tempFilters.bodyStyle.length > 0}
+        >
+          <BodyStyleList
+            selected={tempFilters.bodyStyle}
+            onChange={(val) => setTempFilters(prev => ({ ...prev, bodyStyle: val }))}
+          />
+        </FilterModal>
+      </div>
+    </>
+  );
+
+  const renderYachtsFilters = () => (
+    <>
+      {/* Price Filter */}
+      <div className="relative">
+        <FilterButton
+          icon={<DollarSign />}
+          label={getPriceLabel()}
+          isActive={filters.price !== null}
+          isOpen={openFilter === "price"}
+          onClick={() => openFilterModal("price")}
+        />
+        <FilterModal
+          isOpen={openFilter === "price"}
+          onClose={() => setOpenFilter(null)}
+          title="Price Range"
+          onApply={applyTempFilters}
+          onClear={clearCurrentFilter}
+          showClear={tempFilters.price !== null}
+        >
+          <PriceSlider
+            value={tempFilters.price}
+            onChange={(val) => setTempFilters(prev => ({ ...prev, price: val }))}
+            assetType={assetType}
+          />
+        </FilterModal>
+      </div>
+
+      {/* Guests Filter */}
+      <div className="relative">
+        <FilterButton
+          icon={<Users />}
+          label={filters.guests ? `${filters.guests}+ guests` : "Guests"}
+          isActive={filters.guests !== null}
+          isOpen={openFilter === "guests"}
+          onClick={() => openFilterModal("guests")}
+        />
+        <FilterModal
+          isOpen={openFilter === "guests"}
+          onClose={() => setOpenFilter(null)}
+          title="Number of Guests"
+          onApply={applyTempFilters}
+          onClear={clearCurrentFilter}
+          showClear={tempFilters.guests !== null}
+        >
+          <Counter
+            value={tempFilters.guests}
+            onChange={(val) => setTempFilters(prev => ({ ...prev, guests: val }))}
+            min={1}
+            max={20}
+            label="Minimum guests"
+          />
+        </FilterModal>
+      </div>
+
+      {/* Length Filter */}
+      <div className="relative">
+        <FilterButton
+          icon={<Ruler />}
+          label={filters.length ? `${filters.length[0]}-${filters.length[1]} ft` : "Length"}
+          isActive={filters.length !== null}
+          isOpen={openFilter === "length"}
+          onClick={() => openFilterModal("length")}
+        />
+        <FilterModal
+          isOpen={openFilter === "length"}
+          onClose={() => setOpenFilter(null)}
+          title="Yacht Length"
+          onApply={applyTempFilters}
+          onClear={clearCurrentFilter}
+          showClear={tempFilters.length !== null}
+        >
+          <LengthSlider
+            value={tempFilters.length}
+            onChange={(val) => setTempFilters(prev => ({ ...prev, length: val }))}
+          />
+        </FilterModal>
+      </div>
+    </>
+  );
+
   return (
     <div className="flex items-center justify-center gap-2 transition-all duration-300">
-      {getFiltersForType()}
-      {hasActiveFilters() && (
-        <button
-          onClick={resetFilters}
-          className="flex items-center gap-1.5 ml-3 px-3 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
-        >
-          <X className="h-3.5 w-3.5" />
-          <span>Reset</span>
-        </button>
+      {assetType === "Stays" && renderStaysFilters()}
+      {assetType === "Cars" && renderCarsFilters()}
+      {assetType === "Yachts" && renderYachtsFilters()}
+
+      {activeCount > 0 && (
+        <div className="flex items-center gap-2 ml-3">
+          <span className="text-sm text-muted-foreground">
+            {activeCount} {activeCount === 1 ? "filter" : "filters"} applied
+          </span>
+          <button
+            onClick={resetAllFilters}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+            <span>Reset</span>
+          </button>
+        </div>
       )}
     </div>
   );
