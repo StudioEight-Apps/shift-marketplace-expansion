@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DollarSign, Users, BedDouble, Car, Ruler, Gauge, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -332,6 +332,11 @@ const FilterPill = ({
 
 const QuickFilters = ({ assetType }: QuickFiltersProps) => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+
+  // Reset filters when asset type changes
+  useEffect(() => {
+    setFilters(defaultFilters);
+  }, [assetType]);
 
   const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }));
