@@ -154,7 +154,8 @@ const FilterModal = ({
   onClear,
   showClear,
   children,
-  wide = false
+  wide = false,
+  alignRight = false
 }: {
   isOpen: boolean;
   onClose?: () => void;
@@ -164,6 +165,7 @@ const FilterModal = ({
   showClear: boolean;
   children: React.ReactNode;
   wide?: boolean;
+  alignRight?: boolean;
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -214,7 +216,9 @@ const FilterModal = ({
       onClick={(e) => e.stopPropagation()}
       className={cn(
         "absolute top-full mt-2 bg-popover border border-border-subtle rounded-md shadow-md z-50",
-        "left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0",
+        alignRight 
+          ? "right-0 md:left-0 md:right-auto" 
+          : "left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0",
         wide ? "w-56" : "w-48"
       )}
     >
@@ -855,6 +859,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
           showClear={tempFilters.beds !== null}
+          alignRight
         >
           <Counter
             value={tempFilters.beds}
@@ -938,6 +943,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
           showClear={tempFilters.bodyStyle.length > 0}
+          alignRight
         >
           <BodyStyleList
             selected={tempFilters.bodyStyle}
@@ -1015,6 +1021,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
           showClear={tempFilters.length !== null}
+          alignRight
         >
           <LengthSlider
             value={tempFilters.length}
