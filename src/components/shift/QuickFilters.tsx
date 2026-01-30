@@ -216,13 +216,13 @@ const FilterModal = ({
       onClick={(e) => e.stopPropagation()}
       className={cn(
         "absolute top-full mt-2 bg-popover border border-border-subtle rounded-md shadow-md z-50",
-        // Mobile: keep a safe inset from viewport edges by anchoring to the trigger
-        // Desktop: standard left alignment under the trigger
-        alignRight ? "right-2 md:right-auto md:left-0" : "left-2 md:left-0",
-        // Clamp width on mobile so it never exceeds viewport
+        // Wide modals (Brand): fixed position centered on mobile, left-aligned on desktop
+        // Regular modals: anchor based on position
         wide
-          ? "w-[min(14rem,calc(100vw-1.5rem))]"
-          : "w-[min(12rem,calc(100vw-1.5rem))]"
+          ? "fixed left-1/2 -translate-x-1/2 md:absolute md:left-0 md:translate-x-0 w-[calc(100vw-2rem)] max-w-xs"
+          : alignRight 
+            ? "right-0 md:right-auto md:left-0 w-48" 
+            : "left-0 w-48"
       )}
     >
       {/* Modal Header */}
