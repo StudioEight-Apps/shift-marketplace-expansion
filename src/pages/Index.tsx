@@ -42,7 +42,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { cityId: searchCityId, startDate, endDate, setCityId, setSearchDates, hasDates } = useSearch();
-  const [selectedCityId, setSelectedCityId] = useState(searchCityId);
+  const [selectedCityId, setSelectedCityId] = useState(searchCityId || "");
   const [selectedType, setSelectedType] = useState<AssetType>("Stays");
 
   // Parse dates from URL on mount
