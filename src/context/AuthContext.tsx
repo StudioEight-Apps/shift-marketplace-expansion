@@ -54,6 +54,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [bookingRequests, setBookingRequests] = useState<BookingRequest[]>([]);
 
   useEffect(() => {
+    // If Firebase auth is not available, just set loading to false
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       if (user) {
@@ -88,14 +94,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (!auth) throw new Error("Firebase is not configured");
     await signInWithEmailAndPassword(auth, email, password);
   };
 
   const signup = async (email: string, password: string) => {
+    if (!auth) throw new Error("Firebase is not configured");
     await createUserWithEmailAndPassword(auth, email, password);
   };
 
   const logout = async () => {
+    if (!auth) return;
     await signOut(auth);
   };
 
