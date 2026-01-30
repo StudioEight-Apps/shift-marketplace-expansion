@@ -21,7 +21,7 @@ const Footer = () => {
         {/* Right - Social Icons */}
         <div className="flex items-center gap-4">
           <a
-            href="https://www.instagram.com/shiftrentals/?hl=en"
+            href="https://www.instagram.com/shiftrentals"
             target="_blank"
             rel="noopener noreferrer"
             className="text-muted-foreground hover:text-foreground transition-colors"
