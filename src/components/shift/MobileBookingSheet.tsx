@@ -149,6 +149,7 @@ const MobileBookingSheet = ({
 
   const handleRequestToBook = () => {
     if (!user) {
+      onClose(); // Close the sheet first so auth modal is visible
       setShowAuthModal(true);
     } else {
       handleBookingSubmit();
