@@ -31,11 +31,7 @@ const cityLocationMap: Record<string, string> = {
 
 // Get popular listing titles by asset type
 const getPopularHeading = (type: AssetType) => {
-  switch (type) {
-    case "Cars": return "Popular Cars";
-    case "Yachts": return "Popular Yachts";
-    default: return "Popular near you";
-  }
+  return `Popular ${type}`;
 };
 
 const Index = () => {
