@@ -116,9 +116,9 @@ const SearchPill = ({
           <PopoverTrigger asChild>
             <button className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 hover:bg-secondary/60 rounded-l-full transition-colors">
               <span className="text-xs text-muted-foreground">Where</span>
-              <span className="text-sm font-medium text-foreground flex items-center gap-1">
+              <span className="text-sm font-medium text-foreground flex items-center gap-1 whitespace-nowrap">
                 {selectedCity ? selectedCity.name : "Choose city"}
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
               </span>
             </button>
           </PopoverTrigger>
