@@ -75,8 +75,9 @@ const Index = () => {
     setCityId(selectedCityId);
   }, [selectedCityId, setCityId]);
 
-  const selectedCity = cities.find(c => c.id === selectedCityId);
-  const cityHasYachts = selectedCity?.hasYachts ?? false;
+  const selectedCity = selectedCityId ? cities.find(c => c.id === selectedCityId) : null;
+  // Show yachts by default (when no city selected), hide only for cities without yacht inventory
+  const cityHasYachts = selectedCity ? (selectedCity.hasYachts ?? false) : true;
 
   // If city doesn't have yachts and Yachts is selected, switch to Stays
   useEffect(() => {
