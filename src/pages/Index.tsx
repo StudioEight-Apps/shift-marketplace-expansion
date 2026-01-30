@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { MapPin, CalendarDays } from "lucide-react";
 import Header from "@/components/shift/Header";
 import Footer from "@/components/shift/Footer";
 import { cities } from "@/components/shift/CitySelector";
@@ -30,13 +29,14 @@ const cityLocationMap: Record<string, string> = {
   "park-city": "Park City",
 };
 
-// Featured destinations for when no dates are selected
-const featuredDestinations = [
-  { id: "miami", name: "Miami", state: "FL", image: "https://images.unsplash.com/photo-1506966953602-c20cc11f75e3?w=400&h=300&fit=crop" },
-  { id: "los-angeles", name: "Los Angeles", state: "CA", image: "https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=400&h=300&fit=crop" },
-  { id: "new-york", name: "New York", state: "NY", image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&h=300&fit=crop" },
-  { id: "aspen", name: "Aspen", state: "CO", image: "https://images.unsplash.com/photo-1609603825832-a2fe5e235d43?w=400&h=300&fit=crop" },
-];
+// Get popular listing titles by asset type
+const getPopularHeading = (type: AssetType) => {
+  switch (type) {
+    case "Cars": return "Popular Cars";
+    case "Yachts": return "Popular Yachts";
+    default: return "Popular near you";
+  }
+};
 
 const Index = () => {
   const navigate = useNavigate();
@@ -92,28 +92,32 @@ const Index = () => {
     }
   }, [selectedType]);
 
-  const listings = useMemo(() => {
-    let allListings;
+  // Get all listings for current asset type (for popular/unfiltered view)
+  const allListingsForType = useMemo(() => {
     switch (selectedType) {
       case "Cars":
-        allListings = carListings;
-        break;
+        return carListings;
       case "Yachts":
-        allListings = yachtListings;
-        break;
+        return yachtListings;
       case "Stays":
       default:
-        allListings = villaListings;
+        return villaListings;
     }
+  }, [selectedType]);
 
-    // Filter by city using the location map
+  // Get filtered listings (when dates are selected, filter by city)
+  const filteredListings = useMemo(() => {
     const locationString = cityLocationMap[selectedCityId];
     if (locationString) {
-      return allListings.filter(l => l.location === locationString);
+      return allListingsForType.filter(l => l.location === locationString);
     }
-    
-    return allListings;
-  }, [selectedCityId, selectedType]);
+    return allListingsForType;
+  }, [selectedCityId, allListingsForType]);
+
+  // Popular listings (show first 8 from all listings, no city filter)
+  const popularListings = useMemo(() => {
+    return allListingsForType.slice(0, 8);
+  }, [allListingsForType]);
 
   const handleListingClick = (listing: Listing) => {
     navigate(`/listing/${listing.id}`);
@@ -137,11 +141,6 @@ const Index = () => {
     if (endDate) params.set("checkout", format(endDate, "yyyy-MM-dd"));
     
     setSearchParams(params);
-  };
-
-  const handleDestinationClick = (cityId: string) => {
-    setSelectedCityId(cityId);
-    setCityId(cityId);
   };
 
   return (
@@ -177,19 +176,20 @@ const Index = () => {
       {/* Content Section */}
       <main className="flex-1 container px-6 py-8 md:py-10">
         {hasDates ? (
+          /* Filtered Results - After dates selected */
           <>
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">
                 {selectedType} in {selectedCity?.name || "Miami"}
               </h2>
               <span className="text-sm text-muted-foreground">
-                {listings.length} {listings.length === 1 ? "listing" : "listings"}
+                {filteredListings.length} {filteredListings.length === 1 ? "listing" : "listings"}
               </span>
             </div>
             
-            {listings.length > 0 ? (
+            {filteredListings.length > 0 ? (
               <ListingsGrid 
-                listings={listings} 
+                listings={filteredListings} 
                 onListingClick={handleListingClick}
               />
             ) : (
@@ -197,50 +197,19 @@ const Index = () => {
             )}
           </>
         ) : (
-          /* No Dates Selected - Show Prompt */
-          <div className="flex flex-col items-center text-center py-8 md:py-16">
-            <div className="mb-8">
-              <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
-                <CalendarDays className="w-8 h-8 text-accent" />
-              </div>
-              <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-3">
-                Select your travel dates
+          /* No Dates Selected - Show Popular Listings */
+          <>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-foreground">
+                {getPopularHeading(selectedType)}
               </h2>
-              <p className="text-muted-foreground text-base md:text-lg max-w-md mx-auto">
-                Choose your dates to see available luxury stays, cars, and yachts for your trip
-              </p>
             </div>
             
-            {/* Featured Destinations */}
-            <div className="w-full max-w-4xl">
-              <h3 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wide">
-                Featured Destinations
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {featuredDestinations.map((dest) => (
-                  <button
-                    key={dest.id}
-                    onClick={() => handleDestinationClick(dest.id)}
-                    className="group relative overflow-hidden rounded-xl aspect-[4/3] bg-secondary/30 hover:ring-2 hover:ring-accent transition-all"
-                  >
-                    <img 
-                      src={dest.image} 
-                      alt={dest.name}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
-                      <div className="flex items-center gap-1.5 text-white">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="font-medium">{dest.name}</span>
-                      </div>
-                      <span className="text-white/70 text-sm">{dest.state}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+            <ListingsGrid 
+              listings={popularListings} 
+              onListingClick={handleListingClick}
+            />
+          </>
         )}
       </main>
 

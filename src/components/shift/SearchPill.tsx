@@ -44,6 +44,14 @@ const SearchPill = ({
   
   const selectedCity = cities.find(c => c.id === selectedCityId);
   const isSingleDayMode = selectedType === "Cars" || selectedType === "Yachts";
+
+  // Auto-advance: when city is selected, open date picker
+  const handleCitySelect = (cityId: string) => {
+    onCityChange(cityId);
+    setCityOpen(false);
+    // Small delay to allow popover transition
+    setTimeout(() => setDateOpen(true), 150);
+  };
   
   // Determine if search is enabled (dates are selected)
   const hasValidDates = isSingleDayMode ? startDate !== null : (startDate !== null && endDate !== null);
@@ -119,10 +127,7 @@ const SearchPill = ({
               {cities.map((city) => (
                 <button
                   key={city.id}
-                  onClick={() => {
-                    onCityChange(city.id);
-                    setCityOpen(false);
-                  }}
+                  onClick={() => handleCitySelect(city.id)}
                   className={cn(
                     "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
                     selectedCityId === city.id
@@ -154,7 +159,9 @@ const SearchPill = ({
           <PopoverContent className="w-auto p-0 bg-card border-border-subtle mx-4" align="center" sideOffset={8}>
             <div className="p-3 pb-0">
               <p className="text-xs text-muted-foreground mb-2 text-center">
-                {isSingleDayMode ? "Select a date" : "Select check-in and check-out"}
+                {selectedCity 
+                  ? `When are you visiting ${selectedCity.name}?`
+                  : isSingleDayMode ? "Select a date" : "Select check-in and check-out"}
               </p>
             </div>
             {isSingleDayMode ? (
