@@ -211,26 +211,26 @@ const FilterModal = ({
       ref={modalRef}
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        "absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-card border border-border/40 rounded-xl shadow-elevated z-50",
-        wide ? "w-80" : "w-72"
+        "absolute top-full left-0 mt-2 bg-popover border border-border-subtle rounded-md shadow-md z-50",
+        wide ? "w-72" : "w-64"
       )}
     >
       {/* Modal Header */}
-      <div className="px-4 py-3 border-b border-border/30">
+      <div className="px-3 pt-3 pb-2">
         <h3 className="text-sm font-medium text-foreground">{title}</h3>
       </div>
 
       {/* Modal Content */}
-      <div className="p-4">
+      <div className="px-3 pb-3">
         {children}
       </div>
 
       {/* Modal Footer */}
-      <div className="px-4 py-3 border-t border-border/30 flex items-center justify-between">
+      <div className="px-3 py-2 border-t border-border-subtle flex items-center justify-between">
         {showClear ? (
           <button
             onClick={onClear}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
           >
             Clear
           </button>
@@ -240,7 +240,7 @@ const FilterModal = ({
         <Button
           size="sm"
           onClick={onApply}
-          className="bg-foreground text-background hover:bg-foreground/90 rounded-full px-6"
+          className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 text-xs font-medium"
         >
           Apply
         </Button>
