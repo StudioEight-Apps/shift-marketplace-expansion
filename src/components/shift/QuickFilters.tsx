@@ -213,7 +213,8 @@ const FilterModal = ({
       ref={modalRef}
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        "absolute top-full left-0 mt-2 bg-popover border border-border-subtle rounded-md shadow-md z-50",
+        "absolute top-full mt-2 bg-popover border border-border-subtle rounded-md shadow-md z-50",
+        "left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0",
         wide ? "w-56" : "w-48"
       )}
     >
