@@ -216,10 +216,13 @@ const FilterModal = ({
       onClick={(e) => e.stopPropagation()}
       className={cn(
         "absolute top-full mt-2 bg-popover border border-border-subtle rounded-md shadow-md z-50",
-        alignRight 
-          ? "right-0 md:left-0 md:right-auto" 
-          : "left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0",
-        wide ? "w-56" : "w-48"
+        // Mobile: keep a safe inset from viewport edges by anchoring to the trigger
+        // Desktop: standard left alignment under the trigger
+        alignRight ? "right-2 md:right-auto md:left-0" : "left-2 md:left-0",
+        // Clamp width on mobile so it never exceeds viewport
+        wide
+          ? "w-[min(14rem,calc(100vw-1.5rem))]"
+          : "w-[min(12rem,calc(100vw-1.5rem))]"
       )}
     >
       {/* Modal Header */}
@@ -1033,7 +1036,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
   );
 
   return (
-    <div className="flex items-center justify-center gap-2 transition-all duration-300">
+    <div className="w-full px-4 flex items-center justify-center gap-2 transition-all duration-300">
       {assetType === "Stays" && renderStaysFilters()}
       {assetType === "Cars" && renderCarsFilters()}
       {assetType === "Yachts" && renderYachtsFilters()}
