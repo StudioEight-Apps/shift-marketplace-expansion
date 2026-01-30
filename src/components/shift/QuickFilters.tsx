@@ -118,7 +118,9 @@ const formatPriceValue = (value: number, compact = false): string => {
 
 // Get price unit based on asset type
 const getPriceUnit = (assetType: AssetType): string => {
-  return assetType === "Stays" ? "/ night" : "/ day";
+  if (assetType === "Stays") return "/ night";
+  if (assetType === "Yachts") return "/ hr";
+  return "/ day";
 };
 
 // Get chip label for collapsed price filter
@@ -212,7 +214,7 @@ const FilterModal = ({
       onClick={(e) => e.stopPropagation()}
       className={cn(
         "absolute top-full left-0 mt-2 bg-popover border border-border-subtle rounded-md shadow-md z-50",
-        wide ? "w-72" : "w-64"
+        wide ? "w-56" : "w-48"
       )}
     >
       {/* Modal Header */}
@@ -302,24 +304,24 @@ const Counter = ({
   const currentValue = value ?? min;
 
   return (
-    <div className="flex flex-col items-center gap-4 py-4">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-6">
+    <div className="flex flex-col items-center gap-2 py-2">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-4">
         <button
           onClick={() => onChange(currentValue <= min ? null : currentValue - 1)}
-          className="h-10 w-10 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-30"
+          className="h-8 w-8 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-30"
           disabled={value === null}
         >
-          <span className="text-xl font-light">−</span>
+          <span className="text-lg font-light">−</span>
         </button>
-        <span className="w-16 text-center text-2xl font-medium text-foreground tabular-nums">
+        <span className="w-10 text-center text-base font-medium text-foreground tabular-nums">
           {value ?? "Any"}
         </span>
         <button
           onClick={() => onChange(Math.min(currentValue + 1, max))}
-          className="h-10 w-10 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+          className="h-8 w-8 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
         >
-          <span className="text-xl font-light">+</span>
+          <span className="text-lg font-light">+</span>
         </button>
       </div>
     </div>
@@ -384,26 +386,13 @@ const PriceSlider = ({
   const displayMax = formatPriceValue(snapValues[localMax]);
 
   return (
-    <div className="pt-2 pb-2">
-      {/* Distribution heatline backdrop */}
-      <div className="relative h-6 mb-2">
-        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-[2px] h-full">
-          {PRICE_DISTRIBUTION.map((weight, i) => (
-            <div
-              key={i}
-              className="flex-1 bg-muted-foreground/10 rounded-t-sm"
-              style={{ height: `${weight * 100}%` }}
-            />
-          ))}
-        </div>
-      </div>
-
+    <div className="pt-1 pb-1">
       {/* Slider track */}
       <div className="relative h-4 flex items-center">
-        <div className="absolute inset-x-0 h-[3px] bg-secondary rounded-full" />
+        <div className="absolute inset-x-0 h-[2px] bg-secondary rounded-full" />
 
         <div
-          className="absolute h-[3px] bg-foreground/60 rounded-full"
+          className="absolute h-[2px] bg-foreground/60 rounded-full"
           style={{
             left: `${getPositionPercent(localMin)}%`,
             right: `${100 - getPositionPercent(localMax)}%`
@@ -424,8 +413,8 @@ const PriceSlider = ({
           onTouchEnd={commitChange}
           className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer z-10
             [&::-webkit-slider-thumb]:appearance-none
-            [&::-webkit-slider-thumb]:w-3.5
-            [&::-webkit-slider-thumb]:h-3.5
+            [&::-webkit-slider-thumb]:w-3
+            [&::-webkit-slider-thumb]:h-3
             [&::-webkit-slider-thumb]:rounded-full
             [&::-webkit-slider-thumb]:bg-foreground
             [&::-webkit-slider-thumb]:border-2
@@ -433,10 +422,8 @@ const PriceSlider = ({
             [&::-webkit-slider-thumb]:shadow-sm
             [&::-webkit-slider-thumb]:cursor-grab
             [&::-webkit-slider-thumb]:active:cursor-grabbing
-            [&::-webkit-slider-thumb]:transition-transform
-            [&::-webkit-slider-thumb]:hover:scale-110
-            [&::-moz-range-thumb]:w-3.5
-            [&::-moz-range-thumb]:h-3.5
+            [&::-moz-range-thumb]:w-3
+            [&::-moz-range-thumb]:h-3
             [&::-moz-range-thumb]:rounded-full
             [&::-moz-range-thumb]:bg-foreground
             [&::-moz-range-thumb]:border-2
@@ -459,8 +446,8 @@ const PriceSlider = ({
           onTouchEnd={commitChange}
           className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer z-20
             [&::-webkit-slider-thumb]:appearance-none
-            [&::-webkit-slider-thumb]:w-3.5
-            [&::-webkit-slider-thumb]:h-3.5
+            [&::-webkit-slider-thumb]:w-3
+            [&::-webkit-slider-thumb]:h-3
             [&::-webkit-slider-thumb]:rounded-full
             [&::-webkit-slider-thumb]:bg-foreground
             [&::-webkit-slider-thumb]:border-2
@@ -468,10 +455,8 @@ const PriceSlider = ({
             [&::-webkit-slider-thumb]:shadow-sm
             [&::-webkit-slider-thumb]:cursor-grab
             [&::-webkit-slider-thumb]:active:cursor-grabbing
-            [&::-webkit-slider-thumb]:transition-transform
-            [&::-webkit-slider-thumb]:hover:scale-110
-            [&::-moz-range-thumb]:w-3.5
-            [&::-moz-range-thumb]:h-3.5
+            [&::-moz-range-thumb]:w-3
+            [&::-moz-range-thumb]:h-3
             [&::-moz-range-thumb]:rounded-full
             [&::-moz-range-thumb]:bg-foreground
             [&::-moz-range-thumb]:border-2
@@ -482,8 +467,8 @@ const PriceSlider = ({
       </div>
 
       {/* Live range display */}
-      <div className="text-center mt-4">
-        <span className="text-sm font-medium text-foreground tabular-nums">
+      <div className="text-center mt-3">
+        <span className="text-xs font-medium text-foreground tabular-nums">
           {displayMin} – {displayMax} {unit}
         </span>
       </div>
