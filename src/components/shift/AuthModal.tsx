@@ -55,15 +55,25 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
+      console.error("Auth error:", err);
       if (err instanceof Error) {
-        if (err.message.includes("user-not-found")) {
+        const errorCode = (err as { code?: string }).code || err.message;
+        if (errorCode.includes("user-not-found") || errorCode.includes("auth/user-not-found")) {
           setError("No account found with this email");
-        } else if (err.message.includes("wrong-password")) {
-          setError("Incorrect password");
-        } else if (err.message.includes("email-already-in-use")) {
+        } else if (errorCode.includes("wrong-password") || errorCode.includes("auth/wrong-password") || errorCode.includes("auth/invalid-credential")) {
+          setError("Incorrect email or password");
+        } else if (errorCode.includes("email-already-in-use") || errorCode.includes("auth/email-already-in-use")) {
           setError("An account with this email already exists");
+        } else if (errorCode.includes("auth/invalid-email")) {
+          setError("Invalid email address");
+        } else if (errorCode.includes("auth/weak-password")) {
+          setError("Password should be at least 6 characters");
+        } else if (errorCode.includes("auth/operation-not-allowed")) {
+          setError("Email/password sign-in is not enabled. Please enable it in Firebase Console.");
+        } else if (errorCode.includes("Firebase is not configured")) {
+          setError("Firebase is not configured. Please check your environment variables.");
         } else {
-          setError("Authentication failed. Please try again.");
+          setError(err.message || "Authentication failed. Please try again.");
         }
       }
     } finally {
