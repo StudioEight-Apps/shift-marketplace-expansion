@@ -9,6 +9,9 @@ import CompleteYourTrip from "@/components/shift/CompleteYourTrip";
 import BookingCard from "@/components/shift/BookingCard";
 import YachtBookingCard from "@/components/shift/YachtBookingCard";
 import ImageGallery from "@/components/shift/ImageGallery";
+import MobileBookingFooter from "@/components/shift/MobileBookingFooter";
+import MobileBookingSheet from "@/components/shift/MobileBookingSheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Listing } from "@/components/shift/ListingCard";
 
 // All listings combined for lookup
@@ -18,6 +21,10 @@ const ListingDetailContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setStay, stayDates, setStayDates } = useTrip();
+  const isMobile = useIsMobile();
+
+  // Mobile booking sheet state
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Standalone date state for Cars (not tied to trip container)
   const [standaloneDates, setStandaloneDates] = useState<{ start: Date | null; end: Date | null }>({
@@ -131,6 +138,11 @@ const ListingDetailContent = () => {
     }
   };
 
+  // Check if booking is valid (for mobile footer button text)
+  const hasValidBooking = isYacht
+    ? yachtDate && yachtHours && yachtHours > 0
+    : currentDates.start && currentDates.end;
+
   return (
     <div className="min-h-screen bg-background scrollbar-dark flex flex-col">
       <Header />
@@ -138,8 +150,8 @@ const ListingDetailContent = () => {
       {/* Image Gallery */}
       <ImageGallery images={listing.images || [listing.image]} title={listing.title} />
 
-      {/* Main Content */}
-      <div className="flex-1 max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8">
+      {/* Main Content - add bottom padding on mobile for sticky footer */}
+      <div className="flex-1 max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8 pb-24 md:pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-16">
           {/* Left Column - Details */}
           <div className="lg:col-span-3 space-y-6">
@@ -204,8 +216,8 @@ const ListingDetailContent = () => {
             )}
           </div>
 
-          {/* Right Column - Booking Card (Sticky) */}
-          <div className="lg:col-span-2">
+          {/* Right Column - Booking Card (Desktop only) */}
+          <div className="hidden md:block lg:col-span-2">
             <div className="sticky top-6 max-w-sm ml-auto">
               {isYacht ? (
                 <YachtBookingCard
@@ -232,6 +244,34 @@ const ListingDetailContent = () => {
       </div>
 
       <Footer />
+
+      {/* Mobile Booking Footer */}
+      {isMobile && (
+        <MobileBookingFooter
+          listing={listing}
+          priceUnit={getPriceUnit()}
+          hasValidBooking={!!hasValidBooking}
+          onViewDates={() => setIsSheetOpen(true)}
+        />
+      )}
+
+      {/* Mobile Booking Sheet */}
+      {isMobile && (
+        <MobileBookingSheet
+          isOpen={isSheetOpen}
+          onClose={() => setIsSheetOpen(false)}
+          listing={listing}
+          priceUnit={getPriceUnit()}
+          dateLabels={dateLabels}
+          currentDates={currentDates}
+          onDateChange={handleDateChange}
+          yachtDate={yachtDate}
+          yachtHours={yachtHours}
+          onYachtDateChange={setYachtDate}
+          onYachtHoursChange={setYachtHours}
+          minDate={today}
+        />
+      )}
     </div>
   );
 };
