@@ -54,8 +54,8 @@ const Header = () => {
             {/* Profile dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary hover:bg-primary/80 transition-colors">
-                  <User className="h-4 w-4 text-primary-foreground" />
+                <button className="flex h-8 w-8 items-center justify-center rounded-full bg-black md:bg-primary hover:bg-black/80 md:hover:bg-primary/80 transition-colors">
+                  <User className="h-4 w-4 text-white md:text-primary-foreground" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52 bg-card border-border-subtle">
