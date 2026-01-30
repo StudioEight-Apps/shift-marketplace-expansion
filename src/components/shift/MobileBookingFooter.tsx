@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useTrip } from "@/context/TripContext";
 import { cn } from "@/lib/utils";
@@ -17,7 +18,7 @@ const MobileBookingFooter = ({
   hasValidBooking,
   onViewDates,
 }: MobileBookingFooterProps) => {
-  const { car, yachtBooking, stayNights, carDays, yachtHours, tripTotal } = useTrip();
+  const { car, yachtBooking, stayNights, stayDates, tripTotal } = useTrip();
 
   const isStay = listing.assetType === "Stays";
   
@@ -38,15 +39,22 @@ const MobileBookingFooter = ({
     ? Math.round(tripTotal / stayNights) 
     : listing.price;
 
+  // Format date range for display
+  const dateRangeLabel = useMemo(() => {
+    if (!isStay) return null;
+    if (!stayDates.checkIn || !stayDates.checkOut) return null;
+    return `${format(stayDates.checkIn, "MMM d")}–${format(stayDates.checkOut, "d")}`;
+  }, [stayDates, isStay]);
+
   // Button text changes based on state
   const getButtonText = () => {
-    if (hasValidBooking && addOnCount > 0) {
+    if (!hasValidBooking) {
+      return "Select Dates";
+    }
+    if (addOnCount > 0) {
       return "Review Trip";
     }
-    if (hasValidBooking) {
-      return "Request to Book";
-    }
-    return "View Dates";
+    return "Request to Book";
   };
 
   return (
@@ -60,11 +68,17 @@ const MobileBookingFooter = ({
             </span>
             <span className="text-sm text-muted-foreground">/ {priceUnit}</span>
           </div>
-          {addOnCount > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {totalItems} items in trip
-            </span>
-          )}
+          {/* Show date range or item count */}
+          <span className="text-xs text-muted-foreground">
+            {dateRangeLabel && addOnCount > 0 
+              ? `${totalItems} items · ${dateRangeLabel}`
+              : dateRangeLabel 
+                ? dateRangeLabel
+                : addOnCount > 0 
+                  ? `${totalItems} items in trip`
+                  : null
+            }
+          </span>
         </div>
 
         {/* CTA Button */}
