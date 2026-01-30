@@ -39,8 +39,7 @@ const MobileCompleteYourTrip = ({ city }: MobileCompleteYourTripProps) => {
     [city]
   );
 
-  // Only show if stay dates are set - AFTER all hooks
-  if (!stayDates.checkIn || !stayDates.checkOut) return null;
+  // Don't return null - always show section (with overlay if no dates)
 
   const handleAddClick = (item: Listing, type: "Cars" | "Yachts") => {
     // If already added, remove it
@@ -80,6 +79,8 @@ const MobileCompleteYourTrip = ({ city }: MobileCompleteYourTripProps) => {
   const isCarAdded = (item: Listing) => car?.id === item.id;
   const isYachtAdded = (item: Listing) => yachtBooking.yacht?.id === item.id;
 
+  const hasValidDates = stayDates.checkIn && stayDates.checkOut;
+
   return (
     <>
       <div className="space-y-6 py-6 border-t border-border-subtle">
@@ -90,8 +91,17 @@ const MobileCompleteYourTrip = ({ city }: MobileCompleteYourTripProps) => {
           </p>
         </div>
 
-        {/* Cars Section */}
-        {availableCars.length > 0 && (
+        {/* No dates overlay */}
+        {!hasValidDates && (
+          <div className="relative rounded-xl bg-secondary/20 border border-border-subtle p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Select dates to see available cars and yachts
+            </p>
+          </div>
+        )}
+
+        {/* Cars Section - only show if dates are set */}
+        {hasValidDates && availableCars.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Car className="h-4 w-4 text-primary" />
@@ -153,8 +163,8 @@ const MobileCompleteYourTrip = ({ city }: MobileCompleteYourTripProps) => {
           </div>
         )}
 
-        {/* Yachts Section */}
-        {availableYachts.length > 0 && (
+        {/* Yachts Section - only show if dates are set */}
+        {hasValidDates && availableYachts.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Anchor className="h-4 w-4 text-primary" />

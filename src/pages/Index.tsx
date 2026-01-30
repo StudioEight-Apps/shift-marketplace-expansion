@@ -9,6 +9,7 @@ import QuickFilters from "@/components/shift/QuickFilters";
 import ListingsGrid from "@/components/shift/ListingsGrid";
 import EmptyState from "@/components/shift/EmptyState";
 import { villaListings, carListings, yachtListings } from "@/data/listings";
+import { useSearch } from "@/context/SearchContext";
 import type { Listing } from "@/components/shift/ListingCard";
 
 type AssetType = "Stays" | "Cars" | "Yachts";
@@ -29,10 +30,14 @@ const cityLocationMap: Record<string, string> = {
 
 const Index = () => {
   const navigate = useNavigate();
-  const [selectedCityId, setSelectedCityId] = useState("miami");
+  const { cityId: searchCityId, startDate, endDate, setCityId, setSearchDates } = useSearch();
+  const [selectedCityId, setSelectedCityId] = useState(searchCityId);
   const [selectedType, setSelectedType] = useState<AssetType>("Stays");
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+
+  // Sync local city state with global search context
+  useEffect(() => {
+    setCityId(selectedCityId);
+  }, [selectedCityId, setCityId]);
 
   const selectedCity = cities.find(c => c.id === selectedCityId);
   const cityHasYachts = selectedCity?.hasYachts ?? false;
@@ -44,10 +49,10 @@ const Index = () => {
     }
   }, [cityHasYachts, selectedType]);
 
-  // Reset dates when switching between single-day and range modes
+  // Reset end date when switching to single-day modes
   useEffect(() => {
     if (selectedType === "Cars" || selectedType === "Yachts") {
-      setEndDate(null);
+      setSearchDates(startDate, null);
     }
   }, [selectedType]);
 
@@ -83,8 +88,7 @@ const Index = () => {
   };
 
   const handleDateChange = (start: Date | null, end: Date | null) => {
-    setStartDate(start);
-    setEndDate(end);
+    setSearchDates(start, end);
   };
 
   return (

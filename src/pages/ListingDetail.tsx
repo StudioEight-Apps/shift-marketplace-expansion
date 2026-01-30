@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Star, Users, Bed, MapPin, Anchor, Car as CarIcon, Gauge } from "lucide-react";
 import { TripProvider, useTrip } from "@/context/TripContext";
+import { useSearch } from "@/context/SearchContext";
 import { villaListings, carListings, yachtListings } from "@/data/listings";
 import Header from "@/components/shift/Header";
 import Footer from "@/components/shift/Footer";
@@ -22,6 +23,7 @@ const ListingDetailContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setStay, stayDates, setStayDates } = useTrip();
+  const { startDate: searchStartDate, endDate: searchEndDate, hasDates: hasSearchDates } = useSearch();
   const isMobile = useIsMobile();
 
   // Mobile booking sheet state
@@ -45,8 +47,12 @@ const ListingDetailContent = () => {
   useEffect(() => {
     if (listing && listing.assetType === "Stays") {
       setStay(listing);
+      // If we have search dates, apply them to the stay
+      if (hasSearchDates && searchStartDate && searchEndDate && !stayDates.checkIn) {
+        setStayDates({ checkIn: searchStartDate, checkOut: searchEndDate });
+      }
     }
-  }, [listing, setStay]);
+  }, [listing, setStay, hasSearchDates, searchStartDate, searchEndDate, stayDates.checkIn, setStayDates]);
 
   // Reset standalone dates when listing changes
   useEffect(() => {
@@ -54,6 +60,13 @@ const ListingDetailContent = () => {
     setYachtDate(null);
     setYachtHours(null);
   }, [id]);
+
+  // For Cars, also inherit search dates
+  useEffect(() => {
+    if (listing?.assetType === "Cars" && hasSearchDates && searchStartDate && !standaloneDates.start) {
+      setStandaloneDates({ start: searchStartDate, end: searchEndDate });
+    }
+  }, [listing, hasSearchDates, searchStartDate, searchEndDate]);
 
   if (!listing) {
     return (
