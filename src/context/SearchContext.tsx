@@ -43,7 +43,7 @@ export const SearchProvider = ({ children }: SearchProviderProps) => {
     setState(prev => ({ ...prev, startDate, endDate }));
   }, []);
 
-  const hasDates = state.startDate !== null && state.endDate !== null;
+  const hasDates = state.startDate !== null;
 
   const value: SearchContextValue = {
     ...state,

@@ -8,6 +8,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cities, type City } from "./CitySelector";
 import type { DateRange } from "react-day-picker";
 
@@ -20,6 +26,7 @@ interface SearchPillProps {
   startDate: Date | null;
   endDate: Date | null;
   onDateChange: (start: Date | null, end: Date | null) => void;
+  onSearch?: () => void;
 }
 
 const SearchPill = ({
@@ -29,6 +36,7 @@ const SearchPill = ({
   startDate,
   endDate,
   onDateChange,
+  onSearch,
 }: SearchPillProps) => {
   const [cityOpen, setCityOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
@@ -36,6 +44,9 @@ const SearchPill = ({
   
   const selectedCity = cities.find(c => c.id === selectedCityId);
   const isSingleDayMode = selectedType === "Cars" || selectedType === "Yachts";
+  
+  // Determine if search is enabled (dates are selected)
+  const hasValidDates = isSingleDayMode ? startDate !== null : (startDate !== null && endDate !== null);
   
   const cityLabel = selectedCity ? `${selectedCity.name}, ${selectedCity.state}` : "Where";
   
@@ -56,6 +67,8 @@ const SearchPill = ({
     if (isSingleDayMode) {
       onDateChange(day, null);
       setDateOpen(false);
+      // Trigger search after date selection
+      setTimeout(() => onSearch?.(), 100);
     } else {
       // Range mode
       if (!startDate || (startDate && endDate)) {
@@ -66,8 +79,16 @@ const SearchPill = ({
         } else {
           onDateChange(startDate, day);
           setDateOpen(false);
+          // Trigger search after range complete
+          setTimeout(() => onSearch?.(), 100);
         }
       }
+    }
+  };
+
+  const handleSearchClick = () => {
+    if (hasValidDates) {
+      onSearch?.();
     }
   };
 
@@ -164,10 +185,30 @@ const SearchPill = ({
           </PopoverContent>
         </Popover>
 
-        {/* Search Button */}
-        <button className="flex items-center justify-center h-8 w-8 md:h-9 md:w-9 mr-1.5 md:mr-2 rounded-full bg-foreground text-background hover:opacity-90 transition-opacity">
-          <Search className="h-4 w-4" />
-        </button>
+        {/* Search Button with Tooltip */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                onClick={handleSearchClick}
+                disabled={!hasValidDates}
+                className={cn(
+                  "flex items-center justify-center h-8 w-8 md:h-9 md:w-9 mr-1.5 md:mr-2 rounded-full transition-all",
+                  hasValidDates 
+                    ? "bg-accent text-accent-foreground hover:opacity-90 cursor-pointer" 
+                    : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                )}
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            {!hasValidDates && (
+              <TooltipContent side="bottom" className="bg-popover text-popover-foreground border-border-subtle">
+                <p>Select dates to search</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );
