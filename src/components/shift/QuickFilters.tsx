@@ -147,7 +147,6 @@ const getPriceChipLabel = (
 // Filter Modal Component
 const FilterModal = ({
   isOpen,
-  onClose,
   title,
   onApply,
   onClear,
@@ -156,7 +155,7 @@ const FilterModal = ({
   wide = false
 }: {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   title: string;
   onApply: () => void;
   onClear: () => void;
@@ -168,8 +167,14 @@ const FilterModal = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Check if click is inside the modal
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onApply();
+        // Check if click is on a filter button (parent relative container)
+        const target = event.target as HTMLElement;
+        const isFilterButton = target.closest('[data-filter-button]');
+        if (!isFilterButton) {
+          onApply();
+        }
       }
     };
 
@@ -180,8 +185,17 @@ const FilterModal = ({
     };
 
     if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", handleEscape);
+      // Use setTimeout to avoid immediately closing on the same click that opened it
+      const timeoutId = setTimeout(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleEscape);
+      }, 0);
+
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("keydown", handleEscape);
+      };
     }
 
     return () => {
@@ -195,6 +209,7 @@ const FilterModal = ({
   return (
     <div
       ref={modalRef}
+      onClick={(e) => e.stopPropagation()}
       className={cn(
         "absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-card border border-border/40 rounded-xl shadow-elevated z-50",
         wide ? "w-80" : "w-72"
@@ -250,6 +265,7 @@ const FilterButton = ({
 }) => {
   return (
     <button
+      data-filter-button
       onClick={onClick}
       className={cn(
         "relative flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all duration-200",
@@ -799,7 +815,6 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         />
         <FilterModal
           isOpen={openFilter === "price"}
-          onClose={() => setOpenFilter(null)}
           title="Price Range"
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
@@ -824,7 +839,6 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         />
         <FilterModal
           isOpen={openFilter === "guests"}
-          onClose={() => setOpenFilter(null)}
           title="Number of Guests"
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
@@ -851,7 +865,6 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         />
         <FilterModal
           isOpen={openFilter === "beds"}
-          onClose={() => setOpenFilter(null)}
           title="Number of Beds"
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
@@ -882,7 +895,6 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         />
         <FilterModal
           isOpen={openFilter === "price"}
-          onClose={() => setOpenFilter(null)}
           title="Price Range"
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
@@ -907,7 +919,6 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         />
         <FilterModal
           isOpen={openFilter === "brand"}
-          onClose={() => setOpenFilter(null)}
           title="Select Brands"
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
@@ -937,7 +948,6 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         />
         <FilterModal
           isOpen={openFilter === "bodyStyle"}
-          onClose={() => setOpenFilter(null)}
           title="Body Style"
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
@@ -965,7 +975,6 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         />
         <FilterModal
           isOpen={openFilter === "price"}
-          onClose={() => setOpenFilter(null)}
           title="Price Range"
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
@@ -990,7 +999,6 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         />
         <FilterModal
           isOpen={openFilter === "guests"}
-          onClose={() => setOpenFilter(null)}
           title="Number of Guests"
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
@@ -1017,7 +1025,6 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
         />
         <FilterModal
           isOpen={openFilter === "length"}
-          onClose={() => setOpenFilter(null)}
           title="Yacht Length"
           onApply={applyTempFilters}
           onClear={clearCurrentFilter}
