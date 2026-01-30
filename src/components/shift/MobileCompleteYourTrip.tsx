@@ -28,10 +28,7 @@ const MobileCompleteYourTrip = ({ city }: MobileCompleteYourTripProps) => {
   const [selectedItem, setSelectedItem] = useState<Listing | null>(null);
   const [selectedType, setSelectedType] = useState<"Cars" | "Yachts">("Cars");
 
-  // Only show if stay dates are set
-  if (!stayDates.checkIn || !stayDates.checkOut) return null;
-
-  // Get available cars and yachts in the city
+  // Get available cars and yachts in the city - hooks must be called unconditionally
   const availableCars = useMemo(
     () => carListings.filter((c) => c.location === city),
     [city]
@@ -41,6 +38,9 @@ const MobileCompleteYourTrip = ({ city }: MobileCompleteYourTripProps) => {
     () => yachtListings.filter((y) => y.location === city),
     [city]
   );
+
+  // Only show if stay dates are set - AFTER all hooks
+  if (!stayDates.checkIn || !stayDates.checkOut) return null;
 
   const handleAddClick = (item: Listing, type: "Cars" | "Yachts") => {
     // If already added, remove it
