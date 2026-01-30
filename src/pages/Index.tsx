@@ -48,24 +48,51 @@ const Index = () => {
   // Parse dates from URL on mount
   useEffect(() => {
     const urlCity = searchParams.get("city");
+    const urlType = searchParams.get("type");
     const urlCheckin = searchParams.get("checkin");
     const urlCheckout = searchParams.get("checkout");
+
+    // Optional: hydrate asset type from URL when available
+    const parsedType: AssetType | null = urlType
+      ? urlType.toLowerCase() === "cars"
+        ? "Cars"
+        : urlType.toLowerCase() === "yachts"
+          ? "Yachts"
+          : urlType.toLowerCase() === "stays"
+            ? "Stays"
+            : null
+      : null;
+
+    if (parsedType) {
+      setSelectedType(parsedType);
+    }
+
+    // Only hydrate city when the URL represents a complete, valid search.
+    // This prevents "fresh" loads like /?city=miami (or partial dates) from preselecting a city.
+    const isSingleDayUrl = parsedType === "Cars" || parsedType === "Yachts";
+    const hasValidUrlDates = isSingleDayUrl
+      ? !!urlCheckin
+      : !!(urlCheckin && urlCheckout);
+
+    if (!hasValidUrlDates) return;
+
+    // Hydrate dates
+    try {
+      const checkinDate = urlCheckin ? parseISO(urlCheckin) : null;
+      const checkoutDate = !isSingleDayUrl && urlCheckout ? parseISO(urlCheckout) : null;
+      if (checkinDate) {
+        setSearchDates(checkinDate, checkoutDate);
+      }
+    } catch (e) {
+      // Invalid dates, ignore
+      return;
+    }
     
     if (urlCity) {
       const city = cities.find(c => c.id === urlCity || c.name.toLowerCase() === urlCity.toLowerCase());
       if (city) {
         setSelectedCityId(city.id);
         setCityId(city.id);
-      }
-    }
-    
-    if (urlCheckin && urlCheckout) {
-      try {
-        const checkinDate = parseISO(urlCheckin);
-        const checkoutDate = parseISO(urlCheckout);
-        setSearchDates(checkinDate, checkoutDate);
-      } catch (e) {
-        // Invalid dates, ignore
       }
     }
   }, []);
@@ -137,7 +164,8 @@ const Index = () => {
     
     // Update URL with search params
     const params = new URLSearchParams();
-    params.set("city", selectedCityId);
+    params.set("type", selectedType.toLowerCase());
+    if (selectedCityId) params.set("city", selectedCityId);
     if (startDate) params.set("checkin", format(startDate, "yyyy-MM-dd"));
     if (endDate) params.set("checkout", format(endDate, "yyyy-MM-dd"));
     
