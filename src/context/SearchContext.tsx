@@ -13,7 +13,7 @@ interface SearchContextValue extends SearchState {
 }
 
 const initialState: SearchState = {
-  cityId: "miami",
+  cityId: "",
   startDate: null,
   endDate: null,
 };
