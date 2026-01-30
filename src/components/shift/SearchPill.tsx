@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, ChevronDown, CalendarIcon } from "lucide-react";
+import { ChevronDown, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
@@ -8,12 +8,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cities, type City } from "./CitySelector";
 import type { DateRange } from "react-day-picker";
 
@@ -148,7 +142,7 @@ const SearchPill = ({
         {/* When Segment */}
         <Popover open={dateOpen} onOpenChange={setDateOpen}>
           <PopoverTrigger asChild>
-            <button className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 hover:bg-secondary/60 transition-colors">
+            <button className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 hover:bg-secondary/60 rounded-r-full transition-colors">
               <span className="text-xs text-muted-foreground">When</span>
               <span className="text-sm font-medium text-foreground flex items-center gap-1 whitespace-nowrap">
                 {getDateLabel()}
@@ -192,30 +186,6 @@ const SearchPill = ({
           </PopoverContent>
         </Popover>
 
-        {/* Search Button with Tooltip */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button 
-                onClick={handleSearchClick}
-                disabled={!hasValidDates}
-                className={cn(
-                  "flex items-center justify-center h-8 w-8 md:h-9 md:w-9 mr-1.5 md:mr-2 rounded-full transition-all",
-                  hasValidDates 
-                    ? "bg-accent text-accent-foreground hover:opacity-90 cursor-pointer" 
-                    : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
-                )}
-              >
-                <Search className="h-4 w-4" />
-              </button>
-            </TooltipTrigger>
-            {!hasValidDates && (
-              <TooltipContent side="bottom" className="bg-popover text-popover-foreground border-border-subtle">
-                <p>Select dates to search</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
       </div>
     </div>
   );
