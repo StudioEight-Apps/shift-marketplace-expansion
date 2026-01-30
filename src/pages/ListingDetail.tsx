@@ -6,6 +6,7 @@ import { villaListings, carListings, yachtListings } from "@/data/listings";
 import Header from "@/components/shift/Header";
 import Footer from "@/components/shift/Footer";
 import CompleteYourTrip from "@/components/shift/CompleteYourTrip";
+import MobileCompleteYourTrip from "@/components/shift/MobileCompleteYourTrip";
 import BookingCard from "@/components/shift/BookingCard";
 import YachtBookingCard from "@/components/shift/YachtBookingCard";
 import ImageGallery from "@/components/shift/ImageGallery";
@@ -208,11 +209,16 @@ const ListingDetailContent = () => {
               </p>
             </div>
 
-            {/* Complete Your Trip Section - Only for Stays */}
-            {listing.assetType === "Stays" && (
+            {/* Complete Your Trip Section - Desktop only */}
+            {listing.assetType === "Stays" && !isMobile && (
               <div className="pt-6">
                 <CompleteYourTrip currentListing={listing} city={listing.location} />
               </div>
+            )}
+
+            {/* Mobile Complete Your Trip - Stays only */}
+            {listing.assetType === "Stays" && isMobile && (
+              <MobileCompleteYourTrip city={listing.location} />
             )}
           </div>
 
