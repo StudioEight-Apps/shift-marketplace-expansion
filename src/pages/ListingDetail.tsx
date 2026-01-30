@@ -4,6 +4,7 @@ import { Star, Users, Bed, MapPin, Anchor, Car as CarIcon, Gauge } from "lucide-
 import { TripProvider, useTrip } from "@/context/TripContext";
 import { villaListings, carListings, yachtListings } from "@/data/listings";
 import Header from "@/components/shift/Header";
+import Footer from "@/components/shift/Footer";
 import CompleteYourTrip from "@/components/shift/CompleteYourTrip";
 import BookingCard from "@/components/shift/BookingCard";
 import YachtBookingCard from "@/components/shift/YachtBookingCard";
@@ -131,14 +132,14 @@ const ListingDetailContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background scrollbar-dark">
+    <div className="min-h-screen bg-background scrollbar-dark flex flex-col">
       <Header />
 
       {/* Image Gallery */}
       <ImageGallery images={listing.images || [listing.image]} title={listing.title} />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8">
+      <div className="flex-1 max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-16">
           {/* Left Column - Details */}
           <div className="lg:col-span-3 space-y-6">
@@ -229,6 +230,8 @@ const ListingDetailContent = () => {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };

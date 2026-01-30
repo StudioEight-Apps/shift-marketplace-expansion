@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/shift/Header";
+import Footer from "@/components/shift/Footer";
 import { cities } from "@/components/shift/CitySelector";
 import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
@@ -87,7 +88,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background scrollbar-dark">
+    <div className="min-h-screen bg-background scrollbar-dark flex flex-col">
       <Header />
       
       {/* 3-Tier Navigation Stack */}
@@ -116,7 +117,7 @@ const Index = () => {
       </section>
       
       {/* Listings Section */}
-      <main className="container px-6 py-8 md:py-10">
+      <main className="flex-1 container px-6 py-8 md:py-10">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">
             {selectedType} in {selectedCity?.name || "Miami"}
@@ -135,6 +136,8 @@ const Index = () => {
           <EmptyState assetType={selectedType} city={selectedCity?.name || "Miami"} />
         )}
       </main>
+
+      <Footer />
     </div>
   );
 };
