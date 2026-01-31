@@ -278,7 +278,7 @@ const FilterButton = ({
       data-filter-button
       onClick={onClick}
       className={cn(
-        "relative flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all duration-200",
+        "relative flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs transition-all duration-200",
         isOpen
           ? "bg-foreground text-background font-medium ring-2 ring-foreground/20"
           : isActive
@@ -286,10 +286,10 @@ const FilterButton = ({
             : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
       )}
     >
-      <span className="[&>svg]:h-4 [&>svg]:w-4 opacity-70">{icon}</span>
-      <span className="max-w-[140px] truncate">{label}</span>
+      <span className="[&>svg]:h-3.5 [&>svg]:w-3.5 opacity-70">{icon}</span>
+      <span className="max-w-[100px] truncate whitespace-nowrap">{label}</span>
       {isActive && !isOpen && (
-        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background" />
+        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full border border-background" />
       )}
     </button>
   );
@@ -1036,21 +1036,21 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
   );
 
   return (
-    <div className="w-full px-4 flex items-center justify-center gap-2 transition-all duration-300">
+    <div className="w-full px-2 flex flex-wrap items-center justify-center gap-1.5 transition-all duration-300">
       {assetType === "Stays" && renderStaysFilters()}
       {assetType === "Cars" && renderCarsFilters()}
       {assetType === "Yachts" && renderYachtsFilters()}
 
       {activeCount > 0 && (
-        <div className="flex items-center gap-2 ml-3">
-          <span className="text-sm text-muted-foreground">
-            {activeCount} {activeCount === 1 ? "filter" : "filters"} applied
+        <div className="flex items-center gap-1.5 ml-2">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {activeCount} applied
           </span>
           <button
             onClick={resetAllFilters}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-full text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3 w-3" />
             <span>Reset</span>
           </button>
         </div>
