@@ -65,7 +65,7 @@ const Index = () => {
 
     // Only hydrate city when the URL represents a complete, valid search.
     // This prevents "fresh" loads like /?city=miami (or partial dates) from preselecting a city.
-    const isSingleDayUrl = parsedType === "Cars" || parsedType === "Yachts";
+    const isSingleDayUrl = parsedType === "Yachts";
     const hasValidUrlDates = isSingleDayUrl
       ? !!urlCheckin
       : !!(urlCheckin && urlCheckout);
@@ -109,9 +109,9 @@ const Index = () => {
     }
   }, [cityHasYachts, selectedType]);
 
-  // Reset end date when switching to single-day modes
+  // Reset end date when switching to single-day modes (Yachts only)
   useEffect(() => {
-    if (selectedType === "Cars" || selectedType === "Yachts") {
+    if (selectedType === "Yachts") {
       setSearchDates(startDate, null);
     }
   }, [selectedType]);
