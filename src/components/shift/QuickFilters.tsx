@@ -36,10 +36,10 @@ const defaultFilters: FilterState = {
 };
 
 // Snap values for price slider (in dollars)
-const PRICE_SNAP_VALUES = [500, 1000, 2000, 3000, 5000, 7500, 10000];
+const PRICE_SNAP_VALUES = [0, 500, 1000, 2000, 3000, 5000, 7500, 10000];
 
 // Distribution weights for heatline (purely visual)
-const PRICE_DISTRIBUTION = [0.15, 0.25, 0.35, 0.5, 0.7, 0.45, 0.3];
+const PRICE_DISTRIBUTION = [0.1, 0.15, 0.25, 0.35, 0.5, 0.7, 0.45, 0.3];
 
 // Brand data with logos
 const carBrands = [
