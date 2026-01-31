@@ -37,7 +37,7 @@ const SearchPill = ({
   const [displayMonth, setDisplayMonth] = useState<Date>(startDate || new Date());
   
   const selectedCity = cities.find(c => c.id === selectedCityId);
-  const isSingleDayMode = selectedType === "Cars" || selectedType === "Yachts";
+  const isSingleDayMode = selectedType === "Yachts";
 
   // Auto-advance: when city is selected, open date picker
   const handleCitySelect = (cityId: string) => {
