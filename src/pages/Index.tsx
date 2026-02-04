@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import Header from "@/components/shift/Header";
 import Footer from "@/components/shift/Footer";
+import HeroTagline from "@/components/shift/HeroTagline";
+import BundlingBenefits from "@/components/shift/BundlingBenefits";
 import { cities } from "@/components/shift/CitySelector";
 import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
@@ -172,6 +174,9 @@ const Index = () => {
     <div className="min-h-screen bg-background scrollbar-dark flex flex-col">
       <Header />
       
+      {/* Hero Tagline Section */}
+      <HeroTagline />
+      
       {/* 3-Tier Navigation Stack */}
       <section className="border-b border-border-subtle py-6 md:py-8">
         <div className="container px-4 md:px-6 flex flex-col items-center gap-8">
@@ -237,6 +242,9 @@ const Index = () => {
           </>
         )}
       </main>
+
+      {/* Bundling Benefits Section */}
+      <BundlingBenefits />
 
       <Footer />
     </div>
