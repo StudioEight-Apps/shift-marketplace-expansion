@@ -45,7 +45,7 @@ const AboutSection = () => {
               </h3>
               
               {/* Description - centered on mobile, left-aligned on desktop */}
-              <p className="text-sm md:text-[15px] text-muted-foreground leading-relaxed max-w-[300px] md:text-left text-center">
+              <p className="text-sm md:text-[15px] text-muted-foreground leading-relaxed max-w-[300px] text-center">
                 {feature.description}
               </p>
             </div>
