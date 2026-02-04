@@ -21,21 +21,22 @@ const features = [
 const AboutSection = () => {
   return (
     <section className="w-full border-t border-border-subtle py-16 md:py-20 px-6 md:px-10">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-[1300px] mx-auto">
         {/* Heading */}
         <h2 className="text-center text-[28px] md:text-[36px] font-bold text-foreground mb-12 md:mb-16">
           Shift Cities, Maintain Standards
         </h2>
 
-        {/* Feature Blocks */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
+        {/* Feature Blocks - Mobile: stacked with spacing, Desktop: 3 columns */}
+        <div className="flex flex-col space-y-12 md:space-y-0 md:grid md:grid-cols-3 md:gap-12">
           {features.map((feature) => (
-            <div key={feature.title} className="flex flex-col items-center text-center">
+            <div key={feature.title} className="flex flex-col items-center text-center md:text-left md:items-center">
               {/* Icon */}
-              <div className="mb-5">
+              <div className="mb-6">
                 <feature.icon 
-                  className="w-10 h-10 md:w-12 md:h-12 stroke-[1.25]" 
-                  style={{ color: '#D4A853' }} 
+                  className="w-10 h-10 md:w-12 md:h-12" 
+                  strokeWidth={1.5}
+                  style={{ color: '#D4AF37' }} 
                 />
               </div>
               
@@ -44,8 +45,8 @@ const AboutSection = () => {
                 {feature.title}
               </h3>
               
-              {/* Description */}
-              <p className="text-sm md:text-[15px] text-muted-foreground leading-relaxed max-w-[280px]">
+              {/* Description - centered on mobile, left-aligned on desktop */}
+              <p className="text-sm md:text-[15px] text-muted-foreground leading-relaxed max-w-[300px] md:text-left text-center">
                 {feature.description}
               </p>
             </div>
