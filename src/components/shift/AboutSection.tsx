@@ -4,17 +4,17 @@ const features = [
   {
     icon: Compass,
     title: "Browse Our Curated Fleet",
-    description: "Every vehicle, villa, and yacht is hand-selected to meet our exacting standards for luxury, performance, and reliability.",
+    description: "Explore our full collection of luxury villas, exotic vehicles, and yacht experiences. Once you request your booking, dedicated concierge guidance handles the rest. Expert support, zero pressure.",
   },
   {
     icon: Layers,
     title: "One Platform, Full Experience",
-    description: "Book your entire trip in one place. Seamlessly combine accommodations, exotic cars, and private charters.",
+    description: "Bundle your entire stay in a single request: villa, exotic car, yacht day. No juggling multiple brokers or platforms. One point of contact, everything handled.",
   },
   {
     icon: Shield,
     title: "White-Glove Service",
-    description: "Dedicated concierge support from booking to checkout. We handle the details so you can focus on the experience.",
+    description: "Every property, vehicle, and vessel meets Shift's standards. One point of contact from booking through checkout. Premium curation, operational control, zero headaches.",
   },
 ];
 
