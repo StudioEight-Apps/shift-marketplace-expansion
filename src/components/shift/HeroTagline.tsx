@@ -7,7 +7,7 @@ const HeroTagline = () => {
       <img
         src={heroImage}
         alt="Luxury lifestyle"
-        className="absolute inset-0 w-full h-full object-cover object-[center_70%]"
+        className="absolute inset-0 w-full h-full object-cover object-[center_85%]"
       />
       
       {/* Dark Overlay - lighter for visibility */}
