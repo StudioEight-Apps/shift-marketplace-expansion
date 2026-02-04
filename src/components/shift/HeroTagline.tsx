@@ -2,12 +2,12 @@ import heroImage from "@/assets/hero-luxury.jpg";
 
 const HeroTagline = () => {
   return (
-    <section className="relative w-full h-[180px] md:h-[250px] overflow-hidden">
+    <section className="relative w-full h-[280px] md:h-[400px] overflow-hidden">
       {/* Background Image */}
       <img
         src={heroImage}
         alt="Luxury lifestyle"
-        className="absolute inset-0 w-full h-full object-cover object-[center_85%]"
+        className="absolute inset-0 w-full h-full object-cover object-center"
       />
       
       {/* Dark Overlay - lighter for visibility */}
