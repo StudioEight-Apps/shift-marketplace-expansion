@@ -5,6 +5,7 @@ import Header from "@/components/shift/Header";
 import Footer from "@/components/shift/Footer";
 import HeroTagline from "@/components/shift/HeroTagline";
 import BundlingBenefits from "@/components/shift/BundlingBenefits";
+import AboutSection from "@/components/shift/AboutSection";
 import { cities } from "@/components/shift/CitySelector";
 import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
@@ -252,6 +253,9 @@ const Index = () => {
           </>
         )}
       </main>
+
+      {/* About Section */}
+      <AboutSection />
 
       {/* Bundling Benefits Section */}
       <BundlingBenefits />
