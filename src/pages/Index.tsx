@@ -4,8 +4,8 @@ import { format, parseISO } from "date-fns";
 import Header from "@/components/shift/Header";
 import Footer from "@/components/shift/Footer";
 import HeroTagline from "@/components/shift/HeroTagline";
-
 import AboutSection from "@/components/shift/AboutSection";
+import WhyShiftSection from "@/components/shift/WhyShiftSection";
 import { cities } from "@/components/shift/CitySelector";
 import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
@@ -254,8 +254,13 @@ const Index = () => {
         )}
       </main>
 
-      {/* About Section */}
-      <AboutSection />
+      {/* About & Why Shift Sections - only show when no dates selected */}
+      {!hasDates && (
+        <>
+          <WhyShiftSection />
+          <AboutSection />
+        </>
+      )}
 
       <Footer />
     </div>
