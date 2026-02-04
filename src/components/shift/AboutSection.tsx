@@ -16,9 +16,9 @@ const AboutSection = () => {
         </div>
       </div>
 
-      {/* Bottom divider line with glow */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-700/20 to-transparent pointer-events-none" />
+      {/* Bottom divider line with stronger glow */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-600/30 to-transparent pointer-events-none" />
     </section>
   );
 };

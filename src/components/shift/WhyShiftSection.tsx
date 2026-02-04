@@ -68,13 +68,20 @@ const WhyShiftSection = () => {
           <img
             src={whyShiftImage}
             alt="Luxury villa with exotic cars"
-            className="absolute inset-0 w-full h-full object-cover object-[center_40%]"
+            className="absolute inset-0 w-full h-full object-cover object-[center_55%] md:object-[center_30%]"
           />
           {/* Left-to-right gradient overlay for text readability */}
           <div
             className="absolute inset-0"
             style={{
               background: 'linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0.1) 100%)'
+            }}
+          />
+          {/* Top edge shadow for divider contrast */}
+          <div
+            className="absolute top-0 left-0 right-0 h-16"
+            style={{
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%)'
             }}
           />
         </div>
