@@ -87,9 +87,9 @@
   }
 
   .light {
-    /* Airbnb-inspired light theme with subtle premium gradient */
-    --background: 0 0% 98.5%;
-    --background-elevated: 0 0% 100%;
+    /* Airbnb-inspired light theme - warmer off-white */
+    --background: 30 5% 95%;
+    --background-elevated: 30 3% 98%;
     --foreground: 220 15% 15%;
     
     /* Cards and surfaces */
