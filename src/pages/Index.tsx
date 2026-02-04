@@ -10,9 +10,11 @@ import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
 import QuickFilters from "@/components/shift/QuickFilters";
 import ListingsGrid from "@/components/shift/ListingsGrid";
+import MobilePopularCarousel from "@/components/shift/MobilePopularCarousel";
 import EmptyState from "@/components/shift/EmptyState";
 import { villaListings, carListings, yachtListings } from "@/data/listings";
 import { useSearch } from "@/context/SearchContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Listing } from "@/components/shift/ListingCard";
 
 type AssetType = "Stays" | "Cars" | "Yachts";
@@ -42,6 +44,7 @@ const Index = () => {
   const { cityId: searchCityId, startDate, endDate, setCityId, setSearchDates, hasDates } = useSearch();
   const [selectedCityId, setSelectedCityId] = useState(searchCityId || "");
   const [selectedType, setSelectedType] = useState<AssetType>("Stays");
+  const isMobile = useIsMobile();
 
   // Parse dates from URL on mount
   useEffect(() => {
@@ -229,16 +232,23 @@ const Index = () => {
         ) : (
           /* No Dates Selected - Show Popular Listings */
           <>
-            <div className="mb-6">
+            <div className="mb-4 md:mb-6">
               <h2 className="text-lg font-semibold text-foreground">
                 {getPopularHeading(selectedType)}
               </h2>
             </div>
             
-            <ListingsGrid 
-              listings={popularListings} 
-              onListingClick={handleListingClick}
-            />
+            {isMobile ? (
+              <MobilePopularCarousel 
+                listings={popularListings} 
+                onListingClick={handleListingClick}
+              />
+            ) : (
+              <ListingsGrid 
+                listings={popularListings} 
+                onListingClick={handleListingClick}
+              />
+            )}
           </>
         )}
       </main>
