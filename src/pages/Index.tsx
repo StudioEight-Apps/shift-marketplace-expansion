@@ -257,8 +257,8 @@ const Index = () => {
       {/* About & Why Shift Sections - only show when no dates selected */}
       {!hasDates && (
         <>
-          <WhyShiftSection />
           <AboutSection />
+          <WhyShiftSection />
         </>
       )}
 
