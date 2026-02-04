@@ -3,30 +3,45 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import Header from "@/components/shift/Header";
 import Footer from "@/components/shift/Footer";
+import HeroTagline from "@/components/shift/HeroTagline";
+import AboutSection from "@/components/shift/AboutSection";
+import WhyShiftSection from "@/components/shift/WhyShiftSection";
 import { cities } from "@/components/shift/CitySelector";
 import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
 import QuickFilters from "@/components/shift/QuickFilters";
 import ListingsGrid from "@/components/shift/ListingsGrid";
+import MobilePopularCarousel from "@/components/shift/MobilePopularCarousel";
 import EmptyState from "@/components/shift/EmptyState";
-import { villaListings, carListings, yachtListings } from "@/data/listings";
 import { useSearch } from "@/context/SearchContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Listing } from "@/components/shift/ListingCard";
+import {
+  getVillas,
+  getCars,
+  getYachts,
+  villaToListing,
+  carToListing,
+  yachtToListing,
+  Villa,
+  Car,
+  Yacht,
+} from "@/lib/listings";
 
 type AssetType = "Stays" | "Cars" | "Yachts";
 
 // Map city IDs to location strings used in listings data
 const cityLocationMap: Record<string, string> = {
-  "miami": "Miami",
-  "los-angeles": "LA",
-  "new-york": "NYC",
-  "las-vegas": "Las Vegas",
-  "scottsdale": "Scottsdale",
-  "aspen": "Aspen",
-  "austin": "Austin",
-  "nashville": "Nashville",
-  "hamptons": "The Hamptons",
-  "park-city": "Park City",
+  "miami": "Miami, FL",
+  "los-angeles": "Los Angeles, CA",
+  "new-york": "New York City, NY",
+  "las-vegas": "Las Vegas, NV",
+  "scottsdale": "Scottsdale, AZ",
+  "aspen": "Aspen, CO",
+  "austin": "Austin, TX",
+  "nashville": "Nashville, TN",
+  "hamptons": "The Hamptons, NY",
+  "park-city": "Park City, UT",
 };
 
 // Get popular listing titles by asset type
@@ -40,6 +55,33 @@ const Index = () => {
   const { cityId: searchCityId, startDate, endDate, setCityId, setSearchDates, hasDates } = useSearch();
   const [selectedCityId, setSelectedCityId] = useState(searchCityId || "");
   const [selectedType, setSelectedType] = useState<AssetType>("Stays");
+  const isMobile = useIsMobile();
+
+  // Firestore data state
+  const [villas, setVillas] = useState<Villa[]>([]);
+  const [cars, setCars] = useState<Car[]>([]);
+  const [yachts, setYachts] = useState<Yacht[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch listings from Firestore
+  useEffect(() => {
+    const unsubVillas = getVillas((data) => {
+      setVillas(data.filter(v => v.status === "active"));
+      setLoading(false);
+    });
+    const unsubCars = getCars((data) => {
+      setCars(data.filter(c => c.status === "active"));
+    });
+    const unsubYachts = getYachts((data) => {
+      setYachts(data.filter(y => y.status === "active"));
+    });
+
+    return () => {
+      unsubVillas();
+      unsubCars();
+      unsubYachts();
+    };
+  }, []);
 
   // Parse dates from URL on mount
   useEffect(() => {
@@ -116,6 +158,11 @@ const Index = () => {
     }
   }, [selectedType]);
 
+  // Convert Firestore data to UI Listing format
+  const villaListings = useMemo(() => villas.map(villaToListing), [villas]);
+  const carListings = useMemo(() => cars.map(carToListing), [cars]);
+  const yachtListings = useMemo(() => yachts.map(yachtToListing), [yachts]);
+
   // Get all listings for current asset type (for popular/unfiltered view)
   const allListingsForType = useMemo(() => {
     switch (selectedType) {
@@ -127,20 +174,55 @@ const Index = () => {
       default:
         return villaListings;
     }
-  }, [selectedType]);
+  }, [selectedType, villaListings, carListings, yachtListings]);
 
-  // Get filtered listings (when dates are selected, filter by city)
+  // Get filtered listings (when dates are selected, filter by city AND availability)
   const filteredListings = useMemo(() => {
+    let filtered = allListingsForType;
+
+    // Filter by city
     const locationString = cityLocationMap[selectedCityId];
     if (locationString) {
-      return allListingsForType.filter(l => l.location === locationString);
+      filtered = filtered.filter(l => l.location === locationString);
     }
-    return allListingsForType;
-  }, [selectedCityId, allListingsForType]);
 
-  // Popular listings (show first 8 from all listings, no city filter)
+    // Filter by availability (if dates selected)
+    if (hasDates && startDate && endDate) {
+      filtered = filtered.filter(listing => {
+        // Get the source data (villa/car/yacht) to check blockedDates
+        let blockedDates: string[] = [];
+
+        if (listing.assetType === "Stays") {
+          const villa = villas.find(v => v.id === listing.id);
+          blockedDates = villa?.blockedDates || [];
+        } else if (listing.assetType === "Cars") {
+          const car = cars.find(c => c.id === listing.id);
+          blockedDates = car?.blockedDates || [];
+        } else if (listing.assetType === "Yachts") {
+          const yacht = yachts.find(y => y.id === listing.id);
+          blockedDates = yacht?.blockedDates || [];
+        }
+
+        // Check if any date in the selected range is blocked
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+          const dateString = currentDate.toISOString().split("T")[0];
+          if (blockedDates.includes(dateString)) {
+            return false; // This listing is not available
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        return true; // No blocked dates found, listing is available
+      });
+    }
+
+    return filtered;
+  }, [selectedCityId, allListingsForType, hasDates, startDate, endDate, villas, cars, yachts]);
+
+  // Popular listings (show only featured listings, up to 8)
   const popularListings = useMemo(() => {
-    return allListingsForType.slice(0, 8);
+    return allListingsForType.filter(l => l.badges.includes("Guest Favorite")).slice(0, 8);
   }, [allListingsForType]);
 
   const handleListingClick = (listing: Listing) => {
@@ -171,7 +253,10 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background scrollbar-dark flex flex-col">
       <Header />
-      
+
+      {/* Hero Section */}
+      <HeroTagline />
+
       {/* 3-Tier Navigation Stack */}
       <section className="border-b border-border-subtle py-6 md:py-8">
         <div className="container px-4 md:px-6 flex flex-col items-center gap-8">
@@ -200,7 +285,13 @@ const Index = () => {
       
       {/* Content Section */}
       <main className="flex-1 container px-6 py-8 md:py-10">
-        {hasDates ? (
+        {loading ? (
+          /* Loading State */
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <p className="mt-4 text-sm text-muted-foreground">Loading listings...</p>
+          </div>
+        ) : hasDates ? (
           /* Filtered Results - After dates selected */
           <>
             <div className="mb-6 flex items-center justify-between">
@@ -213,9 +304,10 @@ const Index = () => {
             </div>
             
             {filteredListings.length > 0 ? (
-              <ListingsGrid 
-                listings={filteredListings} 
+              <ListingsGrid
+                listings={filteredListings}
                 onListingClick={handleListingClick}
+                compact={isMobile}
               />
             ) : (
               <EmptyState assetType={selectedType} city={selectedCity?.name || "Miami"} />
@@ -229,14 +321,33 @@ const Index = () => {
                 {getPopularHeading(selectedType)}
               </h2>
             </div>
-            
-            <ListingsGrid 
-              listings={popularListings} 
-              onListingClick={handleListingClick}
-            />
+
+            {popularListings.length > 0 ? (
+              isMobile ? (
+                <MobilePopularCarousel
+                  listings={popularListings}
+                  onListingClick={handleListingClick}
+                />
+              ) : (
+                <ListingsGrid
+                  listings={popularListings}
+                  onListingClick={handleListingClick}
+                />
+              )
+            ) : (
+              <EmptyState assetType={selectedType} city={selectedCity?.name || "your area"} />
+            )}
           </>
         )}
       </main>
+
+      {/* About & Why Shift Sections - only show when no dates selected */}
+      {!hasDates && (
+        <>
+          <AboutSection />
+          <WhyShiftSection />
+        </>
+      )}
 
       <Footer />
     </div>
