@@ -15,7 +15,10 @@ const HeroTagline = () => {
       
       {/* Centered Text */}
       <div className="relative z-10 flex items-center justify-center h-full px-4">
-        <h1 className="text-white text-[28px] md:text-[44px] font-bold tracking-tight text-center">
+        <h1 
+          className="text-white text-[28px] md:text-[44px] font-bold tracking-tight text-center"
+          style={{ textShadow: '0 3px 12px rgba(0, 0, 0, 0.9)' }}
+        >
           Book Luxury Anywhere In The World
         </h1>
       </div>
