@@ -24,30 +24,31 @@ const WhyShiftSection = () => {
     <section className="w-full bg-black dark:bg-black">
       <div className="flex flex-row">
         {/* Left: Text Content */}
-        <div className="w-1/2 px-4 md:px-12 lg:px-16 py-8 md:py-16">
+        <div className="w-1/2 px-4 md:px-12 lg:px-16 py-6 md:py-16 flex flex-col justify-center">
           {/* Heading */}
-          <h2 className="text-lg md:text-3xl lg:text-4xl font-light italic text-white mb-6 md:mb-14">
+          <h2 className="text-xl md:text-3xl lg:text-4xl font-light italic text-white mb-6 md:mb-14">
             Why Shift
           </h2>
 
           {/* Feature Blocks */}
-          <div className="flex flex-col space-y-5 md:space-y-10">
+          <div className="flex flex-col space-y-4 md:space-y-10">
             {features.map((feature) => (
-              <div key={feature.title} className="flex items-start gap-2 md:gap-4">
+              <div key={feature.title} className="flex items-start gap-3 md:gap-4">
                 {/* Icon */}
                 <div className="flex-shrink-0 mt-0.5">
                   <feature.icon 
-                    className="w-4 h-4 md:w-7 md:h-7 text-gray-400" 
+                    className="w-5 h-5 md:w-7 md:h-7 text-gray-400" 
                     strokeWidth={1.25}
                   />
                 </div>
                 
                 {/* Text */}
                 <div>
-                  <h3 className="text-xs md:text-lg font-semibold text-white mb-1 md:mb-2">
+                  <h3 className="text-sm md:text-lg font-semibold text-white md:mb-2">
                     {feature.title}
                   </h3>
-                  <p className="text-[10px] md:text-[15px] text-gray-400 leading-relaxed">
+                  {/* Body text - hidden on mobile */}
+                  <p className="hidden md:block text-[15px] text-gray-400 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -57,7 +58,7 @@ const WhyShiftSection = () => {
         </div>
 
         {/* Right: Image with overlay */}
-        <div className="w-1/2 relative min-h-[280px] md:min-h-[500px]">
+        <div className="w-1/2 relative min-h-[220px] md:min-h-[500px]">
           <img
             src={whyShiftImage}
             alt="Luxury villa with exotic cars"
