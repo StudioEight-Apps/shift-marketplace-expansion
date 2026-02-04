@@ -17,13 +17,13 @@ const HeroTagline = () => {
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
         <h1 
           className="text-white text-[28px] md:text-[44px] font-bold tracking-tight text-center"
-          style={{ textShadow: '0 3px 12px rgba(0, 0, 0, 0.9)' }}
+          style={{ textShadow: '0 4px 16px rgba(0, 0, 0, 1), 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7)' }}
         >
           Book Luxury Anywhere In The World
         </h1>
         <p 
           className="text-white text-[16px] md:text-[18px] font-medium tracking-wide text-center mt-2"
-          style={{ textShadow: '0 3px 12px rgba(0, 0, 0, 0.9)' }}
+          style={{ textShadow: '0 4px 16px rgba(0, 0, 0, 1), 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7)' }}
         >
           Villas • Cars • Yachts
         </p>
