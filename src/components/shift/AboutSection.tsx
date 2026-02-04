@@ -1,8 +1,9 @@
 const AboutSection = () => {
   return (
     <section className="relative w-full bg-black">
-      {/* Top fade divider */}
-      <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none" />
+      {/* Top divider line with glow */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-gray-700/20 to-transparent pointer-events-none" />
 
       {/* Content */}
       <div className="py-12 md:py-16 px-6">
@@ -15,8 +16,9 @@ const AboutSection = () => {
         </div>
       </div>
 
-      {/* Bottom fade divider */}
-      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+      {/* Bottom divider line with glow */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-700/20 to-transparent pointer-events-none" />
     </section>
   );
 };

@@ -5,16 +5,19 @@ const features = [
   {
     icon: Compass,
     title: "Browse Our Curated Fleet",
+    mobileTitle: "Exclusive access to Villas, Cars, & Yachts",
     description: "Explore our full collection of luxury villas, exotic vehicles, and yacht experiences. Once you request your booking, dedicated concierge guidance handles the rest. Expert support, zero pressure.",
   },
   {
     icon: Layers,
     title: "One Platform, Full Experience",
+    mobileTitle: "Bundle Everything on One Platform",
     description: "Bundle your entire stay in a single request: villa, exotic car, yacht day. No juggling multiple brokers or platforms. One point of contact, everything handled.",
   },
   {
     icon: Shield,
     title: "White-Glove Service",
+    mobileTitle: "White-Glove Service, End-to-End",
     description: "Every property, vehicle, and vessel meets Shift's standards. One point of contact from booking through checkout. Premium curation, operational control, zero headaches.",
   },
 ];
@@ -46,8 +49,9 @@ const WhyShiftSection = () => {
 
                 {/* Text */}
                 <div>
-                  <h3 className="text-sm md:text-lg font-semibold text-white mb-1 md:mb-2">
-                    {feature.title}
+                  <h3 className="text-[11px] md:text-lg font-semibold text-white mb-1 md:mb-2">
+                    <span className="md:hidden">{feature.mobileTitle}</span>
+                    <span className="hidden md:inline">{feature.title}</span>
                   </h3>
                   {/* Body text - hidden on mobile */}
                   <p className="hidden md:block text-[15px] text-gray-400 leading-relaxed">
@@ -64,7 +68,7 @@ const WhyShiftSection = () => {
           <img
             src={whyShiftImage}
             alt="Luxury villa with exotic cars"
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover object-[center_40%]"
           />
           {/* Left-to-right gradient overlay for text readability */}
           <div
