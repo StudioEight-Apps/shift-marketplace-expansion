@@ -8,7 +8,7 @@ interface EmptyStateProps {
 
 const EmptyState = ({ assetType, city }: EmptyStateProps) => {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
+    <div className="flex flex-col items-center justify-center py-8 md:py-20 text-center">
       <div className="mb-6 rounded-full bg-secondary/30 p-4">
         <MessageCircle className="h-8 w-8 text-muted-foreground" />
       </div>
