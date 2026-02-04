@@ -7,11 +7,11 @@ const HeroTagline = () => {
       <img
         src={heroImage}
         alt="Luxury lifestyle"
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover object-[center_70%]"
       />
       
-      {/* Dark Overlay - reduced opacity */}
-      <div className="absolute inset-0 bg-black/25" />
+      {/* Dark Overlay - lighter for visibility */}
+      <div className="absolute inset-0 bg-black/15" />
       
       {/* Centered Text */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
