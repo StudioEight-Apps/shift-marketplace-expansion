@@ -1,33 +1,26 @@
 import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
-interface BookingItem {
-  type: string;
-  name: string;
-  price: number;
-}
+import { BookingVilla, BookingCar, BookingYacht } from "@/context/AuthContext";
 
 interface BookingConfirmationProps {
   isOpen: boolean;
   onClose: () => void;
   requestId: string;
-  destination: string;
-  checkIn: Date;
-  checkOut: Date;
-  items: BookingItem[];
-  total: number;
+  villa: BookingVilla | null;
+  car: BookingCar | null;
+  yacht: BookingYacht | null;
+  grandTotal: number;
 }
 
 const BookingConfirmation = ({
   isOpen,
   onClose,
   requestId,
-  destination,
-  checkIn,
-  checkOut,
-  items,
-  total,
+  villa,
+  car,
+  yacht,
+  grandTotal,
 }: BookingConfirmationProps) => {
   const navigate = useNavigate();
 
@@ -52,6 +45,23 @@ const BookingConfirmation = ({
     }
   };
 
+  // Get primary destination/location
+  const destination = villa?.location || "Your Trip";
+
+  // Get date range
+  const getDateRange = () => {
+    if (villa) {
+      return `${formatDate(villa.checkIn)} - ${formatDate(villa.checkOut)}`;
+    }
+    if (car) {
+      return `${formatDate(car.pickupDate)} - ${formatDate(car.dropoffDate)}`;
+    }
+    if (yacht) {
+      return formatDate(yacht.date);
+    }
+    return "";
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
@@ -67,41 +77,65 @@ const BookingConfirmation = ({
 
         {/* Title */}
         <h2 className="text-xl font-semibold text-foreground mb-2">
-          Request Submitted Successfully
+          Request Submitted!
         </h2>
         <p className="text-sm text-muted-foreground mb-6">
-          A member of our team will reach out via call/text shortly to confirm your booking
+          We'll contact you shortly to confirm your booking.
         </p>
 
         {/* Request ID */}
         <div className="bg-background rounded-lg px-4 py-3 mb-6">
           <span className="text-xs text-muted-foreground">Request ID</span>
-          <p className="text-base font-mono font-medium text-foreground">{requestId}</p>
+          <p className="text-sm font-mono font-medium text-foreground truncate">{requestId}</p>
         </div>
 
         {/* Summary */}
         <div className="border-t border-border-subtle pt-4 mb-6 text-left space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Destination</span>
-            <span className="text-foreground">{destination}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Dates</span>
-            <span className="text-foreground">
-              {formatDate(checkIn)} - {formatDate(checkOut)}
-            </span>
-          </div>
-          <div className="border-t border-border-subtle pt-3">
-            {items.map((item, i) => (
-              <div key={i} className="flex justify-between text-sm py-1">
-                <span className="text-muted-foreground">{item.type}: {item.name}</span>
-                <span className="text-foreground">${item.price.toLocaleString()}</span>
+          {destination && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Destination</span>
+              <span className="text-foreground">{destination}</span>
+            </div>
+          )}
+          {getDateRange() && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Dates</span>
+              <span className="text-foreground">{getDateRange()}</span>
+            </div>
+          )}
+
+          {/* Items breakdown */}
+          <div className="border-t border-border-subtle pt-3 space-y-2">
+            {villa && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Stay: {villa.name} ({villa.nights} {villa.nights === 1 ? "night" : "nights"})
+                </span>
+                <span className="text-foreground">${villa.price.toLocaleString()}</span>
               </div>
-            ))}
+            )}
+            {car && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Car: {car.name} ({car.days} {car.days === 1 ? "day" : "days"})
+                </span>
+                <span className="text-foreground">${car.price.toLocaleString()}</span>
+              </div>
+            )}
+            {yacht && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Yacht: {yacht.name} ({yacht.hours} {yacht.hours === 1 ? "hour" : "hours"})
+                </span>
+                <span className="text-foreground">${yacht.price.toLocaleString()}</span>
+              </div>
+            )}
           </div>
+
+          {/* Total */}
           <div className="flex justify-between pt-2 border-t border-border-subtle">
             <span className="font-medium text-foreground">Total</span>
-            <span className="font-bold text-primary">${total.toLocaleString()}</span>
+            <span className="font-bold text-primary">${grandTotal.toLocaleString()}</span>
           </div>
         </div>
 

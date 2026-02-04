@@ -1,14 +1,14 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Car, Ship, Home } from "lucide-react";
 import Header from "@/components/shift/Header";
 import Footer from "@/components/shift/Footer";
 import { Badge } from "@/components/ui/badge";
 import { useAuth, BookingRequest } from "@/context/AuthContext";
 
 const statusColors: Record<BookingRequest["status"], string> = {
-  New: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  Contacted: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  Pending: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  Contacted: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   Confirmed: "bg-green-500/20 text-green-400 border-green-500/30",
   Cancelled: "bg-red-500/20 text-red-400 border-red-500/30",
 };
@@ -70,54 +70,79 @@ const MyTrips = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {bookingRequests
-              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-              .map((request) => (
-                <div
-                  key={request.id}
-                  className="rounded-xl bg-card border border-border-subtle p-5"
-                >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
+            {bookingRequests.map((request) => (
+              <div
+                key={request.id}
+                className="rounded-xl bg-card border border-border-subtle p-5"
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    {request.villa && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                         <MapPin className="h-3.5 w-3.5" />
-                        {request.destination}
+                        {request.villa.location}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatDate(request.checkIn)} - {formatDate(request.checkOut)}
-                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {request.villa
+                        ? `${formatDate(request.villa.checkIn)} - ${formatDate(request.villa.checkOut)}`
+                        : request.car
+                        ? `${formatDate(request.car.pickupDate)} - ${formatDate(request.car.dropoffDate)}`
+                        : request.yacht
+                        ? formatDate(request.yacht.date)
+                        : ""}
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={`text-xs font-medium ${statusColors[request.status]}`}
-                    >
-                      {request.status}
-                    </Badge>
                   </div>
-
-                  {/* Items */}
-                  <div className="border-t border-border-subtle pt-3 space-y-2">
-                    {request.items.map((item, i) => (
-                      <div key={i} className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          {item.type}: {item.name}
-                        </span>
-                        <span className="text-foreground">${item.price.toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-border-subtle">
-                    <span className="text-xs text-muted-foreground font-mono">{request.id}</span>
-                    <span className="font-semibold text-primary">
-                      ${request.total.toLocaleString()}
-                    </span>
-                  </div>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs font-medium ${statusColors[request.status]}`}
+                  >
+                    {request.status}
+                  </Badge>
                 </div>
-              ))}
+
+                {/* Items */}
+                <div className="border-t border-border-subtle pt-3 space-y-2">
+                  {request.villa && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <Home className="h-3.5 w-3.5" />
+                        {request.villa.name} · {request.villa.nights} {request.villa.nights === 1 ? "night" : "nights"}
+                      </span>
+                      <span className="text-foreground">${request.villa.price.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {request.car && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <Car className="h-3.5 w-3.5" />
+                        {request.car.name} · {request.car.days} {request.car.days === 1 ? "day" : "days"}
+                      </span>
+                      <span className="text-foreground">${request.car.price.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {request.yacht && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <Ship className="h-3.5 w-3.5" />
+                        {request.yacht.name} · {request.yacht.hours} {request.yacht.hours === 1 ? "hour" : "hours"}
+                      </span>
+                      <span className="text-foreground">${request.yacht.price.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-border-subtle">
+                  <span className="text-xs text-muted-foreground font-mono truncate max-w-[150px]">{request.id}</span>
+                  <span className="font-semibold text-primary">
+                    ${request.grandTotal.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </main>

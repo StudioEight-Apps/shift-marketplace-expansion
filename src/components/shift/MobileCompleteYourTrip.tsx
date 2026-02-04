@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Plus, Check, Car, Anchor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTrip } from "@/context/TripContext";
-import { carListings, yachtListings } from "@/data/listings";
+import { getCars, getYachts, carToListing, yachtToListing, Car as CarType, Yacht } from "@/lib/listings";
 import AddOnSchedulingDrawer, { type CarSchedule, type YachtSchedule } from "./AddOnSchedulingDrawer";
 import type { Listing } from "./ListingCard";
 import { toast } from "@/hooks/use-toast";
@@ -28,15 +28,38 @@ const MobileCompleteYourTrip = ({ city }: MobileCompleteYourTripProps) => {
   const [selectedItem, setSelectedItem] = useState<Listing | null>(null);
   const [selectedType, setSelectedType] = useState<"Cars" | "Yachts">("Cars");
 
+  // Firestore data state
+  const [carsData, setCarsData] = useState<CarType[]>([]);
+  const [yachtsData, setYachtsData] = useState<Yacht[]>([]);
+
+  // Fetch from Firestore
+  useEffect(() => {
+    const unsubCars = getCars((data) => {
+      setCarsData(data.filter(c => c.status === "active"));
+    });
+    const unsubYachts = getYachts((data) => {
+      setYachtsData(data.filter(y => y.status === "active"));
+    });
+
+    return () => {
+      unsubCars();
+      unsubYachts();
+    };
+  }, []);
+
+  // Convert to Listing format
+  const carListings = useMemo(() => carsData.map(carToListing), [carsData]);
+  const yachtListings = useMemo(() => yachtsData.map(yachtToListing), [yachtsData]);
+
   // Get available cars and yachts in the city - hooks must be called unconditionally
   const availableCars = useMemo(
     () => carListings.filter((c) => c.location === city),
-    [city]
+    [city, carListings]
   );
 
   const availableYachts = useMemo(
     () => yachtListings.filter((y) => y.location === city),
-    [city]
+    [city, yachtListings]
   );
 
   // Don't return null - always show section (with overlay if no dates)

@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Plus, Car, Anchor, ChevronRight, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTrip } from "@/context/TripContext";
-import { carListings, yachtListings } from "@/data/listings";
+import { getCars, getYachts, carToListing, yachtToListing, Car as CarType, Yacht } from "@/lib/listings";
 import AddOnSchedulingDrawer, { type CarSchedule, type YachtSchedule } from "./AddOnSchedulingDrawer";
 import ViewAllAddOnsModal from "./ViewAllAddOnsModal";
 import type { Listing } from "./ListingCard";
@@ -14,8 +14,8 @@ interface CompactAddOnRailProps {
 }
 
 const CompactAddOnRail = ({ city, variant = "compact" }: CompactAddOnRailProps) => {
-  const { 
-    stayDates, 
+  const {
+    stayDates,
     car, setCar, setCarDates, removeCar,
     yachtBooking, setYacht, setYachtBooking, removeYacht,
     carDays, yachtHours
@@ -26,22 +26,45 @@ const CompactAddOnRail = ({ city, variant = "compact" }: CompactAddOnRailProps) 
   const [selectedType, setSelectedType] = useState<"Cars" | "Yachts">("Cars");
   const [viewAllType, setViewAllType] = useState<"Cars" | "Yachts" | null>(null);
 
+  // Firestore data state
+  const [carsData, setCarsData] = useState<CarType[]>([]);
+  const [yachtsData, setYachtsData] = useState<Yacht[]>([]);
+
+  // Fetch from Firestore
+  useEffect(() => {
+    const unsubCars = getCars((data) => {
+      setCarsData(data.filter(c => c.status === "active"));
+    });
+    const unsubYachts = getYachts((data) => {
+      setYachtsData(data.filter(y => y.status === "active"));
+    });
+
+    return () => {
+      unsubCars();
+      unsubYachts();
+    };
+  }, []);
+
+  // Convert to Listing format
+  const carListings = useMemo(() => carsData.map(carToListing), [carsData]);
+  const yachtListings = useMemo(() => yachtsData.map(yachtToListing), [yachtsData]);
+
   // Only show if stay dates are set
   if (!stayDates.checkIn || !stayDates.checkOut) return null;
 
   // Get available cars and yachts in the city
-  const availableCars = useMemo(() => 
+  const availableCars = useMemo(() =>
     carListings.filter(c => c.location === city).slice(0, variant === "compact" ? 4 : 6),
-    [city, variant]
+    [city, variant, carListings]
   );
 
-  const availableYachts = useMemo(() => 
+  const availableYachts = useMemo(() =>
     yachtListings.filter(y => y.location === city).slice(0, variant === "compact" ? 3 : 4),
-    [city, variant]
+    [city, variant, yachtListings]
   );
 
-  const allCars = useMemo(() => carListings.filter(c => c.location === city), [city]);
-  const allYachts = useMemo(() => yachtListings.filter(y => y.location === city), [city]);
+  const allCars = useMemo(() => carListings.filter(c => c.location === city), [city, carListings]);
+  const allYachts = useMemo(() => yachtListings.filter(y => y.location === city), [city, yachtListings]);
 
   const handleAddClick = (item: Listing, type: "Cars" | "Yachts") => {
     setSelectedItem(item);

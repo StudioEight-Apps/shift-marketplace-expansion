@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Star, Users, Bed, MapPin, Anchor, Car as CarIcon, Gauge } from "lucide-react";
+import { Users, Bed, MapPin, Anchor, Car as CarIcon, Gauge } from "lucide-react";
 import { TripProvider, useTrip } from "@/context/TripContext";
 import { useSearch } from "@/context/SearchContext";
-import { villaListings, carListings, yachtListings } from "@/data/listings";
 import Header from "@/components/shift/Header";
 import Footer from "@/components/shift/Footer";
 import CompleteYourTrip from "@/components/shift/CompleteYourTrip";
@@ -15,9 +14,14 @@ import MobileBookingFooter from "@/components/shift/MobileBookingFooter";
 import MobileBookingSheet from "@/components/shift/MobileBookingSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Listing } from "@/components/shift/ListingCard";
-
-// All listings combined for lookup
-const allListings = [...villaListings, ...carListings, ...yachtListings];
+import {
+  getVillaById,
+  getCarById,
+  getYachtById,
+  villaToListing,
+  carToListing,
+  yachtToListing,
+} from "@/lib/listings";
 
 const ListingDetailContent = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,8 +43,44 @@ const ListingDetailContent = () => {
   const [yachtDate, setYachtDate] = useState<Date | null>(null);
   const [yachtHours, setYachtHours] = useState<number | null>(null);
 
-  const listing = useMemo(() => {
-    return allListings.find((l) => l.id === id) || null;
+  // Listing state from Firestore
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [loadingListing, setLoadingListing] = useState(true);
+
+  // Fetch listing from Firestore
+  useEffect(() => {
+    const fetchListing = async () => {
+      if (!id) return;
+      setLoadingListing(true);
+
+      // Try to fetch from each collection
+      const villa = await getVillaById(id);
+      if (villa) {
+        setListing(villaToListing(villa));
+        setLoadingListing(false);
+        return;
+      }
+
+      const car = await getCarById(id);
+      if (car) {
+        setListing(carToListing(car));
+        setLoadingListing(false);
+        return;
+      }
+
+      const yacht = await getYachtById(id);
+      if (yacht) {
+        setListing(yachtToListing(yacht));
+        setLoadingListing(false);
+        return;
+      }
+
+      // Not found
+      setListing(null);
+      setLoadingListing(false);
+    };
+
+    fetchListing();
   }, [id]);
 
   // Set the primary booking item in context (only Stays are trip containers)
@@ -67,6 +107,17 @@ const ListingDetailContent = () => {
       setStandaloneDates({ start: searchStartDate, end: searchEndDate });
     }
   }, [listing, hasSearchDates, searchStartDate, searchEndDate]);
+
+  if (loadingListing) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container px-6 py-12 text-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!listing) {
     return (
@@ -178,10 +229,6 @@ const ListingDetailContent = () => {
                 <span className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4" />
                   {listing.location}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  {listing.rating}
                 </span>
               </div>
             </div>

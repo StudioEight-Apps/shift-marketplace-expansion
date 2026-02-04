@@ -24,13 +24,13 @@ const features = [
 
 const WhyShiftSection = () => {
   return (
-    <section className="w-full bg-black">
+    <section className="w-full bg-slate-50 dark:bg-black">
       <div className="flex flex-row">
         {/* Left: Text Content */}
         <div className="w-1/2 px-4 md:px-12 lg:px-16 py-8 md:py-16 flex flex-col justify-center">
           {/* Heading */}
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-light italic text-white mb-8 md:mb-14">
-            Why Shift
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold italic text-gray-900 dark:text-white mb-8 md:mb-14 text-center">
+            Shift Rentals
           </h2>
 
           {/* Feature Blocks */}
@@ -39,9 +39,9 @@ const WhyShiftSection = () => {
               <div key={feature.title} className="flex items-start gap-3 md:gap-4">
                 {/* Circular outlined icon */}
                 <div className="flex-shrink-0 mt-0.5">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-500 flex items-center justify-center">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-400 dark:border-gray-500 flex items-center justify-center">
                     <feature.icon
-                      className="w-4 h-4 md:w-5 md:h-5 text-gray-400"
+                      className="w-4 h-4 md:w-5 md:h-5 text-gray-500 dark:text-gray-400"
                       strokeWidth={1.5}
                     />
                   </div>
@@ -49,12 +49,12 @@ const WhyShiftSection = () => {
 
                 {/* Text */}
                 <div>
-                  <h3 className="text-[11px] md:text-lg font-semibold text-white mb-1 md:mb-2">
+                  <h3 className="text-[11px] md:text-lg font-semibold text-gray-800 dark:text-white mb-1 md:mb-2">
                     <span className="md:hidden">{feature.mobileTitle}</span>
                     <span className="hidden md:inline">{feature.title}</span>
                   </h3>
                   {/* Body text - hidden on mobile */}
-                  <p className="hidden md:block text-[15px] text-gray-400 leading-relaxed">
+                  <p className="hidden md:block text-[15px] text-gray-600 dark:text-gray-400 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -68,7 +68,7 @@ const WhyShiftSection = () => {
           <img
             src={whyShiftImage}
             alt="Luxury villa with exotic cars"
-            className="absolute inset-0 w-full h-full object-cover object-[center_55%] md:object-[center_45%]"
+            className="absolute inset-0 w-full h-full object-cover object-[center_55%] md:object-[center_80%]"
           />
           {/* Left-to-right gradient overlay for text readability */}
           <div

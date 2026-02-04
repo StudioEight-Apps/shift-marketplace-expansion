@@ -26,7 +26,7 @@ const Logo = () => {
       {/* Mobile logo - theme aware */}
       <img src={mobileLogo} alt="Shift Rentals" className="h-12 w-auto md:hidden" />
       {/* Desktop horizontal logo - blue works for both themes */}
-      <img src={shiftLogoHorizontal} alt="Shift Rentals" className="hidden md:block h-10 w-auto" />
+      <img src={shiftLogoHorizontal} alt="Shift Rentals" className="hidden md:block h-14 w-auto" />
     </button>
   );
 };

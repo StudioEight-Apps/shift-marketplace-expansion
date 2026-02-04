@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { ArrowLeft, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useEmblaCarousel from "embla-carousel-react";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,8 @@ interface ImageGalleryProps {
 
 const ImageGallery = ({ images, title }: ImageGalleryProps) => {
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Use provided images, fallback to repeating the first image if needed
   const galleryImages = images.length >= 5 
@@ -49,6 +51,24 @@ const ImageGallery = ({ images, title }: ImageGalleryProps) => {
   } else if (emblaApi) {
     emblaApi.on("select", () => setCurrentSlide(emblaApi.selectedScrollSnap()));
   }
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsModalOpen(false);
+      } else if (e.key === "ArrowLeft" && currentImageIndex > 0) {
+        setCurrentImageIndex(currentImageIndex - 1);
+      } else if (e.key === "ArrowRight" && currentImageIndex < images.length - 1) {
+        setCurrentImageIndex(currentImageIndex + 1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen, currentImageIndex, images.length]);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-0 md:px-12 lg:px-20 pt-0 md:pt-6">
@@ -168,12 +188,75 @@ const ImageGallery = ({ images, title }: ImageGalleryProps) => {
             />
             
             {/* Show All Photos Button */}
-            <button className="absolute bottom-3 right-3 px-4 py-2 rounded-lg bg-background/90 backdrop-blur-sm text-foreground text-sm font-medium hover:bg-background transition-colors border border-border/50">
+            <button
+              onClick={() => {
+                setCurrentImageIndex(0);
+                setIsModalOpen(true);
+              }}
+              className="absolute bottom-3 right-3 px-4 py-2 rounded-lg bg-background/90 backdrop-blur-sm text-foreground text-sm font-medium hover:bg-background transition-colors border border-border/50"
+            >
               Show all photos
             </button>
           </div>
         </div>
       </div>
+
+      {/* Full Screen Photo Lightbox */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+          onClick={() => setIsModalOpen(false)}
+        >
+          {/* Close Button */}
+          <button
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-6 left-6 p-2 rounded-full bg-transparent hover:bg-white/10 transition-colors z-50"
+          >
+            <X className="h-7 w-7 text-white" />
+          </button>
+
+          {/* Image Counter */}
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 text-white text-sm font-medium z-50">
+            {currentImageIndex + 1} / {images.length}
+          </div>
+
+          {/* Main Image */}
+          <div className="relative w-full h-full flex items-center justify-center p-20">
+            <img
+              src={images[currentImageIndex]}
+              alt={`${title} - View ${currentImageIndex + 1}`}
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          {/* Previous Button */}
+          {currentImageIndex > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentImageIndex(currentImageIndex - 1);
+              }}
+              className="absolute left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/90 hover:bg-white transition-colors z-50"
+            >
+              <ChevronLeft className="h-6 w-6 text-black" />
+            </button>
+          )}
+
+          {/* Next Button */}
+          {currentImageIndex < images.length - 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentImageIndex(currentImageIndex + 1);
+              }}
+              className="absolute right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/90 hover:bg-white transition-colors z-50"
+            >
+              <ChevronRight className="h-6 w-6 text-black" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

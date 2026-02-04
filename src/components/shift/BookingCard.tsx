@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { differenceInDays, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useTrip } from "@/context/TripContext";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, BookingRequestInput, BookingVilla, BookingCar, BookingYacht } from "@/context/AuthContext";
 import DateRangePicker from "./DateRangePicker";
 import AuthModal from "./AuthModal";
 import BookingConfirmation from "./BookingConfirmation";
@@ -30,17 +30,17 @@ const BookingCard = ({
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmationData, setConfirmationData] = useState<{
     requestId: string;
-    destination: string;
-    checkIn: Date;
-    checkOut: Date;
-    items: { type: string; name: string; price: number }[];
-    total: number;
+    villa: BookingVilla | null;
+    car: BookingCar | null;
+    yacht: BookingYacht | null;
+    grandTotal: number;
   } | null>(null);
 
   const isStay = listing.assetType === "Stays";
-  
+
   // Calculate duration and totals
   const duration = useMemo(() => {
     if (!currentDates.start || !currentDates.end) return 0;
@@ -74,42 +74,93 @@ const BookingCard = ({
     return `${format(yachtBooking.startDate, "MMM d")} · ${yachtBooking.startTime}–${yachtBooking.endTime}`;
   };
 
-  const handleBookingSubmit = () => {
+  const handleBookingSubmit = async () => {
     if (!currentDates.start || !currentDates.end) return;
 
-    // Build items list
-    const items: { type: string; name: string; price: number }[] = [
-      { 
-        type: listing.assetType === "Stays" ? "Stay" : listing.assetType === "Cars" ? "Car" : "Yacht", 
-        name: listing.title, 
-        price: primaryTotal 
+    setIsSubmitting(true);
+
+    try {
+      // Build villa data (for stays) or null
+      const villaData: BookingVilla | null = isStay ? {
+        name: listing.title,
+        checkIn: currentDates.start,
+        checkOut: currentDates.end,
+        price: primaryTotal,
+        pricePerNight: listing.price,
+        nights: duration,
+        location: listing.location,
+      } : null;
+
+      // Build car data if added
+      const carData: BookingCar | null = hasCarAddOn && car && carDates.pickup && carDates.dropoff ? {
+        name: car.title,
+        pickupDate: carDates.pickup,
+        dropoffDate: carDates.dropoff,
+        price: carAddOnTotal,
+        pricePerDay: car.price,
+        days: carDays,
+      } : null;
+
+      // Build yacht data if added
+      const yachtData: BookingYacht | null = hasYachtAddOn && yachtBooking.yacht && yachtBooking.startDate ? {
+        name: yachtBooking.yacht.title,
+        date: yachtBooking.startDate,
+        startTime: yachtBooking.startTime,
+        endTime: yachtBooking.endTime,
+        price: yachtTotal,
+        pricePerHour: yachtBooking.yacht.price,
+        hours: yachtHours,
+      } : null;
+
+      // For non-stay bookings (standalone car or yacht)
+      let finalVilla = villaData;
+      let finalCar = carData;
+      let finalYacht = yachtData;
+
+      if (listing.assetType === "Cars") {
+        finalCar = {
+          name: listing.title,
+          pickupDate: currentDates.start,
+          dropoffDate: currentDates.end,
+          price: primaryTotal,
+          pricePerDay: listing.price,
+          days: duration,
+        };
+      } else if (listing.assetType === "Yachts") {
+        finalYacht = {
+          name: listing.title,
+          date: currentDates.start,
+          startTime: "10:00 AM",
+          endTime: `${10 + duration}:00 PM`,
+          price: primaryTotal,
+          pricePerHour: listing.price,
+          hours: duration,
+        };
       }
-    ];
 
-    if (hasCarAddOn && car) {
-      items.push({ type: "Car", name: car.title, price: carAddOnTotal });
+      const bookingInput: BookingRequestInput = {
+        villa: finalVilla,
+        car: finalCar,
+        yacht: finalYacht,
+        grandTotal,
+      };
+
+      const requestId = await addBookingRequest(bookingInput);
+
+      setConfirmationData({
+        requestId,
+        villa: finalVilla,
+        car: finalCar,
+        yacht: finalYacht,
+        grandTotal,
+      });
+      setShowConfirmation(true);
+    } catch (error) {
+      console.error("Error creating booking:", error);
+      alert("Failed to submit booking. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-    if (hasYachtAddOn && yachtBooking.yacht) {
-      items.push({ type: "Yacht", name: yachtBooking.yacht.title, price: yachtTotal });
-    }
-
-    const requestId = addBookingRequest({
-      destination: listing.location,
-      checkIn: currentDates.start,
-      checkOut: currentDates.end,
-      items,
-      total: grandTotal,
-    });
-
-    setConfirmationData({
-      requestId,
-      destination: listing.location,
-      checkIn: currentDates.start,
-      checkOut: currentDates.end,
-      items,
-      total: grandTotal,
-    });
-    setShowConfirmation(true);
   };
 
   const handleRequestToBook = () => {
@@ -208,10 +259,10 @@ const BookingCard = ({
         <Button
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 text-base"
           size="lg"
-          disabled={!isValidBooking}
+          disabled={!isValidBooking || isSubmitting}
           onClick={handleRequestToBook}
         >
-          Request to Book
+          {isSubmitting ? "Submitting..." : "Request to Book"}
         </Button>
 
         <p className="text-xs text-muted-foreground text-center">

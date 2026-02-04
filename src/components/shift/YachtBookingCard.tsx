@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, BookingRequestInput, BookingYacht } from "@/context/AuthContext";
 import YachtDatePicker from "./YachtDatePicker";
 import AuthModal from "./AuthModal";
 import BookingConfirmation from "./BookingConfirmation";
@@ -28,13 +28,13 @@ const YachtBookingCard = ({
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmationData, setConfirmationData] = useState<{
     requestId: string;
-    destination: string;
-    checkIn: Date;
-    checkOut: Date;
-    items: { type: string; name: string; price: number }[];
-    total: number;
+    villa: null;
+    car: null;
+    yacht: BookingYacht;
+    grandTotal: number;
   } | null>(null);
 
   const total = useMemo(() => {
@@ -44,33 +44,45 @@ const YachtBookingCard = ({
 
   const isValidBooking = selectedDate && selectedHours && selectedHours > 0;
 
-  const handleBookingSubmit = () => {
+  const handleBookingSubmit = async () => {
     if (!selectedDate || !selectedHours) return;
 
-    const checkOut = new Date(selectedDate);
-    checkOut.setHours(checkOut.getHours() + selectedHours);
+    setIsSubmitting(true);
 
-    const items = [
-      { type: "Yacht", name: listing.title, price: total }
-    ];
+    try {
+      const yachtData: BookingYacht = {
+        name: listing.title,
+        date: selectedDate,
+        startTime: "10:00 AM",
+        endTime: `${10 + selectedHours}:00 PM`,
+        price: total,
+        pricePerHour: listing.price,
+        hours: selectedHours,
+      };
 
-    const requestId = addBookingRequest({
-      destination: listing.location,
-      checkIn: selectedDate,
-      checkOut,
-      items,
-      total,
-    });
+      const bookingInput: BookingRequestInput = {
+        villa: null,
+        car: null,
+        yacht: yachtData,
+        grandTotal: total,
+      };
 
-    setConfirmationData({
-      requestId,
-      destination: listing.location,
-      checkIn: selectedDate,
-      checkOut,
-      items,
-      total,
-    });
-    setShowConfirmation(true);
+      const requestId = await addBookingRequest(bookingInput);
+
+      setConfirmationData({
+        requestId,
+        villa: null,
+        car: null,
+        yacht: yachtData,
+        grandTotal: total,
+      });
+      setShowConfirmation(true);
+    } catch (error) {
+      console.error("Error creating booking:", error);
+      alert("Failed to submit booking. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleRequestToBook = () => {
@@ -133,10 +145,10 @@ const YachtBookingCard = ({
         <Button
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 text-base"
           size="lg"
-          disabled={!isValidBooking}
+          disabled={!isValidBooking || isSubmitting}
           onClick={handleRequestToBook}
         >
-          Request to Book
+          {isSubmitting ? "Submitting..." : "Request to Book"}
         </Button>
 
         <p className="text-xs text-muted-foreground text-center">

@@ -6,7 +6,17 @@ import {
   createUserWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import {
+  collection,
+  addDoc,
+  doc,
+  setDoc,
+  query,
+  where,
+  onSnapshot,
+  Timestamp,
+} from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 
 export interface UserProfile {
   firstName: string;
@@ -15,16 +25,56 @@ export interface UserProfile {
   phone: string;
 }
 
-export interface BookingRequest {
-  id: string;
-  destination: string;
+// Booking item details
+export interface BookingVilla {
+  name: string;
   checkIn: Date;
   checkOut: Date;
-  items: { type: string; name: string; price: number }[];
-  total: number;
-  status: "New" | "Contacted" | "Confirmed" | "Cancelled";
-  createdAt: Date;
+  price: number;
+  pricePerNight: number;
+  nights: number;
+  location: string;
 }
+
+export interface BookingCar {
+  name: string;
+  pickupDate: Date;
+  dropoffDate: Date;
+  price: number;
+  pricePerDay: number;
+  days: number;
+}
+
+export interface BookingYacht {
+  name: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  price: number;
+  pricePerHour: number;
+  hours: number;
+}
+
+export interface BookingRequest {
+  id: string;
+  status: "Pending" | "Contacted" | "Confirmed" | "Cancelled";
+  createdAt: Date;
+  customer: {
+    uid: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
+  villa: BookingVilla | null;
+  car: BookingCar | null;
+  yacht: BookingYacht | null;
+  grandTotal: number;
+}
+
+// Input type for creating a new booking (without auto-generated fields)
+export type BookingRequestInput = Omit<BookingRequest, "id" | "status" | "createdAt" | "customer"> & {
+  customer?: Partial<BookingRequest["customer"]>;
+};
 
 interface AuthContextType {
   user: User | null;
@@ -32,10 +82,10 @@ interface AuthContextType {
   profile: UserProfile;
   bookingRequests: BookingRequest[];
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, profileData?: Omit<UserProfile, "email">) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profile: UserProfile) => void;
-  addBookingRequest: (request: Omit<BookingRequest, "id" | "status" | "createdAt">) => string;
+  addBookingRequest: (request: BookingRequestInput) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,8 +103,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [bookingRequests, setBookingRequests] = useState<BookingRequest[]>([]);
 
+  // Load user profile from localStorage
+  const loadProfile = (uid: string, email: string) => {
+    const savedProfile = localStorage.getItem(`profile_${uid}`);
+    if (savedProfile) {
+      setProfile(JSON.parse(savedProfile));
+    } else {
+      setProfile({ ...DEFAULT_PROFILE, email });
+    }
+  };
+
+  // Subscribe to user's booking requests from Firestore
   useEffect(() => {
-    // If Firebase auth is not available, just set loading to false
+    if (!user || !db) {
+      setBookingRequests([]);
+      return;
+    }
+
+    const bookingsRef = collection(db, "bookingRequests");
+    const q = query(
+      bookingsRef,
+      where("customer.uid", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const requests: BookingRequest[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          status: data.status,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          customer: data.customer,
+          villa: data.villa ? {
+            ...data.villa,
+            checkIn: data.villa.checkIn?.toDate() || new Date(),
+            checkOut: data.villa.checkOut?.toDate() || new Date(),
+          } : null,
+          car: data.car ? {
+            ...data.car,
+            pickupDate: data.car.pickupDate?.toDate() || new Date(),
+            dropoffDate: data.car.dropoffDate?.toDate() || new Date(),
+          } : null,
+          yacht: data.yacht ? {
+            ...data.yacht,
+            date: data.yacht.date?.toDate() || new Date(),
+          } : null,
+          grandTotal: data.grandTotal,
+        };
+      });
+      // Sort client-side to avoid needing a composite index
+      requests.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      setBookingRequests(requests);
+    }, (error) => {
+      console.error("Error fetching bookings:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
     if (!auth) {
       setLoading(false);
       return;
@@ -63,26 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       if (user) {
-        // Load profile from localStorage (mock)
-        const savedProfile = localStorage.getItem(`profile_${user.uid}`);
-        if (savedProfile) {
-          setProfile(JSON.parse(savedProfile));
-        } else {
-          setProfile({ ...DEFAULT_PROFILE, email: user.email || "" });
-        }
-        // Load booking requests
-        const savedRequests = localStorage.getItem(`bookings_${user.uid}`);
-        if (savedRequests) {
-          const parsed = JSON.parse(savedRequests);
-          setBookingRequests(
-            parsed.map((r: BookingRequest) => ({
-              ...r,
-              checkIn: new Date(r.checkIn),
-              checkOut: new Date(r.checkOut),
-              createdAt: new Date(r.createdAt),
-            }))
-          );
-        }
+        loadProfile(user.uid, user.email || "");
       } else {
         setProfile(DEFAULT_PROFILE);
         setBookingRequests([]);
@@ -98,9 +186,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, profileData?: Omit<UserProfile, "email">) => {
     if (!auth) throw new Error("Firebase is not configured");
-    await createUserWithEmailAndPassword(auth, email, password);
+    if (!db) throw new Error("Firestore is not configured");
+
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+    if (userCredential.user) {
+      const newProfile: UserProfile = {
+        firstName: profileData?.firstName || "",
+        lastName: profileData?.lastName || "",
+        phone: profileData?.phone || "",
+        email: email,
+      };
+
+      // Save to localStorage
+      localStorage.setItem(`profile_${userCredential.user.uid}`, JSON.stringify(newProfile));
+      setProfile(newProfile);
+
+      // Create user document in Firestore
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        firstName: newProfile.firstName,
+        lastName: newProfile.lastName,
+        email: newProfile.email,
+        phone: newProfile.phone,
+        role: "customer", // Default role for new signups
+        createdAt: Timestamp.now(),
+      });
+    }
   };
 
   const logout = async () => {
@@ -115,19 +228,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addBookingRequest = (request: Omit<BookingRequest, "id" | "status" | "createdAt">) => {
-    const newRequest: BookingRequest = {
-      ...request,
-      id: `REQ-${Date.now().toString(36).toUpperCase()}`,
-      status: "New",
-      createdAt: new Date(),
+  const addBookingRequest = async (request: BookingRequestInput): Promise<string> => {
+    if (!db) throw new Error("Firestore is not configured");
+    if (!user) throw new Error("User must be logged in to create a booking");
+
+    // Build the document with Firestore Timestamps
+    const bookingDoc = {
+      status: "Pending" as const,
+      createdAt: Timestamp.now(),
+      customer: {
+        uid: user.uid,
+        name: `${profile.firstName} ${profile.lastName}`.trim() || "Guest",
+        email: profile.email || user.email || "",
+        phone: profile.phone || "",
+      },
+      villa: request.villa ? {
+        name: request.villa.name,
+        checkIn: Timestamp.fromDate(request.villa.checkIn),
+        checkOut: Timestamp.fromDate(request.villa.checkOut),
+        price: request.villa.price,
+        pricePerNight: request.villa.pricePerNight,
+        nights: request.villa.nights,
+        location: request.villa.location,
+      } : null,
+      car: request.car ? {
+        name: request.car.name,
+        pickupDate: Timestamp.fromDate(request.car.pickupDate),
+        dropoffDate: Timestamp.fromDate(request.car.dropoffDate),
+        price: request.car.price,
+        pricePerDay: request.car.pricePerDay,
+        days: request.car.days,
+      } : null,
+      yacht: request.yacht ? {
+        name: request.yacht.name,
+        date: Timestamp.fromDate(request.yacht.date),
+        startTime: request.yacht.startTime,
+        endTime: request.yacht.endTime,
+        price: request.yacht.price,
+        pricePerHour: request.yacht.pricePerHour,
+        hours: request.yacht.hours,
+      } : null,
+      grandTotal: request.grandTotal,
     };
-    const updated = [...bookingRequests, newRequest];
-    setBookingRequests(updated);
-    if (user) {
-      localStorage.setItem(`bookings_${user.uid}`, JSON.stringify(updated));
-    }
-    return newRequest.id;
+
+    const docRef = await addDoc(collection(db, "bookingRequests"), bookingDoc);
+    return docRef.id;
   };
 
   return (

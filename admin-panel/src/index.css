@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0a0a0a;
+  color: #fff;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #141414;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Google Places Autocomplete Styling */
+.pac-container {
+  background-color: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  border-radius: 8px !important;
+  margin-top: 4px !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+.pac-item {
+  background-color: #1a1a1a !important;
+  border-top: 1px solid #333 !important;
+  color: #fff !important;
+  padding: 10px 12px !important;
+  cursor: pointer !important;
+}
+
+.pac-item:hover {
+  background-color: #262626 !important;
+}
+
+.pac-item-selected {
+  background-color: #2a2a2a !important;
+}
+
+.pac-item-query {
+  color: #fff !important;
+  font-size: 14px !important;
+}
+
+.pac-matched {
+  color: #00d9ff !important;
+  font-weight: 600 !important;
+}
+
+.pac-icon {
+  display: none !important;
+}
+
+.pac-item:first-child {
+  border-top: none !important;
+}

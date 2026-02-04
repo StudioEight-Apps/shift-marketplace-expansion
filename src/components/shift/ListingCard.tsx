@@ -1,4 +1,3 @@
-import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type AssetType = "Stays" | "Cars" | "Yachts";
@@ -27,9 +26,10 @@ interface ListingCardProps {
   listing: Listing;
   className?: string;
   onClick?: () => void;
+  compact?: boolean;
 }
 
-const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
+const ListingCard = ({ listing, className, onClick, compact = false }: ListingCardProps) => {
   // Get price display based on asset type
   const getPriceDisplay = () => {
     const assetType = listing.assetType || "Villas";
@@ -69,8 +69,50 @@ const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
   const priceDisplay = getPriceDisplay();
   const specChips = getSpecChips();
 
+  // Compact mode for mobile filtered results
+  if (compact) {
+    return (
+      <div
+        className={cn(
+          "group relative overflow-hidden bg-card cursor-pointer transition-all duration-300 ease-out",
+          "rounded-xl shadow-card hover:shadow-elevated",
+          className
+        )}
+        onClick={onClick}
+      >
+        {/* Image - Square aspect for compact */}
+        <div className="relative aspect-square overflow-hidden rounded-t-xl">
+          <img
+            src={listing.image}
+            alt={listing.title}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          {listing.badges.length > 0 && (
+            <span className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[9px] font-medium bg-white text-black shadow-sm">
+              {listing.badges[0]}
+            </span>
+          )}
+        </div>
+
+        {/* Compact Content */}
+        <div className="p-2.5">
+          <h3 className="text-[12px] font-semibold text-foreground leading-tight line-clamp-1">
+            {listing.title}
+          </h3>
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-[11px] text-muted-foreground line-clamp-1">{listing.location}</span>
+          </div>
+          <div className="mt-1">
+            <span className="text-[12px] font-semibold text-foreground">${priceDisplay.price}</span>
+            <span className="text-[9px] text-muted-foreground ml-0.5">{priceDisplay.unit}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div 
+    <div
       className={cn(
         "group relative overflow-hidden bg-card cursor-pointer transition-all duration-300 ease-out",
         "rounded-[14px] shadow-card hover:shadow-elevated hover:bg-card-hover",
@@ -86,24 +128,24 @@ const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
           alt={listing.title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        
+
         {/* Top Badge - Single badge, subdued styling */}
         {listing.badges.length > 0 && (
           <span
             className={cn(
               "absolute left-2.5 top-2.5 rounded-full px-2 py-0.5 text-[9px] font-medium",
               "bg-black/50 backdrop-blur-md border border-white/10",
-              listing.badges[0] === "Guest Favorite" 
-                ? "text-primary/90" 
+              listing.badges[0] === "Guest Favorite"
+                ? "text-primary/90"
                 : "text-white/70"
             )}
           >
             {listing.badges[0]}
           </span>
         )}
-        
+
       </div>
-      
+
       {/* Content - Refined spacing */}
       <div className="p-3.5">
         {/* Title and Price Row */}
@@ -116,22 +158,17 @@ const ListingCard = ({ listing, className, onClick }: ListingCardProps) => {
             <span className="text-[9px] text-muted-foreground ml-0.5">{priceDisplay.unit}</span>
           </div>
         </div>
-        
-        {/* Location and Rating - Muted hierarchy */}
-        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+
+        {/* Location */}
+        <div className="mt-1.5 text-[11px] text-muted-foreground">
           <span>{listing.location}</span>
-          <span className="opacity-40">•</span>
-          <span className="flex items-center gap-0.5">
-            <Star className="h-2.5 w-2.5 fill-current text-muted-foreground" />
-            {listing.rating}
-          </span>
         </div>
-        
+
         {/* Essential Spec Pills - Max 2, subdued */}
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {specChips.slice(0, 2).map((spec, index) => (
-            <span 
-              key={index} 
+            <span
+              key={index}
               className="rounded-full bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 text-[9px] text-muted-foreground"
             >
               {spec}

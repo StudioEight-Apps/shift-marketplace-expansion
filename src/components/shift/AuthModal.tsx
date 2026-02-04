@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
@@ -14,18 +14,43 @@ interface AuthModalProps {
 
 const emailSchema = z.string().trim().email("Invalid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const nameSchema = z.string().trim().min(1, "This field is required");
+const phoneSchema = z.string().trim().min(10, "Please enter a valid phone number");
 
 const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthModalProps) => {
   const [activeTab, setActiveTab] = useState<"login" | "signup">(defaultTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login, signup } = useAuth();
 
   if (!isOpen) return null;
 
   const validateForm = () => {
+    // Validate signup-specific fields
+    if (activeTab === "signup") {
+      const firstNameResult = nameSchema.safeParse(firstName);
+      if (!firstNameResult.success) {
+        setError("First name is required");
+        return false;
+      }
+      const lastNameResult = nameSchema.safeParse(lastName);
+      if (!lastNameResult.success) {
+        setError("Last name is required");
+        return false;
+      }
+      const phoneResult = phoneSchema.safeParse(phone);
+      if (!phoneResult.success) {
+        setError(phoneResult.error.errors[0].message);
+        return false;
+      }
+    }
+
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) {
       setError(emailResult.error.errors[0].message);
@@ -50,7 +75,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
       if (activeTab === "login") {
         await login(email, password);
       } else {
-        await signup(email, password);
+        await signup(email, password, { firstName, lastName, phone });
       }
       onSuccess?.();
       onClose();
@@ -133,6 +158,46 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Signup-only fields */}
+          {activeTab === "signup" && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-muted-foreground mb-1.5">First Name</label>
+                  <Input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="John"
+                    className="bg-background border-border-subtle"
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-muted-foreground mb-1.5">Last Name</label>
+                  <Input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Doe"
+                    className="bg-background border-border-subtle"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-muted-foreground mb-1.5">Phone Number</label>
+                <Input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  className="bg-background border-border-subtle"
+                  disabled={loading}
+                />
+              </div>
+            </>
+          )}
           <div>
             <label className="block text-sm text-muted-foreground mb-1.5">Email</label>
             <Input
@@ -146,14 +211,23 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
           </div>
           <div>
             <label className="block text-sm text-muted-foreground mb-1.5">Password</label>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="bg-background border-border-subtle"
-              disabled={loading}
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="bg-background border-border-subtle pr-10"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (
