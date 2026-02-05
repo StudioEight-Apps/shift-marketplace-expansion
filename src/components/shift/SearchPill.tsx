@@ -116,7 +116,7 @@ const SearchPill = ({
               </span>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-56 p-2 bg-card border-border-subtle" align="start" side="bottom">
+          <PopoverContent className="w-56 p-2 bg-card border-border-subtle" align="start" side="bottom" avoidCollisions={false} collisionPadding={0}>
             <div className="space-y-1">
               {cities.map((city) => (
                 <button
@@ -150,7 +150,7 @@ const SearchPill = ({
               </span>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-card border-border-subtle mx-4" align="center" side="bottom" sideOffset={8}>
+          <PopoverContent className="w-auto p-0 bg-card border-border-subtle mx-4" align="center" side="bottom" sideOffset={8} avoidCollisions={false} collisionPadding={0}>
             <div className="p-3 pb-0">
               <p className="text-xs text-muted-foreground mb-2 text-center">
                 {selectedCity 

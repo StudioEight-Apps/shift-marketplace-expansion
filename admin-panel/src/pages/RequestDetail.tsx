@@ -3,17 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { doc, onSnapshot, updateDoc, Timestamp, arrayUnion } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { format } from "date-fns";
-import { ArrowLeft, Mail, Phone, Home, Car, Ship, Plus, Clock, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Home, Car, Ship, Plus, Clock, Check, X, AlertCircle, RotateCcw } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/context/AuthContext";
-import {
-  LineItemStatus,
-  lineItemStatusLabels,
-  lineItemStatusOptions,
-  lineItemStatusColors,
-  deriveTripStatus,
-  tripStatusColors,
-} from "@/lib/bookingStatus";
+import { ItemStatus, deriveBookingStatus, bookingStatusColors, itemStatusColors } from "@/lib/bookingStatus";
 import { updateVilla, updateCar, updateYacht } from "@/lib/listings";
 
 interface ActivityLogEntry {
@@ -25,7 +18,6 @@ interface ActivityLogEntry {
 
 interface BookingRequest {
   id: string;
-  status: string;
   createdAt: Date;
   updatedAt?: Date;
   customer: {
@@ -43,7 +35,7 @@ interface BookingRequest {
     pricePerNight: number;
     price: number;
     location: string;
-    status?: LineItemStatus;
+    status?: ItemStatus;
   } | null;
   car: {
     id?: string;
@@ -53,7 +45,7 @@ interface BookingRequest {
     days: number;
     pricePerDay: number;
     price: number;
-    status?: LineItemStatus;
+    status?: ItemStatus;
   } | null;
   yacht: {
     id?: string;
@@ -64,13 +56,11 @@ interface BookingRequest {
     hours: number;
     pricePerHour: number;
     price: number;
-    status?: LineItemStatus;
+    status?: ItemStatus;
   } | null;
   grandTotal: number;
   notes?: { text: string; author: string; timestamp: Date }[];
   activityLog?: ActivityLogEntry[];
-  readyToCollect?: boolean;
-  paymentCollected?: boolean;
 }
 
 const RequestDetail = () => {
@@ -93,7 +83,6 @@ const RequestDetail = () => {
           const data = docSnap.data();
           setBooking({
             id: docSnap.id,
-            status: data.status || "Pending",
             createdAt: data.createdAt?.toDate() || new Date(),
             updatedAt: data.updatedAt?.toDate(),
             customer: data.customer,
@@ -102,7 +91,7 @@ const RequestDetail = () => {
                   ...data.villa,
                   checkIn: data.villa.checkIn?.toDate() || new Date(),
                   checkOut: data.villa.checkOut?.toDate() || new Date(),
-                  status: data.villa.status || "Unverified",
+                  status: data.villa.status || "Pending",
                 }
               : null,
             car: data.car
@@ -110,14 +99,14 @@ const RequestDetail = () => {
                   ...data.car,
                   pickupDate: data.car.pickupDate?.toDate() || new Date(),
                   dropoffDate: data.car.dropoffDate?.toDate() || new Date(),
-                  status: data.car.status || "Unverified",
+                  status: data.car.status || "Pending",
                 }
               : null,
             yacht: data.yacht
               ? {
                   ...data.yacht,
                   date: data.yacht.date?.toDate() || new Date(),
-                  status: data.yacht.status || "Unverified",
+                  status: data.yacht.status || "Pending",
                 }
               : null,
             grandTotal: data.grandTotal,
@@ -133,8 +122,6 @@ const RequestDetail = () => {
                   timestamp: a.timestamp?.toDate() || new Date(),
                 })
               ) || [],
-            readyToCollect: data.readyToCollect || false,
-            paymentCollected: data.paymentCollected || false,
           });
           setError(null);
         } else {
@@ -153,14 +140,13 @@ const RequestDetail = () => {
   }, [id]);
 
   // Log activity with atomic update
-  const logActivity = async (action: string, details?: string) => {
+  const logActivity = async (action: string) => {
     if (!id) return;
 
     const activity = {
       action,
       actor: user?.email || "Admin",
       timestamp: Timestamp.now(),
-      details,
     };
 
     await updateDoc(doc(db, "bookingRequests", id), {
@@ -180,101 +166,72 @@ const RequestDetail = () => {
     return dates;
   };
 
-  // Update line item status and block calendar if Booked
-  const updateLineItemStatus = async (itemType: "villa" | "car" | "yacht", newStatus: LineItemStatus) => {
+  // Approve an item - sets status to Approved and blocks calendar dates
+  const approveItem = async (itemType: "villa" | "car" | "yacht") => {
     if (!id || !booking) return;
     setSaving(true);
     try {
       const currentItem = booking[itemType];
-      const oldStatus = currentItem?.status || "Unverified";
 
       // Update the booking document
       await updateDoc(doc(db, "bookingRequests", id), {
-        [`${itemType}.status`]: newStatus,
+        [`${itemType}.status`]: "Approved",
         updatedAt: Timestamp.now(),
       });
 
-      // If status changed to "Booked", block the dates on the inventory item
-      if (newStatus === "Booked" && currentItem?.id) {
+      // Block the dates on the inventory item
+      if (currentItem?.id) {
         let datesToBlock: string[] = [];
 
         if (itemType === "villa" && booking.villa) {
           datesToBlock = getDateRange(booking.villa.checkIn, booking.villa.checkOut);
-          await updateVilla(currentItem.id, {
-            blockedDates: datesToBlock,
-          });
+          await updateVilla(currentItem.id, { blockedDates: datesToBlock });
         } else if (itemType === "car" && booking.car) {
           datesToBlock = getDateRange(booking.car.pickupDate, booking.car.dropoffDate);
-          await updateCar(currentItem.id, {
-            blockedDates: datesToBlock,
-          });
+          await updateCar(currentItem.id, { blockedDates: datesToBlock });
         } else if (itemType === "yacht" && booking.yacht) {
           datesToBlock = [format(booking.yacht.date, "yyyy-MM-dd")];
-          await updateYacht(currentItem.id, {
-            blockedDates: datesToBlock,
-          });
+          await updateYacht(currentItem.id, { blockedDates: datesToBlock });
         }
       }
 
-      await logActivity(
-        `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} status: ${lineItemStatusLabels[oldStatus]} → ${lineItemStatusLabels[newStatus]}`
-      );
+      await logActivity(`Approved ${itemType}`);
     } catch (error) {
-      console.error("Error updating status:", error);
+      console.error("Error approving item:", error);
     }
     setSaving(false);
   };
 
-  const updatePaymentFlag = async (field: "readyToCollect" | "paymentCollected", value: boolean) => {
-    if (!id) return;
-    setSaving(true);
-    try {
-      await updateDoc(doc(db, "bookingRequests", id), {
-        [field]: value,
-        updatedAt: Timestamp.now(),
-      });
-
-      const actionText =
-        field === "readyToCollect"
-          ? value
-            ? "Marked ready to collect payment"
-            : "Removed ready to collect flag"
-          : value
-            ? "Payment collected"
-            : "Payment collection removed";
-      await logActivity(actionText);
-    } catch (error) {
-      console.error("Error updating payment flag:", error);
-    }
-    setSaving(false);
-  };
-
-  const markBookingClosed = async () => {
+  // Decline an item
+  const declineItem = async (itemType: "villa" | "car" | "yacht") => {
     if (!id || !booking) return;
     setSaving(true);
     try {
       await updateDoc(doc(db, "bookingRequests", id), {
-        status: "Completed",
+        [`${itemType}.status`]: "Declined",
         updatedAt: Timestamp.now(),
       });
-      await logActivity("Trip closed by admin");
+
+      await logActivity(`Declined ${itemType}`);
     } catch (error) {
-      console.error("Error closing booking:", error);
+      console.error("Error declining item:", error);
     }
     setSaving(false);
   };
 
-  const markBookingCancelled = async () => {
+  // Undo a decision - set back to Pending
+  const undoDecision = async (itemType: "villa" | "car" | "yacht") => {
     if (!id || !booking) return;
     setSaving(true);
     try {
       await updateDoc(doc(db, "bookingRequests", id), {
-        status: "Cancelled",
+        [`${itemType}.status`]: "Pending",
         updatedAt: Timestamp.now(),
       });
-      await logActivity("Trip cancelled by admin");
+
+      await logActivity(`Reset ${itemType} to pending`);
     } catch (error) {
-      console.error("Error cancelling booking:", error);
+      console.error("Error undoing decision:", error);
     }
     setSaving(false);
   };
@@ -316,27 +273,97 @@ const RequestDetail = () => {
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 flex flex-col items-center gap-4">
             <AlertCircle className="h-12 w-12 text-red-400" />
             <p className="text-red-400 text-lg">{error || "Booking not found"}</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate("/")}
-                className="px-4 py-2 bg-gray-500/20 text-gray-300 rounded-lg hover:bg-gray-500/30"
-              >
-                Back to Bookings
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary/90"
-              >
-                Retry
-              </button>
-            </div>
+            <button
+              onClick={() => navigate("/")}
+              className="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary/90"
+            >
+              Back to Bookings
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  const tripStatus = deriveTripStatus(booking);
+  const overallStatus = deriveBookingStatus(booking);
+
+  // Item card component for villa/car/yacht
+  const ItemCard = ({
+    type,
+    icon: Icon,
+    iconColor,
+    name,
+    details,
+    price,
+    status,
+  }: {
+    type: "villa" | "car" | "yacht";
+    icon: typeof Home;
+    iconColor: string;
+    name: string;
+    details: React.ReactNode;
+    price: number;
+    status: ItemStatus;
+  }) => (
+    <div className="bg-card border border-border rounded-xl p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${iconColor}`}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-white font-semibold">{name}</h3>
+            <p className="text-gray-400 text-sm capitalize">{type}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-white font-semibold">${price.toLocaleString()}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-sm mb-4">{details}</div>
+
+      {/* Action buttons or status display */}
+      <div className="pt-4 border-t border-border">
+        {status === "Pending" ? (
+          <div className="flex gap-3">
+            <button
+              onClick={() => approveItem(type)}
+              disabled={saving}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              <Check className="h-4 w-4" />
+              Approve
+            </button>
+            <button
+              onClick={() => declineItem(type)}
+              disabled={saving}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              <X className="h-4 w-4" />
+              Decline
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${itemStatusColors[status]}`}>
+              {status === "Approved" && <Check className="h-4 w-4" />}
+              {status === "Declined" && <X className="h-4 w-4" />}
+              {status}
+            </div>
+            <button
+              onClick={() => undoDecision(type)}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-gray-400 hover:text-white text-sm transition-colors disabled:opacity-50"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Undo
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -353,7 +380,7 @@ const RequestDetail = () => {
         </button>
 
         <div className="grid grid-cols-3 gap-6">
-          {/* Left column */}
+          {/* Left column - 2/3 width */}
           <div className="col-span-2 space-y-6">
             {/* Customer Info */}
             <div className="bg-card border border-border rounded-xl p-6">
@@ -374,166 +401,95 @@ const RequestDetail = () => {
                   <Phone className="h-4 w-4" />
                   {booking.customer.phone || "No phone"}
                 </a>
-                {booking.customer.uid && (
-                  <button
-                    onClick={() => navigate(`/users/${booking.customer.uid}`)}
-                    className="text-sm text-gray-400 hover:text-primary transition-colors"
-                  >
-                    View full profile →
-                  </button>
-                )}
               </div>
             </div>
 
-            {/* Line Items with Status Management */}
+            {/* Villa */}
             {booking.villa && (
-              <div className="bg-card border border-border rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Home className="h-5 w-5 text-blue-400" />
-                    <h2 className="text-lg font-semibold text-white">Villa</h2>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-400 text-sm">Availability:</span>
-                    <select
-                      value={booking.villa.status || "Unverified"}
-                      onChange={(e) => updateLineItemStatus("villa", e.target.value as LineItemStatus)}
-                      disabled={saving}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium border focus:outline-none ${lineItemStatusColors[booking.villa.status || "Unverified"]}`}
-                    >
-                      {lineItemStatusOptions.map((status) => (
-                        <option key={status} value={status}>
-                          {lineItemStatusLabels[status]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-400">Property</p>
-                    <p className="text-white font-medium">{booking.villa.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Location</p>
-                    <p className="text-white">{booking.villa.location}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Check-in</p>
-                    <p className="text-white">{format(booking.villa.checkIn, "MMM d, yyyy")}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Check-out</p>
-                    <p className="text-white">{format(booking.villa.checkOut, "MMM d, yyyy")}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Duration</p>
-                    <p className="text-white">{booking.villa.nights} nights</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Subtotal</p>
-                    <p className="text-white font-medium">${booking.villa.price.toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
+              <ItemCard
+                type="villa"
+                icon={Home}
+                iconColor="bg-blue-500/20 text-blue-400"
+                name={booking.villa.name}
+                price={booking.villa.price}
+                status={booking.villa.status || "Pending"}
+                details={
+                  <>
+                    <div>
+                      <p className="text-gray-400">Location</p>
+                      <p className="text-white">{booking.villa.location}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Duration</p>
+                      <p className="text-white">{booking.villa.nights} nights</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Check-in</p>
+                      <p className="text-white">{format(booking.villa.checkIn, "MMM d, yyyy")}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Check-out</p>
+                      <p className="text-white">{format(booking.villa.checkOut, "MMM d, yyyy")}</p>
+                    </div>
+                  </>
+                }
+              />
             )}
 
+            {/* Car */}
             {booking.car && (
-              <div className="bg-card border border-border rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Car className="h-5 w-5 text-purple-400" />
-                    <h2 className="text-lg font-semibold text-white">Car</h2>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-400 text-sm">Availability:</span>
-                    <select
-                      value={booking.car.status || "Unverified"}
-                      onChange={(e) => updateLineItemStatus("car", e.target.value as LineItemStatus)}
-                      disabled={saving}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium border focus:outline-none ${lineItemStatusColors[booking.car.status || "Unverified"]}`}
-                    >
-                      {lineItemStatusOptions.map((status) => (
-                        <option key={status} value={status}>
-                          {lineItemStatusLabels[status]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-400">Vehicle</p>
-                    <p className="text-white font-medium">{booking.car.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Pick-up</p>
-                    <p className="text-white">{format(booking.car.pickupDate, "MMM d, yyyy")}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Drop-off</p>
-                    <p className="text-white">{format(booking.car.dropoffDate, "MMM d, yyyy")}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Duration</p>
-                    <p className="text-white">{booking.car.days} days</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Subtotal</p>
-                    <p className="text-white font-medium">${booking.car.price.toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
+              <ItemCard
+                type="car"
+                icon={Car}
+                iconColor="bg-purple-500/20 text-purple-400"
+                name={booking.car.name}
+                price={booking.car.price}
+                status={booking.car.status || "Pending"}
+                details={
+                  <>
+                    <div>
+                      <p className="text-gray-400">Pick-up</p>
+                      <p className="text-white">{format(booking.car.pickupDate, "MMM d, yyyy")}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Drop-off</p>
+                      <p className="text-white">{format(booking.car.dropoffDate, "MMM d, yyyy")}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Duration</p>
+                      <p className="text-white">{booking.car.days} days</p>
+                    </div>
+                  </>
+                }
+              />
             )}
 
+            {/* Yacht */}
             {booking.yacht && (
-              <div className="bg-card border border-border rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Ship className="h-5 w-5 text-cyan-400" />
-                    <h2 className="text-lg font-semibold text-white">Yacht</h2>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-400 text-sm">Availability:</span>
-                    <select
-                      value={booking.yacht.status || "Unverified"}
-                      onChange={(e) => updateLineItemStatus("yacht", e.target.value as LineItemStatus)}
-                      disabled={saving}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium border focus:outline-none ${lineItemStatusColors[booking.yacht.status || "Unverified"]}`}
-                    >
-                      {lineItemStatusOptions.map((status) => (
-                        <option key={status} value={status}>
-                          {lineItemStatusLabels[status]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-400">Vessel</p>
-                    <p className="text-white font-medium">{booking.yacht.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Date</p>
-                    <p className="text-white">{format(booking.yacht.date, "MMM d, yyyy")}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Time</p>
-                    <p className="text-white">
-                      {booking.yacht.startTime} - {booking.yacht.endTime}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Duration</p>
-                    <p className="text-white">{booking.yacht.hours} hours</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Subtotal</p>
-                    <p className="text-white font-medium">${booking.yacht.price.toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
+              <ItemCard
+                type="yacht"
+                icon={Ship}
+                iconColor="bg-cyan-500/20 text-cyan-400"
+                name={booking.yacht.name}
+                price={booking.yacht.price}
+                status={booking.yacht.status || "Pending"}
+                details={
+                  <>
+                    <div>
+                      <p className="text-gray-400">Date</p>
+                      <p className="text-white">{format(booking.yacht.date, "MMM d, yyyy")}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Time</p>
+                      <p className="text-white">{booking.yacht.startTime} - {booking.yacht.endTime}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Duration</p>
+                      <p className="text-white">{booking.yacht.hours} hours</p>
+                    </div>
+                  </>
+                }
+              />
             )}
 
             {/* Notes */}
@@ -579,38 +535,17 @@ const RequestDetail = () => {
             </div>
           </div>
 
-          {/* Right column */}
+          {/* Right column - 1/3 width */}
           <div className="space-y-6">
-            {/* Trip Status */}
+            {/* Overall Status */}
             <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Trip Status</h2>
-              <div className={`inline-flex px-4 py-2 rounded-lg text-sm font-medium ${tripStatusColors[tripStatus]}`}>
-                {tripStatus}
+              <h2 className="text-lg font-semibold text-white mb-4">Booking Status</h2>
+              <div className={`inline-flex px-4 py-2 rounded-lg text-sm font-medium ${bookingStatusColors[overallStatus]}`}>
+                {overallStatus}
               </div>
-              <p className="text-gray-500 text-xs mt-3">Derived from item availability statuses</p>
-              <p className="text-gray-500 text-xs mt-1">
+              <p className="text-gray-500 text-xs mt-3">
                 Submitted {format(booking.createdAt, "MMM d, yyyy 'at' h:mm a")}
               </p>
-
-              {/* Manual Actions */}
-              {tripStatus !== "Closed" && (
-                <div className="mt-4 pt-4 border-t border-border space-y-2">
-                  <button
-                    onClick={markBookingClosed}
-                    disabled={saving}
-                    className="w-full px-3 py-2 bg-gray-500/20 hover:bg-gray-500/30 text-gray-300 text-sm rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    Close Trip
-                  </button>
-                  <button
-                    onClick={markBookingCancelled}
-                    disabled={saving}
-                    className="w-full px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    Cancel Trip
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Pricing */}
@@ -642,57 +577,13 @@ const RequestDetail = () => {
               </div>
             </div>
 
-            {/* Payment */}
-            <div className="bg-card border border-border rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <CreditCard className="h-5 w-5 text-gray-400" />
-                <h2 className="text-lg font-semibold text-white">Payment</h2>
-              </div>
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={booking.readyToCollect || false}
-                    onChange={(e) => updatePaymentFlag("readyToCollect", e.target.checked)}
-                    disabled={saving}
-                    className="w-4 h-4 rounded border-gray-600 text-primary focus:ring-primary bg-background"
-                  />
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-300 text-sm">Ready to Collect Payment</span>
-                    {booking.readyToCollect && <CheckCircle className="h-4 w-4 text-amber-400" />}
-                  </div>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={booking.paymentCollected || false}
-                    onChange={(e) => updatePaymentFlag("paymentCollected", e.target.checked)}
-                    disabled={saving}
-                    className="w-4 h-4 rounded border-gray-600 text-primary focus:ring-primary bg-background"
-                  />
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-300 text-sm">Payment Collected</span>
-                    {booking.paymentCollected && <CheckCircle className="h-4 w-4 text-green-400" />}
-                  </div>
-                </label>
-              </div>
-            </div>
-
             {/* Activity History */}
             <div className="bg-card border border-border rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Clock className="h-5 w-5 text-gray-400" />
-                <h2 className="text-lg font-semibold text-white">Activity History</h2>
+                <h2 className="text-lg font-semibold text-white">Activity</h2>
               </div>
               <div className="space-y-3 max-h-64 overflow-auto">
-                {/* Created entry */}
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-300">Trip request submitted</p>
-                    <p className="text-xs text-gray-500">{format(booking.createdAt, "MMM d, yyyy 'at' h:mm a")}</p>
-                  </div>
-                </div>
                 {/* Activity log entries */}
                 {booking.activityLog &&
                   booking.activityLog
@@ -709,6 +600,14 @@ const RequestDetail = () => {
                         </div>
                       </div>
                     ))}
+                {/* Created entry */}
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-gray-300">Booking submitted</p>
+                    <p className="text-xs text-gray-500">{format(booking.createdAt, "MMM d, yyyy 'at' h:mm a")}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -7,9 +7,10 @@ import { ArrowLeft, Mail, Phone, Calendar, Home, Car, Ship, ChevronDown, Chevron
 import Header from "@/components/Header";
 import { useAuth } from "@/context/AuthContext";
 import {
-  LineItemStatus,
-  deriveTripStatus,
-  tripStatusColors,
+  ItemStatus,
+  deriveBookingStatus,
+  bookingStatusColors,
+  itemStatusColors,
 } from "@/lib/bookingStatus";
 
 interface BookingRequest {
@@ -25,7 +26,7 @@ interface BookingRequest {
     nights: number;
     price: number;
     location: string;
-    status?: LineItemStatus;
+    status?: ItemStatus;
   } | null;
   car: {
     name: string;
@@ -33,7 +34,7 @@ interface BookingRequest {
     dropoffDate: Date;
     days: number;
     price: number;
-    status?: LineItemStatus;
+    status?: ItemStatus;
   } | null;
   yacht: {
     name: string;
@@ -42,7 +43,7 @@ interface BookingRequest {
     endTime: string;
     hours: number;
     price: number;
-    status?: LineItemStatus;
+    status?: ItemStatus;
   } | null;
   grandTotal: number;
   activityLog?: { action: string; actor: string; timestamp: Date }[];
@@ -72,12 +73,6 @@ interface UserInfo {
   notes?: UserNote[];
 }
 
-const lineItemStatusColors: Record<LineItemStatus, string> = {
-  Unverified: "bg-gray-500/20 text-gray-400",
-  Verified: "bg-blue-500/20 text-blue-400",
-  Booked: "bg-green-500/20 text-green-400",
-  Unavailable: "bg-red-500/20 text-red-400",
-};
 
 type TabType = "profile" | "trips" | "activity";
 
@@ -161,7 +156,7 @@ const UserDetail = () => {
                   nights: data.villa.nights || 0,
                   price: data.villa.price || 0,
                   location: data.villa.location || "",
-                  status: data.villa.status || "Unverified",
+                  status: data.villa.status || "Pending",
                 }
               : null,
             car: data.car
@@ -171,7 +166,7 @@ const UserDetail = () => {
                   dropoffDate: data.car.dropoffDate?.toDate() || new Date(),
                   days: data.car.days || 0,
                   price: data.car.price || 0,
-                  status: data.car.status || "Unverified",
+                  status: data.car.status || "Pending",
                 }
               : null,
             yacht: data.yacht
@@ -182,7 +177,7 @@ const UserDetail = () => {
                   endTime: data.yacht.endTime || "",
                   hours: data.yacht.hours || 0,
                   price: data.yacht.price || 0,
-                  status: data.yacht.status || "Unverified",
+                  status: data.yacht.status || "Pending",
                 }
               : null,
             grandTotal: data.grandTotal || 0,
@@ -510,14 +505,14 @@ const UserDetail = () => {
             ) : (
               bookings.map((booking) => {
                 const isExpanded = expandedBookings.has(booking.id);
-                const tripStatus = deriveTripStatus(booking);
-                const lineItems: { type: string; name: string; status: LineItemStatus; price: number; details: string }[] = [];
+                const bookingStatus = deriveBookingStatus(booking);
+                const lineItems: { type: string; name: string; status: ItemStatus; price: number; details: string }[] = [];
 
                 if (booking.villa) {
                   lineItems.push({
                     type: "Villa",
                     name: booking.villa.name,
-                    status: booking.villa.status || "Unverified",
+                    status: booking.villa.status || "Pending",
                     price: booking.villa.price,
                     details: `${format(booking.villa.checkIn, "MMM d")} - ${format(booking.villa.checkOut, "MMM d, yyyy")} (${booking.villa.nights} nights)`,
                   });
@@ -526,7 +521,7 @@ const UserDetail = () => {
                   lineItems.push({
                     type: "Car",
                     name: booking.car.name,
-                    status: booking.car.status || "Unverified",
+                    status: booking.car.status || "Pending",
                     price: booking.car.price,
                     details: `${format(booking.car.pickupDate, "MMM d")} - ${format(booking.car.dropoffDate, "MMM d, yyyy")} (${booking.car.days} days)`,
                   });
@@ -535,7 +530,7 @@ const UserDetail = () => {
                   lineItems.push({
                     type: "Yacht",
                     name: booking.yacht.name,
-                    status: booking.yacht.status || "Unverified",
+                    status: booking.yacht.status || "Pending",
                     price: booking.yacht.price,
                     details: `${format(booking.yacht.date, "MMM d, yyyy")} ${booking.yacht.startTime} - ${booking.yacht.endTime}`,
                   });
@@ -562,8 +557,8 @@ const UserDetail = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${tripStatusColors[tripStatus]}`}>
-                          {tripStatus}
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${bookingStatusColors[bookingStatus]}`}>
+                          {bookingStatus}
                         </span>
                         <p className="text-white font-medium">${booking.grandTotal.toLocaleString()}</p>
                         <button
@@ -596,7 +591,7 @@ const UserDetail = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
-                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${lineItemStatusColors[item.status]}`}>
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${itemStatusColors[item.status]}`}>
                                 {item.status}
                               </span>
                               <p className="text-gray-400 text-sm">${item.price.toLocaleString()}</p>

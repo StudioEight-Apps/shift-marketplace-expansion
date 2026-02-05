@@ -3,21 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { format } from "date-fns";
-import { Search, ChevronRight, AlertCircle } from "lucide-react";
+import { Search, ChevronRight, AlertCircle, Home, Car, Ship } from "lucide-react";
 import Header from "@/components/Header";
 import {
-  LineItemStatus,
-  TripStatus,
-  deriveTripStatus,
-  tripStatusColors,
+  ItemStatus,
+  BookingStatus,
+  deriveBookingStatus,
+  bookingStatusColors,
 } from "@/lib/bookingStatus";
 
 interface BookingRequest {
   id: string;
-  status: string;
   createdAt: Date;
   updatedAt?: Date;
-  paymentCollected?: boolean;
   customer: {
     uid?: string;
     name: string;
@@ -30,20 +28,20 @@ interface BookingRequest {
     checkIn?: Date;
     checkOut?: Date;
     location?: string;
-    status?: LineItemStatus;
+    status?: ItemStatus;
   } | null;
   car: {
     name: string;
     price: number;
     pickupDate?: Date;
     dropoffDate?: Date;
-    status?: LineItemStatus;
+    status?: ItemStatus;
   } | null;
   yacht: {
     name: string;
     price: number;
     date?: Date;
-    status?: LineItemStatus;
+    status?: ItemStatus;
   } | null;
   grandTotal: number;
 }
@@ -66,17 +64,15 @@ const Dashboard = () => {
           const data = doc.data();
           return {
             id: doc.id,
-            status: data.status || "Pending",
             createdAt: data.createdAt?.toDate() || new Date(),
             updatedAt: data.updatedAt?.toDate() || data.createdAt?.toDate() || new Date(),
-            paymentCollected: data.paymentCollected || false,
             customer: data.customer || { name: "Unknown", email: "", phone: "" },
             villa: data.villa
               ? {
                   ...data.villa,
                   checkIn: data.villa.checkIn?.toDate(),
                   checkOut: data.villa.checkOut?.toDate(),
-                  status: data.villa.status || "Unverified",
+                  status: data.villa.status || "Pending",
                 }
               : null,
             car: data.car
@@ -84,14 +80,14 @@ const Dashboard = () => {
                   ...data.car,
                   pickupDate: data.car.pickupDate?.toDate(),
                   dropoffDate: data.car.dropoffDate?.toDate(),
-                  status: data.car.status || "Unverified",
+                  status: data.car.status || "Pending",
                 }
               : null,
             yacht: data.yacht
               ? {
                   ...data.yacht,
                   date: data.yacht.date?.toDate(),
-                  status: data.yacht.status || "Unverified",
+                  status: data.yacht.status || "Pending",
                 }
               : null,
             grandTotal: data.grandTotal || 0,
@@ -113,8 +109,8 @@ const Dashboard = () => {
   }, []);
 
   const filteredBookings = bookings.filter((booking) => {
-    const tripStatus = deriveTripStatus(booking);
-    const matchesFilter = filter === "all" || tripStatus === filter;
+    const bookingStatus = deriveBookingStatus(booking);
+    const matchesFilter = filter === "all" || bookingStatus === filter;
     const matchesSearch =
       search === "" ||
       booking.customer.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -143,25 +139,16 @@ const Dashboard = () => {
     return "-";
   };
 
-  // Count line items
-  const getLineItemCount = (booking: BookingRequest): number => {
-    let count = 0;
-    if (booking.villa) count++;
-    if (booking.car) count++;
-    if (booking.yacht) count++;
-    return count;
-  };
-
-  // Count by trip status
-  const statusCounts: Record<TripStatus, number> = {
-    "In Review": 0,
-    "Partially Booked": 0,
-    "Fully Booked": 0,
-    "Closed": 0,
+  // Count by booking status
+  const statusCounts: Record<BookingStatus, number> = {
+    Pending: 0,
+    Approved: 0,
+    Partial: 0,
+    Declined: 0,
   };
 
   bookings.forEach((b) => {
-    const status = deriveTripStatus(b);
+    const status = deriveBookingStatus(b);
     statusCounts[status]++;
   });
 
@@ -189,10 +176,10 @@ const Dashboard = () => {
             className="px-4 py-2.5 bg-card border border-border rounded-lg text-white focus:outline-none focus:border-primary"
           >
             <option value="all">All Status</option>
-            <option value="In Review">In Review</option>
-            <option value="Partially Booked">Partially Booked</option>
-            <option value="Fully Booked">Fully Booked</option>
-            <option value="Closed">Closed</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Partial">Partial</option>
+            <option value="Declined">Declined</option>
           </select>
         </div>
 
@@ -203,20 +190,20 @@ const Dashboard = () => {
             <p className="text-2xl font-bold text-white">{bookings.length}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-gray-400 text-sm">In Review</p>
-            <p className="text-2xl font-bold text-amber-400">{statusCounts["In Review"]}</p>
+            <p className="text-gray-400 text-sm">Pending</p>
+            <p className="text-2xl font-bold text-amber-400">{statusCounts.Pending}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Partially Booked</p>
-            <p className="text-2xl font-bold text-blue-400">{statusCounts["Partially Booked"]}</p>
+            <p className="text-gray-400 text-sm">Approved</p>
+            <p className="text-2xl font-bold text-green-400">{statusCounts.Approved}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Fully Booked</p>
-            <p className="text-2xl font-bold text-green-400">{statusCounts["Fully Booked"]}</p>
+            <p className="text-gray-400 text-sm">Partial</p>
+            <p className="text-2xl font-bold text-blue-400">{statusCounts.Partial}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Closed</p>
-            <p className="text-2xl font-bold text-gray-400">{statusCounts["Closed"]}</p>
+            <p className="text-gray-400 text-sm">Declined</p>
+            <p className="text-2xl font-bold text-red-400">{statusCounts.Declined}</p>
           </div>
         </div>
 
@@ -234,79 +221,80 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Table */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Booking ID</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">User</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">City</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Dates</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Items</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Status</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Last Updated</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                    Loading bookings...
-                  </td>
-                </tr>
-              ) : filteredBookings.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                    {bookings.length === 0 ? "No bookings yet" : "No bookings match your search"}
-                  </td>
-                </tr>
-              ) : (
-                filteredBookings.map((booking) => {
-                  const tripStatus = deriveTripStatus(booking);
-                  return (
-                    <tr
-                      key={booking.id}
-                      className="border-b border-border hover:bg-white/5 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/requests/${booking.id}`)}
-                    >
-                      <td className="px-6 py-4">
-                        <span className="font-mono text-sm text-gray-300">{booking.id.slice(0, 8)}...</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="text-white font-medium">{booking.customer.name}</p>
-                          <p className="text-gray-500 text-sm">{booking.customer.email}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-400">{getBookingCity(booking)}</td>
-                      <td className="px-6 py-4 text-gray-400 text-sm">{getBookingDates(booking)}</td>
-                      <td className="px-6 py-4">
-                        <span className="px-2.5 py-1 bg-gray-500/20 text-gray-300 rounded-full text-sm">
-                          {getLineItemCount(booking)} item{getLineItemCount(booking) !== 1 ? "s" : ""}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${tripStatusColors[tripStatus]}`}>
-                          {tripStatus}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-400 text-sm">
-                        {booking.updatedAt ? format(booking.updatedAt, "MMM d, h:mm a") : "-"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-1 text-gray-400 hover:text-white">
-                          <span className="text-sm">View</span>
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+        {/* Bookings List */}
+        <div className="space-y-3">
+          {loading ? (
+            <div className="text-center py-12 text-gray-500">Loading bookings...</div>
+          ) : filteredBookings.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              {bookings.length === 0 ? "No bookings yet" : "No bookings match your search"}
+            </div>
+          ) : (
+            filteredBookings.map((booking) => {
+              const bookingStatus = deriveBookingStatus(booking);
+              return (
+                <div
+                  key={booking.id}
+                  className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 cursor-pointer transition-colors group"
+                  onClick={() => navigate(`/bookings/${booking.id}`)}
+                >
+                  <div className="flex items-center justify-between">
+                    {/* Left: Customer & Items */}
+                    <div className="flex items-center gap-6">
+                      {/* Customer */}
+                      <div className="min-w-[180px]">
+                        <p className="text-white font-medium">{booking.customer.name}</p>
+                        <p className="text-gray-500 text-sm">{booking.customer.email}</p>
+                      </div>
+
+                      {/* Items icons */}
+                      <div className="flex items-center gap-2">
+                        {booking.villa && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 rounded-lg">
+                            <Home className="h-4 w-4 text-blue-400" />
+                            <span className="text-blue-400 text-sm">Villa</span>
+                          </div>
+                        )}
+                        {booking.car && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-500/10 rounded-lg">
+                            <Car className="h-4 w-4 text-purple-400" />
+                            <span className="text-purple-400 text-sm">Car</span>
+                          </div>
+                        )}
+                        {booking.yacht && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-cyan-500/10 rounded-lg">
+                            <Ship className="h-4 w-4 text-cyan-400" />
+                            <span className="text-cyan-400 text-sm">Yacht</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Dates & City */}
+                      <div className="text-gray-400 text-sm">
+                        {getBookingDates(booking)} · {getBookingCity(booking)}
+                      </div>
+                    </div>
+
+                    {/* Right: Price, Status, Arrow */}
+                    <div className="flex items-center gap-6">
+                      {/* Price */}
+                      <div className="text-right min-w-[100px]">
+                        <p className="text-white font-semibold">${booking.grandTotal.toLocaleString()}</p>
+                      </div>
+
+                      {/* Status */}
+                      <div className={`px-3 py-1 rounded-lg text-sm font-medium min-w-[90px] text-center ${bookingStatusColors[bookingStatus]}`}>
+                        {bookingStatus}
+                      </div>
+
+                      {/* Arrow */}
+                      <ChevronRight className="h-5 w-5 text-gray-500 group-hover:text-primary transition-colors" />
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
