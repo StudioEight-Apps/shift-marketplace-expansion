@@ -17,8 +17,8 @@ interface AvailabilityCalendarProps {
 const AvailabilityCalendar = ({
   itemName,
   itemType,
-  blockedDates,
-  readOnlyCalendar,
+  blockedDates = [],
+  readOnlyCalendar = false,
   syncStatus,
   lastSyncedAt,
   onBlockDates,
@@ -41,7 +41,7 @@ const AvailabilityCalendar = ({
 
   const isDateBlocked = (date: Date): boolean => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return blockedDates.includes(dateStr);
+    return Array.isArray(blockedDates) && blockedDates.includes(dateStr);
   };
 
   const isDateSelected = (date: Date): boolean => {
@@ -79,7 +79,7 @@ const AvailabilityCalendar = ({
     setMode("view");
   };
 
-  const isReadOnly = readOnlyCalendar ?? false;
+  const isReadOnly = readOnlyCalendar;
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
