@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import shiftLogo from "@/assets/shift-logo-horizontal.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -33,7 +34,12 @@ const Login = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">Shift Admin</h1>
+          <img
+            src={shiftLogo}
+            alt="Shift Rentals"
+            className="h-12 mx-auto mb-6"
+          />
+          <h1 className="text-3xl font-bold text-primary mb-2">Admin Panel</h1>
           <p className="text-gray-400">Sign in to manage bookings</p>
         </div>
 
