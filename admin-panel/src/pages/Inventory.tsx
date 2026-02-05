@@ -491,7 +491,7 @@ const Inventory = () => {
           itemName={calendarCar.name}
           itemType="car"
           blockedDates={calendarCar.blockedDates || []}
-          source={calendarCar.source}
+          readOnlyCalendar={calendarCar.source === "api"}
           onBlockDates={(dates) => handleBlockDates("cars", calendarCar.id, calendarCar.blockedDates || [], dates)}
           onUnblockDates={(dates) => handleUnblockDates("cars", calendarCar.id, calendarCar.blockedDates || [], dates)}
           onClose={() => setCalendarCar(null)}
@@ -502,7 +502,7 @@ const Inventory = () => {
           itemName={calendarYacht.name}
           itemType="yacht"
           blockedDates={calendarYacht.blockedDates || []}
-          source={calendarYacht.source}
+          readOnlyCalendar={calendarYacht.source === "api"}
           onBlockDates={(dates) => handleBlockDates("yachts", calendarYacht.id, calendarYacht.blockedDates || [], dates)}
           onUnblockDates={(dates) => handleUnblockDates("yachts", calendarYacht.id, calendarYacht.blockedDates || [], dates)}
           onClose={() => setCalendarYacht(null)}

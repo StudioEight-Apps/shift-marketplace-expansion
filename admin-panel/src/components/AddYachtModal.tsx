@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Upload, Trash2 } from "lucide-react";
 import { Yacht, addYacht, updateYacht } from "@/lib/listings";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "@/lib/firebase";
 
 interface AddYachtModalProps {
   yacht: Yacht | null;
@@ -12,28 +14,85 @@ const AMENITIES_OPTIONS = [
   "Open Bar", "Sound System", "DJ Setup", "Tender", "Kayaks", "Paddleboards"
 ];
 
+const MARKET_OPTIONS = [
+  "Miami, FL",
+  "Los Angeles, CA",
+  "New York City, NY",
+  "Las Vegas, NV",
+  "Scottsdale, AZ",
+  "Aspen, CO",
+  "Austin, TX",
+  "Nashville, TN",
+  "The Hamptons, NY",
+  "Park City, UT"
+];
+
 const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
   const isEditing = !!yacht;
 
   const [form, setForm] = useState({
     name: yacht?.name || "",
     length: yacht?.length || 0,
-    location: yacht?.location || "Miami",
+    location: yacht?.location || "Miami, FL",
     description: yacht?.description || "",
     pricePerHour: yacht?.pricePerHour || 0,
     maxGuests: yacht?.maxGuests || 0,
     crewIncluded: yacht?.crewIncluded ?? true,
     amenities: yacht?.amenities || [],
-    imageUrl: yacht?.images[0] || "",
+    status: yacht?.status || "active" as const,
+    featured: yacht?.featured || false,
   });
 
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<string[]>(yacht?.images || []);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setPhotoFiles((prev) => [...prev, ...files]);
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingPhoto = (index: number) => {
+    setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadPhotos = async (): Promise<string[]> => {
+    if (photoFiles.length === 0) return [];
+
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+
+    try {
+      for (const file of photoFiles) {
+        const fileName = `yachts/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, fileName);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        uploadedUrls.push(url);
+      }
+    } catch (error) {
+      console.error("Error uploading photos:", error);
+      alert("Failed to upload photos");
+    } finally {
+      setUploading(false);
+    }
+
+    return uploadedUrls;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
     try {
+      const newPhotoUrls = await uploadPhotos();
+      const allImages = [...existingPhotos, ...newPhotoUrls];
+
       const yachtData = {
         name: form.name,
         length: Number(form.length),
@@ -43,13 +102,13 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
         maxGuests: Number(form.maxGuests),
         crewIncluded: form.crewIncluded,
         amenities: form.amenities,
-        images: form.imageUrl ? [form.imageUrl] : [],
+        images: allImages,
         provider: "shift_fleet",
         providerId: yacht?.providerId || `manual_${Date.now()}`,
         source: "manual" as const,
         blockedDates: yacht?.blockedDates || [],
-        status: yacht?.status || "active" as const,
-        featured: yacht?.featured || false,
+        status: form.status,
+        featured: form.featured,
       };
 
       if (isEditing) {
@@ -79,7 +138,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
-        <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex justify-between items-center">
+        <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-semibold text-white">
             {isEditing ? "Edit Yacht" : "Add New Yacht"}
           </h2>
@@ -102,18 +161,18 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
             />
           </div>
 
-          {/* Location */}
+          {/* Market/Location */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Location *</label>
+            <label className="block text-sm text-gray-400 mb-1.5">Market *</label>
             <select
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
               className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
               required
             >
-              <option value="Miami">Miami</option>
-              <option value="LA">LA</option>
-              <option value="NYC">NYC</option>
+              {MARKET_OPTIONS.map((market) => (
+                <option key={market} value={market}>{market}</option>
+              ))}
             </select>
           </div>
 
@@ -197,17 +256,115 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
             </div>
           </div>
 
-          {/* Image URL */}
+          {/* Photos */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Image URL</label>
-            <input
-              type="text"
-              value={form.imageUrl}
-              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
-              placeholder="https://example.com/image.jpg"
-            />
-            <p className="text-xs text-gray-500 mt-1">Enter a direct link to an image</p>
+            <label className="block text-sm text-gray-400 mb-2">
+              Photos {(existingPhotos.length + photoFiles.length) > 0 && `(${existingPhotos.length + photoFiles.length} photos)`}
+            </label>
+
+            {/* Existing Photos */}
+            {existingPhotos.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-gray-500 mb-2">Existing Photos</p>
+                <div className="grid grid-cols-4 gap-3">
+                  {existingPhotos.map((url, index) => (
+                    <div key={url} className="relative group">
+                      <img
+                        src={url}
+                        alt={`Photo ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-border"
+                      />
+                      {index === 0 && (
+                        <div className="absolute top-1 left-1 bg-primary text-black text-xs px-2 py-0.5 rounded font-medium">
+                          Main
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeExistingPhoto(index)}
+                        className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-3 w-3 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* New Photos Preview */}
+            {photoFiles.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-gray-500 mb-2">New Photos (will upload on save)</p>
+                <div className="grid grid-cols-4 gap-3">
+                  {photoFiles.map((file, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`New ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-border"
+                      />
+                      {existingPhotos.length === 0 && index === 0 && (
+                        <div className="absolute top-1 left-1 bg-primary text-black text-xs px-2 py-0.5 rounded font-medium">
+                          Main
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-3 w-3 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upload Button */}
+            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-background border-2 border-dashed border-border rounded-lg text-gray-400 hover:text-white hover:border-primary cursor-pointer transition-colors">
+              <Upload className="h-5 w-5" />
+              <span>Click to upload photos</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePhotoSelect}
+                className="hidden"
+              />
+            </label>
+            <p className="text-xs text-gray-500 mt-1">First photo will be the main image. Upload multiple at once.</p>
+          </div>
+
+          {/* Status & Featured */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Status *</label>
+              <select
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "hidden" })}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                required
+              >
+                <option value="active">Active (Visible)</option>
+                <option value="hidden">Hidden</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Featured</label>
+              <div className="flex items-center h-full">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.featured}
+                    onChange={(e) => setForm({ ...form, featured: e.target.checked })}
+                    className="w-5 h-5 rounded border-border bg-background checked:bg-primary"
+                  />
+                  <span className="text-white">Mark as featured</span>
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}
@@ -215,16 +372,17 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 bg-background border border-border text-white rounded-lg hover:bg-white/5"
+              disabled={uploading || saving}
+              className="flex-1 py-3 bg-background border border-border text-white rounded-lg hover:bg-white/5 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={uploading || saving}
               className="flex-1 py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
-              {saving ? "Saving..." : isEditing ? "Update Yacht" : "Add Yacht"}
+              {uploading ? "Uploading Photos..." : saving ? "Saving..." : isEditing ? "Update Yacht" : "Add Yacht"}
             </button>
           </div>
         </form>

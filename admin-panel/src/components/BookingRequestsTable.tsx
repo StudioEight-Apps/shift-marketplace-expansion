@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { collection, onSnapshot, doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc, Timestamp, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { format } from "date-fns";
 
 interface BookingRequest {
   id: string;
-  status: "Pending" | "Approved" | "Denied";
+  status: "Pending" | "Approved" | "Partial" | "Declined";
   createdAt: Date;
   customer: {
     name: string;
@@ -41,7 +41,7 @@ interface BookingRequest {
 const BookingRequestsTable = () => {
   const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"All" | "Pending" | "Approved" | "Denied">("Pending");
+  const [filter, setFilter] = useState<"All" | "Pending" | "Approved" | "Partial" | "Declined">("Pending");
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -121,19 +121,37 @@ const BookingRequestsTable = () => {
     }
   };
 
-  const denyBooking = async (requestId: string) => {
+  const declineBooking = async (requestId: string) => {
     if (!db) return;
     setProcessingId(requestId);
 
     try {
       await updateDoc(doc(db, "bookingRequests", requestId), {
-        status: "Denied",
+        status: "Declined",
         reviewedAt: Timestamp.now(),
       });
-      alert("Booking denied");
+      alert("Booking declined");
     } catch (error) {
-      console.error("Error denying booking:", error);
-      alert("Failed to deny booking");
+      console.error("Error declining booking:", error);
+      alert("Failed to decline booking");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const partialApproveBooking = async (requestId: string) => {
+    if (!db) return;
+    setProcessingId(requestId);
+
+    try {
+      await updateDoc(doc(db, "bookingRequests", requestId), {
+        status: "Partial",
+        reviewedAt: Timestamp.now(),
+      });
+      alert("Booking marked as partial - some items may not be available");
+    } catch (error) {
+      console.error("Error updating booking:", error);
+      alert("Failed to update booking");
     } finally {
       setProcessingId(null);
     }
@@ -240,7 +258,9 @@ const BookingRequestsTable = () => {
         return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
       case "Approved":
         return "bg-green-500/10 text-green-500 border-green-500/20";
-      case "Denied":
+      case "Partial":
+        return "bg-orange-500/10 text-orange-500 border-orange-500/20";
+      case "Declined":
         return "bg-red-500/10 text-red-500 border-red-500/20";
       default:
         return "bg-gray-500/10 text-gray-500 border-gray-500/20";
@@ -263,7 +283,7 @@ const BookingRequestsTable = () => {
 
         {/* Filter Tabs */}
         <div className="flex gap-2">
-          {(["All", "Pending", "Approved", "Denied"] as const).map((status) => (
+          {(["All", "Pending", "Approved", "Partial", "Declined"] as const).map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -363,11 +383,18 @@ const BookingRequestsTable = () => {
                               {processingId === request.id ? "..." : "Approve"}
                             </button>
                             <button
-                              onClick={() => denyBooking(request.id)}
+                              onClick={() => partialApproveBooking(request.id)}
+                              disabled={processingId === request.id}
+                              className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Partial
+                            </button>
+                            <button
+                              onClick={() => declineBooking(request.id)}
                               disabled={processingId === request.id}
                               className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Deny
+                              Decline
                             </button>
                           </div>
                         )}
@@ -386,8 +413,5 @@ const BookingRequestsTable = () => {
     </div>
   );
 };
-
-// Missing import
-import { getDocs } from "firebase/firestore";
 
 export default BookingRequestsTable;

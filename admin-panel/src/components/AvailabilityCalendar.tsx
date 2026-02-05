@@ -114,8 +114,8 @@ const AvailabilityCalendar = ({
                 </>
               )}
             </div>
-            {lastSynced && (
-              <span className="text-xs text-gray-500">Last synced: {format(lastSynced, "MMM d, h:mm a")}</span>
+            {lastSyncedAt && (
+              <span className="text-xs text-gray-500">Last synced: {format(new Date(lastSyncedAt), "MMM d, h:mm a")}</span>
             )}
           </div>
         </div>
