@@ -77,9 +77,11 @@ const WhyShiftSection = () => {
               background: 'linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0.1) 100%)'
             }}
           />
-          {/* Top edge shadow for divider contrast */}
+          {/* Top edge fade - light mode (slate-50 fade) */}
+          <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-slate-50 via-slate-50/50 to-transparent dark:hidden" />
+          {/* Top edge shadow - dark mode */}
           <div
-            className="absolute top-0 left-0 right-0 h-16"
+            className="absolute top-0 left-0 right-0 h-16 hidden dark:block"
             style={{
               background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%)'
             }}
