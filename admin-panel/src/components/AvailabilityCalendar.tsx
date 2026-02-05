@@ -25,6 +25,9 @@ const AvailabilityCalendar = ({
   onUnblockDates,
   onClose,
 }: AvailabilityCalendarProps) => {
+  // Debug log to verify component mounts
+  console.log("AvailabilityCalendar rendering:", { itemName, itemType, blockedDates, readOnlyCalendar });
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [mode, setMode] = useState<"view" | "block" | "unblock">("view");
