@@ -6,7 +6,7 @@ interface AvailabilityCalendarProps {
   itemName: string;
   itemType: "villa" | "car" | "yacht";
   blockedDates: string[]; // Simple string array from Firestore
-  readOnlyCalendar: boolean; // true for PMS/API sources
+  readOnlyCalendar?: boolean; // true for PMS/API sources, defaults to false
   syncStatus?: "n/a" | "ok" | "stale" | "error";
   lastSyncedAt?: string | null; // ISO timestamp
   onBlockDates?: (dates: string[]) => void;
@@ -79,7 +79,7 @@ const AvailabilityCalendar = ({
     setMode("view");
   };
 
-  const isReadOnly = readOnlyCalendar;
+  const isReadOnly = readOnlyCalendar ?? false;
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
