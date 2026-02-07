@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Upload, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { X, Upload, Trash2, ChevronDown, Check } from "lucide-react";
 import { Car, addCar, updateCar } from "@/lib/listings";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
@@ -9,10 +9,33 @@ interface AddCarModalProps {
   onClose: () => void;
 }
 
-const BRAND_OPTIONS = [
-  "Lamborghini", "Ferrari", "Porsche", "McLaren", "Aston Martin",
-  "Bentley", "Rolls-Royce", "Mercedes-Benz", "BMW", "Range Rover",
-  "Maserati", "Bugatti", "Cadillac", "Lucid", "Tesla"
+interface BrandOption {
+  name: string;
+  logo: string; // Short abbreviation for the logo badge
+  country: string;
+}
+
+const BRANDS: BrandOption[] = [
+  { name: "Lamborghini", logo: "L", country: "IT" },
+  { name: "Ferrari", logo: "F", country: "IT" },
+  { name: "Porsche", logo: "P", country: "DE" },
+  { name: "McLaren", logo: "Mc", country: "UK" },
+  { name: "Aston Martin", logo: "AM", country: "UK" },
+  { name: "Bentley", logo: "B", country: "UK" },
+  { name: "Rolls-Royce", logo: "RR", country: "UK" },
+  { name: "Mercedes-Benz", logo: "MB", country: "DE" },
+  { name: "BMW", logo: "BMW", country: "DE" },
+  { name: "Range Rover", logo: "RR", country: "UK" },
+  { name: "Land Rover", logo: "LR", country: "UK" },
+  { name: "Maserati", logo: "M", country: "IT" },
+  { name: "Bugatti", logo: "Bu", country: "FR" },
+  { name: "Cadillac", logo: "C", country: "US" },
+  { name: "Lucid", logo: "Lu", country: "US" },
+  { name: "Tesla", logo: "T", country: "US" },
+  { name: "Audi", logo: "A", country: "DE" },
+  { name: "Maybach", logo: "My", country: "DE" },
+  { name: "Genesis", logo: "G", country: "KR" },
+  { name: "Lexus", logo: "Lx", country: "JP" },
 ];
 
 const BODY_STYLES = ["SUV", "Sedan", "Coupe", "Convertible", "Supercar"];
@@ -46,10 +69,32 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
     featured: car?.featured || false,
   });
 
+  const [brandOpen, setBrandOpen] = useState(false);
+  const [brandSearch, setBrandSearch] = useState("");
+  const brandDropdownRef = useRef<HTMLDivElement>(null);
+
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<string[]>(car?.images || []);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Close brand dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (brandDropdownRef.current && !brandDropdownRef.current.contains(e.target as Node)) {
+        setBrandOpen(false);
+        setBrandSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredBrands = BRANDS.filter((b) =>
+    b.name.toLowerCase().includes(brandSearch.toLowerCase())
+  );
+
+  const selectedBrand = BRANDS.find((b) => b.name === form.brand);
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -156,19 +201,84 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
 
           {/* Brand & Model */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div ref={brandDropdownRef} className="relative">
               <label className="block text-sm text-muted-foreground mb-1.5">Brand *</label>
-              <select
+              {/* Hidden input for form validation */}
+              <input
+                type="text"
                 value={form.brand}
-                onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 required
+                className="sr-only"
+                tabIndex={-1}
+                onChange={() => {}}
+              />
+              <button
+                type="button"
+                onClick={() => { setBrandOpen(!brandOpen); setBrandSearch(""); }}
+                className="w-full flex items-center justify-between px-4 py-3 bg-background border border-border rounded-lg text-foreground hover:border-primary transition-colors"
               >
-                <option value="">Select brand</option>
-                {BRAND_OPTIONS.map((brand) => (
-                  <option key={brand} value={brand}>{brand}</option>
-                ))}
-              </select>
+                <span className="flex items-center gap-2.5">
+                  {selectedBrand ? (
+                    <>
+                      <span className="flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary text-xs font-bold shrink-0">
+                        {selectedBrand.logo}
+                      </span>
+                      <span>{selectedBrand.name}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">Select brand</span>
+                  )}
+                </span>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${brandOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {brandOpen && (
+                <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+                  {/* Search */}
+                  <div className="p-2 border-b border-border">
+                    <input
+                      type="text"
+                      value={brandSearch}
+                      onChange={(e) => setBrandSearch(e.target.value)}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground text-sm focus:outline-none focus:border-primary"
+                      placeholder="Search brands..."
+                      autoFocus
+                    />
+                  </div>
+                  {/* Options */}
+                  <div className="max-h-56 overflow-y-auto">
+                    {filteredBrands.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-muted-foreground">No brands found</div>
+                    ) : (
+                      filteredBrands.map((brand) => (
+                        <button
+                          key={brand.name}
+                          type="button"
+                          onClick={() => {
+                            setForm({ ...form, brand: brand.name });
+                            setBrandOpen(false);
+                            setBrandSearch("");
+                          }}
+                          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
+                            form.brand === brand.name
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-accent/50"
+                          }`}
+                        >
+                          <span className="flex items-center justify-center w-7 h-7 rounded-md bg-secondary text-foreground text-xs font-bold shrink-0">
+                            {brand.logo}
+                          </span>
+                          <span className="flex-1 text-left">{brand.name}</span>
+                          <span className="text-xs text-muted-foreground">{brand.country}</span>
+                          {form.brand === brand.name && (
+                            <Check className="h-4 w-4 text-primary shrink-0" />
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm text-muted-foreground mb-1.5">Model *</label>
