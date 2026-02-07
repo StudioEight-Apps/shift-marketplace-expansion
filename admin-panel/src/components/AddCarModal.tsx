@@ -9,6 +9,12 @@ interface AddCarModalProps {
   onClose: () => void;
 }
 
+const BRAND_OPTIONS = [
+  "Lamborghini", "Ferrari", "Porsche", "McLaren", "Aston Martin",
+  "Bentley", "Rolls-Royce", "Mercedes-Benz", "BMW", "Range Rover",
+  "Maserati", "Bugatti", "Cadillac", "Lucid", "Tesla"
+];
+
 const BODY_STYLES = ["SUV", "Sedan", "Coupe", "Convertible", "Supercar"];
 
 const MARKET_OPTIONS = [
@@ -36,7 +42,6 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
     pricePerDay: car?.pricePerDay || 0,
     bodyStyle: car?.bodyStyle || "SUV",
     seats: car?.seats || 4,
-    power: car?.power || "",
     status: car?.status || "active" as const,
     featured: car?.featured || false,
   });
@@ -100,7 +105,6 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
         pricePerDay: Number(form.pricePerDay),
         bodyStyle: form.bodyStyle,
         seats: Number(form.seats),
-        power: form.power,
         images: allImages,
         provider: "shift_fleet",
         providerId: car?.providerId || `manual_${Date.now()}`,
@@ -129,24 +133,23 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
         <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex justify-between items-center z-10">
-          <h2 className="text-xl font-semibold text-white">
+          <h2 className="text-xl font-semibold text-foreground">
             {isEditing ? "Edit Car" : "Add New Car"}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
-            <X className="h-5 w-5 text-gray-400" />
+          <button onClick={onClose} className="p-2 hover:bg-accent rounded-lg">
+            <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Name */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Display Name *</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Display Name *</label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
-              placeholder="Lamborghini Urus"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               required
             />
           </div>
@@ -154,24 +157,26 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
           {/* Brand & Model */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Brand *</label>
-              <input
-                type="text"
+              <label className="block text-sm text-muted-foreground mb-1.5">Brand *</label>
+              <select
                 value={form.brand}
                 onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
-                placeholder="Lamborghini"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 required
-              />
+              >
+                <option value="">Select brand</option>
+                {BRAND_OPTIONS.map((brand) => (
+                  <option key={brand} value={brand}>{brand}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Model *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Model *</label>
               <input
                 type="text"
                 value={form.model}
                 onChange={(e) => setForm({ ...form, model: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
-                placeholder="Urus"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 required
               />
             </div>
@@ -179,11 +184,11 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
 
           {/* Location/Market */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Market *</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Market *</label>
             <select
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               required
             >
               {MARKET_OPTIONS.map((market) => (
@@ -194,35 +199,34 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Description</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white resize-none"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground resize-none"
               rows={3}
-              placeholder="Experience the thrill of..."
             />
           </div>
 
-          {/* Grid: Price, Body Style, Seats, Power */}
+          {/* Grid: Price, Body Style, Seats */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Price per Day *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Price per Day *</label>
               <input
                 type="number"
                 value={form.pricePerDay}
                 onChange={(e) => setForm({ ...form, pricePerDay: Number(e.target.value) })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="0"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Body Style *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Body Style *</label>
               <select
                 value={form.bodyStyle}
                 onChange={(e) => setForm({ ...form, bodyStyle: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 required
               >
                 {BODY_STYLES.map((style) => (
@@ -231,38 +235,28 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Seats *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Seats *</label>
               <input
                 type="number"
                 value={form.seats}
                 onChange={(e) => setForm({ ...form, seats: Number(e.target.value) })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="1"
                 required
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Power</label>
-              <input
-                type="text"
-                value={form.power}
-                onChange={(e) => setForm({ ...form, power: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
-                placeholder="641 HP"
               />
             </div>
           </div>
 
           {/* Photos */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">
+            <label className="block text-sm text-muted-foreground mb-2">
               Photos {(existingPhotos.length + photoFiles.length) > 0 && `(${existingPhotos.length + photoFiles.length} photos)`}
             </label>
 
             {/* Existing Photos */}
             {existingPhotos.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs text-gray-500 mb-2">Existing Photos</p>
+                <p className="text-xs text-muted-foreground mb-2">Existing Photos</p>
                 <div className="grid grid-cols-4 gap-3">
                   {existingPhotos.map((url, index) => (
                     <div key={url} className="relative group">
@@ -272,7 +266,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
                         className="w-full h-24 object-cover rounded-lg border border-border"
                       />
                       {index === 0 && (
-                        <div className="absolute top-1 left-1 bg-primary text-black text-xs px-2 py-0.5 rounded font-medium">
+                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-medium">
                           Main
                         </div>
                       )}
@@ -281,7 +275,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
                         onClick={() => removeExistingPhoto(index)}
                         className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="h-3 w-3 text-white" />
+                        <Trash2 className="h-3 w-3 text-foreground" />
                       </button>
                     </div>
                   ))}
@@ -292,7 +286,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
             {/* New Photos Preview */}
             {photoFiles.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs text-gray-500 mb-2">New Photos (will upload on save)</p>
+                <p className="text-xs text-muted-foreground mb-2">New Photos (will upload on save)</p>
                 <div className="grid grid-cols-4 gap-3">
                   {photoFiles.map((file, index) => (
                     <div key={index} className="relative group">
@@ -302,7 +296,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
                         className="w-full h-24 object-cover rounded-lg border border-border"
                       />
                       {existingPhotos.length === 0 && index === 0 && (
-                        <div className="absolute top-1 left-1 bg-primary text-black text-xs px-2 py-0.5 rounded font-medium">
+                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-medium">
                           Main
                         </div>
                       )}
@@ -311,7 +305,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
                         onClick={() => removePhoto(index)}
                         className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="h-3 w-3 text-white" />
+                        <Trash2 className="h-3 w-3 text-foreground" />
                       </button>
                     </div>
                   ))}
@@ -320,7 +314,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
             )}
 
             {/* Upload Button */}
-            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-background border-2 border-dashed border-border rounded-lg text-gray-400 hover:text-white hover:border-primary cursor-pointer transition-colors">
+            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-background border-2 border-dashed border-border rounded-lg text-muted-foreground hover:text-foreground hover:border-primary cursor-pointer transition-colors">
               <Upload className="h-5 w-5" />
               <span>Click to upload photos</span>
               <input
@@ -331,17 +325,17 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
                 className="hidden"
               />
             </label>
-            <p className="text-xs text-gray-500 mt-1">First photo will be the main image. Upload multiple at once.</p>
+            <p className="text-xs text-muted-foreground mt-1">First photo will be the main image. Upload multiple at once.</p>
           </div>
 
           {/* Status & Featured */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Status *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Status *</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "hidden" })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 required
               >
                 <option value="active">Active (Visible)</option>
@@ -349,7 +343,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Featured</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Featured</label>
               <div className="flex items-center h-full">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -358,7 +352,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
                     onChange={(e) => setForm({ ...form, featured: e.target.checked })}
                     className="w-5 h-5 rounded border-border bg-background checked:bg-primary"
                   />
-                  <span className="text-white">Mark as featured</span>
+                  <span className="text-foreground">Mark as featured</span>
                 </label>
               </div>
             </div>
@@ -370,14 +364,14 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
               type="button"
               onClick={onClose}
               disabled={uploading || saving}
-              className="flex-1 py-3 bg-background border border-border text-white rounded-lg hover:bg-white/5 disabled:opacity-50"
+              className="flex-1 py-3 bg-background border border-border text-foreground rounded-lg hover:bg-accent/50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={uploading || saving}
-              className="flex-1 py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50"
+              className="flex-1 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
               {uploading ? "Uploading Photos..." : saving ? "Saving..." : isEditing ? "Update Car" : "Add Car"}
             </button>

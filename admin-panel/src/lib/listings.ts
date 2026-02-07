@@ -70,7 +70,6 @@ export interface Car {
   pricePerDay: number;
   bodyStyle: string;
   seats: number;
-  power: string;
   images: string[];
 
   // Provider tracking
@@ -97,7 +96,7 @@ export interface Yacht {
   description: string;
   pricePerHour: number;
   maxGuests: number;
-  crewIncluded: boolean;
+  captainIncluded: boolean;
   amenities: string[];
   images: string[];
 
@@ -272,7 +271,6 @@ export const getCars = (
         pricePerDay: data.pricePerDay || 0,
         bodyStyle: data.bodyStyle || "",
         seats: data.seats || 0,
-        power: data.power || "",
         images: data.images || [],
         provider: data.provider || "shift_fleet",
         providerId: data.providerId || "",
@@ -319,7 +317,6 @@ export const getCarById = async (id: string): Promise<Car | null> => {
     pricePerDay: data.pricePerDay || 0,
     bodyStyle: data.bodyStyle || "",
     seats: data.seats || 0,
-    power: data.power || "",
     images: data.images || [],
     provider: data.provider || "shift_fleet",
     providerId: data.providerId || "",
@@ -376,7 +373,7 @@ export const getYachts = (
         description: data.description || "",
         pricePerHour: data.pricePerHour || 0,
         maxGuests: data.maxGuests || 0,
-        crewIncluded: data.crewIncluded ?? true,
+        captainIncluded: data.captainIncluded ?? data.crewIncluded ?? true,
         amenities: data.amenities || [],
         images: data.images || [],
         provider: data.provider || "shift_fleet",
@@ -422,7 +419,7 @@ export const getYachtById = async (id: string): Promise<Yacht | null> => {
     description: data.description || "",
     pricePerHour: data.pricePerHour || 0,
     maxGuests: data.maxGuests || 0,
-    crewIncluded: data.crewIncluded ?? true,
+    captainIncluded: data.captainIncluded ?? data.crewIncluded ?? true,
     amenities: data.amenities || [],
     images: data.images || [],
     provider: data.provider || "shift_fleet",

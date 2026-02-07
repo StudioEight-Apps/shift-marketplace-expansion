@@ -37,7 +37,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
     description: yacht?.description || "",
     pricePerHour: yacht?.pricePerHour || 0,
     maxGuests: yacht?.maxGuests || 0,
-    crewIncluded: yacht?.crewIncluded ?? true,
+    captainIncluded: yacht?.captainIncluded ?? (yacht as any)?.crewIncluded ?? true,
     amenities: yacht?.amenities || [],
     status: yacht?.status || "active" as const,
     featured: yacht?.featured || false,
@@ -47,6 +47,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
   const [existingPhotos, setExistingPhotos] = useState<string[]>(yacht?.images || []);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [customAmenity, setCustomAmenity] = useState("");
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -100,7 +101,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
         description: form.description,
         pricePerHour: Number(form.pricePerHour),
         maxGuests: Number(form.maxGuests),
-        crewIncluded: form.crewIncluded,
+        captainIncluded: form.captainIncluded,
         amenities: form.amenities,
         images: allImages,
         provider: "shift_fleet",
@@ -135,39 +136,62 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
     }));
   };
 
+  const addCustomAmenity = () => {
+    const trimmed = customAmenity.trim();
+    if (!trimmed) return;
+
+    const exists = form.amenities.some(a => a.toLowerCase() === trimmed.toLowerCase());
+    if (exists) {
+      alert("This amenity already exists");
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      amenities: [...prev.amenities, trimmed],
+    }));
+    setCustomAmenity("");
+  };
+
+  const removeAmenity = (amenity: string) => {
+    setForm((prev) => ({
+      ...prev,
+      amenities: prev.amenities.filter((a) => a !== amenity),
+    }));
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
         <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex justify-between items-center z-10">
-          <h2 className="text-xl font-semibold text-white">
+          <h2 className="text-xl font-semibold text-foreground">
             {isEditing ? "Edit Yacht" : "Add New Yacht"}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
-            <X className="h-5 w-5 text-gray-400" />
+          <button onClick={onClose} className="p-2 hover:bg-accent rounded-lg">
+            <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Name */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Name *</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Name *</label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
-              placeholder="Azure Horizon 85ft"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               required
             />
           </div>
 
           {/* Market/Location */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Market *</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Market *</label>
             <select
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               required
             >
               {MARKET_OPTIONS.map((market) => (
@@ -178,47 +202,46 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Description</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white resize-none"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground resize-none"
               rows={3}
-              placeholder="Luxurious yacht perfect for..."
             />
           </div>
 
           {/* Grid: Price, Length, Guests */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Price per Hour *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Price per Hour *</label>
               <input
                 type="number"
                 value={form.pricePerHour}
                 onChange={(e) => setForm({ ...form, pricePerHour: Number(e.target.value) })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="0"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Length (ft) *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Length (ft) *</label>
               <input
                 type="number"
                 value={form.length}
                 onChange={(e) => setForm({ ...form, length: Number(e.target.value) })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="0"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Max Guests *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Max Guests *</label>
               <input
                 type="number"
                 value={form.maxGuests}
                 onChange={(e) => setForm({ ...form, maxGuests: Number(e.target.value) })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="1"
                 required
               />
@@ -226,19 +249,46 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
             <div className="flex items-center gap-3 pt-6">
               <input
                 type="checkbox"
-                id="crewIncluded"
-                checked={form.crewIncluded}
-                onChange={(e) => setForm({ ...form, crewIncluded: e.target.checked })}
+                id="captainIncluded"
+                checked={form.captainIncluded}
+                onChange={(e) => setForm({ ...form, captainIncluded: e.target.checked })}
                 className="w-5 h-5 rounded border-border"
               />
-              <label htmlFor="crewIncluded" className="text-white">Crew Included</label>
+              <label htmlFor="captainIncluded" className="text-foreground">Captain Included</label>
             </div>
           </div>
 
           {/* Amenities */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Amenities</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="block text-sm text-muted-foreground mb-2">Amenities</label>
+
+            {/* Selected Amenities */}
+            {form.amenities.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-muted-foreground mb-2">Selected Amenities</p>
+                <div className="flex flex-wrap gap-2">
+                  {form.amenities.map((amenity) => (
+                    <div
+                      key={amenity}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm"
+                    >
+                      <span>{amenity}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAmenity(amenity)}
+                        className="ml-1 hover:bg-primary-foreground/10 rounded p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quick Select Amenities */}
+            <p className="text-xs text-muted-foreground mb-2">Quick Select</p>
+            <div className="flex flex-wrap gap-2 mb-3">
               {AMENITIES_OPTIONS.map((amenity) => (
                 <button
                   key={amenity}
@@ -246,26 +296,45 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
                   onClick={() => toggleAmenity(amenity)}
                   className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                     form.amenities.includes(amenity)
-                      ? "bg-primary text-black"
-                      : "bg-background border border-border text-gray-400 hover:text-white"
+                      ? "bg-muted text-muted-foreground cursor-not-allowed"
+                      : "bg-background border border-border text-muted-foreground hover:text-foreground hover:border-primary"
                   }`}
+                  disabled={form.amenities.includes(amenity)}
                 >
                   {amenity}
                 </button>
               ))}
             </div>
+
+            {/* Add Custom Amenity */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customAmenity}
+                onChange={(e) => setCustomAmenity(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomAmenity())}
+                className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-foreground text-sm"
+              />
+              <button
+                type="button"
+                onClick={addCustomAmenity}
+                className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90"
+              >
+                Add
+              </button>
+            </div>
           </div>
 
           {/* Photos */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">
+            <label className="block text-sm text-muted-foreground mb-2">
               Photos {(existingPhotos.length + photoFiles.length) > 0 && `(${existingPhotos.length + photoFiles.length} photos)`}
             </label>
 
             {/* Existing Photos */}
             {existingPhotos.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs text-gray-500 mb-2">Existing Photos</p>
+                <p className="text-xs text-muted-foreground mb-2">Existing Photos</p>
                 <div className="grid grid-cols-4 gap-3">
                   {existingPhotos.map((url, index) => (
                     <div key={url} className="relative group">
@@ -275,7 +344,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
                         className="w-full h-24 object-cover rounded-lg border border-border"
                       />
                       {index === 0 && (
-                        <div className="absolute top-1 left-1 bg-primary text-black text-xs px-2 py-0.5 rounded font-medium">
+                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-medium">
                           Main
                         </div>
                       )}
@@ -284,7 +353,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
                         onClick={() => removeExistingPhoto(index)}
                         className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="h-3 w-3 text-white" />
+                        <Trash2 className="h-3 w-3 text-foreground" />
                       </button>
                     </div>
                   ))}
@@ -295,7 +364,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
             {/* New Photos Preview */}
             {photoFiles.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs text-gray-500 mb-2">New Photos (will upload on save)</p>
+                <p className="text-xs text-muted-foreground mb-2">New Photos (will upload on save)</p>
                 <div className="grid grid-cols-4 gap-3">
                   {photoFiles.map((file, index) => (
                     <div key={index} className="relative group">
@@ -305,7 +374,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
                         className="w-full h-24 object-cover rounded-lg border border-border"
                       />
                       {existingPhotos.length === 0 && index === 0 && (
-                        <div className="absolute top-1 left-1 bg-primary text-black text-xs px-2 py-0.5 rounded font-medium">
+                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-medium">
                           Main
                         </div>
                       )}
@@ -314,7 +383,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
                         onClick={() => removePhoto(index)}
                         className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="h-3 w-3 text-white" />
+                        <Trash2 className="h-3 w-3 text-foreground" />
                       </button>
                     </div>
                   ))}
@@ -323,7 +392,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
             )}
 
             {/* Upload Button */}
-            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-background border-2 border-dashed border-border rounded-lg text-gray-400 hover:text-white hover:border-primary cursor-pointer transition-colors">
+            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-background border-2 border-dashed border-border rounded-lg text-muted-foreground hover:text-foreground hover:border-primary cursor-pointer transition-colors">
               <Upload className="h-5 w-5" />
               <span>Click to upload photos</span>
               <input
@@ -334,17 +403,17 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
                 className="hidden"
               />
             </label>
-            <p className="text-xs text-gray-500 mt-1">First photo will be the main image. Upload multiple at once.</p>
+            <p className="text-xs text-muted-foreground mt-1">First photo will be the main image. Upload multiple at once.</p>
           </div>
 
           {/* Status & Featured */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Status *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Status *</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "hidden" })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 required
               >
                 <option value="active">Active (Visible)</option>
@@ -352,7 +421,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Featured</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Featured</label>
               <div className="flex items-center h-full">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -361,7 +430,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
                     onChange={(e) => setForm({ ...form, featured: e.target.checked })}
                     className="w-5 h-5 rounded border-border bg-background checked:bg-primary"
                   />
-                  <span className="text-white">Mark as featured</span>
+                  <span className="text-foreground">Mark as featured</span>
                 </label>
               </div>
             </div>
@@ -373,14 +442,14 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
               type="button"
               onClick={onClose}
               disabled={uploading || saving}
-              className="flex-1 py-3 bg-background border border-border text-white rounded-lg hover:bg-white/5 disabled:opacity-50"
+              className="flex-1 py-3 bg-background border border-border text-foreground rounded-lg hover:bg-accent/50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={uploading || saving}
-              className="flex-1 py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50"
+              className="flex-1 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
               {uploading ? "Uploading Photos..." : saving ? "Saving..." : isEditing ? "Update Yacht" : "Add Yacht"}
             </button>
