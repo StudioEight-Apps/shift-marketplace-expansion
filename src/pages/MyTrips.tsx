@@ -6,11 +6,26 @@ import Footer from "@/components/shift/Footer";
 import { Badge } from "@/components/ui/badge";
 import { useAuth, BookingRequest } from "@/context/AuthContext";
 
-const statusColors: Record<BookingRequest["status"], string> = {
+const statusColors: Record<string, string> = {
   Pending: "bg-amber-500/20 text-amber-400 border-amber-500/30",
   Contacted: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   Confirmed: "bg-green-500/20 text-green-400 border-green-500/30",
+  Approved: "bg-green-500/20 text-green-400 border-green-500/30",
+  Completed: "bg-green-500/20 text-green-400 border-green-500/30",
+  Partial: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  Declined: "bg-red-500/20 text-red-400 border-red-500/30",
   Cancelled: "bg-red-500/20 text-red-400 border-red-500/30",
+};
+
+const statusLabels: Record<string, string> = {
+  Pending: "Pending",
+  Contacted: "Contacted",
+  Confirmed: "Confirmed",
+  Approved: "Confirmed",
+  Completed: "Confirmed",
+  Partial: "In Review",
+  Declined: "Declined",
+  Cancelled: "Cancelled",
 };
 
 const MyTrips = () => {
@@ -97,9 +112,9 @@ const MyTrips = () => {
                   </div>
                   <Badge
                     variant="outline"
-                    className={`text-xs font-medium ${statusColors[request.status]}`}
+                    className={`text-xs font-medium ${statusColors[request.status] || statusColors.Pending}`}
                   >
-                    {request.status}
+                    {statusLabels[request.status] || request.status}
                   </Badge>
                 </div>
 

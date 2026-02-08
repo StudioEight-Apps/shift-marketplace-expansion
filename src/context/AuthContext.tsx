@@ -57,7 +57,7 @@ export interface BookingYacht {
 
 export interface BookingRequest {
   id: string;
-  status: "Pending" | "Contacted" | "Confirmed" | "Cancelled";
+  status: "Pending" | "Contacted" | "Confirmed" | "Cancelled" | "Approved" | "Partial" | "Declined" | "Completed";
   createdAt: Date;
   customer: {
     uid: string;
@@ -69,6 +69,30 @@ export interface BookingRequest {
   car: BookingCar | null;
   yacht: BookingYacht | null;
   grandTotal: number;
+}
+
+/** Derive overall booking status from per-item statuses (matches admin panel logic) */
+function deriveStatus(data: any): BookingRequest["status"] {
+  const statuses: string[] = [];
+  if (data.villa) statuses.push(data.villa.status || "Pending");
+  if (data.car) statuses.push(data.car.status || "Pending");
+  if (data.yacht) statuses.push(data.yacht.status || "Pending");
+
+  // If no per-item statuses exist, fall back to top-level status
+  if (statuses.length === 0) return data.status || "Pending";
+
+  // If all items still have no per-item status field, use top-level
+  const allUndefined = [data.villa?.status, data.car?.status, data.yacht?.status]
+    .filter((s) => s !== undefined);
+  if (allUndefined.length === 0) return data.status || "Pending";
+
+  const approvedCount = statuses.filter((s) => s === "Approved").length;
+  const declinedCount = statuses.filter((s) => s === "Declined").length;
+
+  if (declinedCount === statuses.length) return "Declined";
+  if (approvedCount === statuses.length) return "Confirmed";
+  if (approvedCount > 0 && approvedCount < statuses.length) return "Partial";
+  return "Pending";
 }
 
 // Input type for creating a new booking (without auto-generated fields)
@@ -131,7 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const data = doc.data();
         return {
           id: doc.id,
-          status: data.status,
+          status: deriveStatus(data),
           createdAt: data.createdAt?.toDate() || new Date(),
           customer: data.customer,
           villa: data.villa ? {
