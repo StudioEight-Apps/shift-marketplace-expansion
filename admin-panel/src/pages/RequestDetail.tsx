@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, deleteDoc, Timestamp, arrayUnion, collection, getDocs, query, where } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, deleteDoc, Timestamp, arrayUnion, increment, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { format } from "date-fns";
 import {
@@ -274,6 +274,19 @@ const RequestDetail = () => {
       }
 
       await logActivity(`Approved ${itemType}`);
+
+      // Update customer's lifetime value
+      if (booking.customer?.uid && currentItem && "price" in currentItem) {
+        const price = currentItem.price || 0;
+        try {
+          await updateDoc(doc(db, "users", booking.customer.uid), {
+            lifetimeValue: increment(price),
+          });
+        } catch (e) {
+          console.error("Failed to update user LTV:", e);
+        }
+      }
+
       toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} approved`);
     } catch (error) {
       console.error("Error approving item:", error);
@@ -344,6 +357,18 @@ const RequestDetail = () => {
             const filtered = existing.filter((d: string) => !datesToRemove.includes(d));
             await updateYacht(listingId, { blockedDates: filtered });
           }
+        }
+      }
+
+      // If was approved, subtract from customer's lifetime value
+      if (wasApproved && booking.customer?.uid && currentItem && "price" in currentItem) {
+        const price = currentItem.price || 0;
+        try {
+          await updateDoc(doc(db, "users", booking.customer.uid), {
+            lifetimeValue: increment(-price),
+          });
+        } catch (e) {
+          console.error("Failed to update user LTV:", e);
         }
       }
 
