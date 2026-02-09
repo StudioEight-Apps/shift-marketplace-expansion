@@ -404,9 +404,67 @@ const RequestDetail = () => {
   };
 
   const handleDeleteBooking = async () => {
-    if (!id) return;
+    if (!id || !booking) return;
     setDeleting(true);
     try {
+      // Unblock dates for any approved items before deleting
+      const itemTypes: ("villa" | "car" | "yacht")[] = ["villa", "car", "yacht"];
+      for (const itemType of itemTypes) {
+        const item = booking[itemType];
+        if (!item || item.status !== "Approved") continue;
+
+        try {
+          const listingId = await resolveListingId(
+            itemType,
+            item.name,
+            "id" in item ? item.id : undefined
+          );
+
+          if (listingId) {
+            let datesToRemove: string[] = [];
+
+            if (itemType === "villa" && booking.villa) {
+              datesToRemove = getDateRange(booking.villa.checkIn, booking.villa.checkOut);
+              const villaDoc = await getVillaById(listingId);
+              const existing = villaDoc?.blockedDates || [];
+              const filtered = existing.filter((d: string) => !datesToRemove.includes(d));
+              await updateVilla(listingId, { blockedDates: filtered });
+            } else if (itemType === "car" && booking.car) {
+              datesToRemove = getDateRange(booking.car.pickupDate, booking.car.dropoffDate);
+              const carDoc = await getCarById(listingId);
+              const existing = carDoc?.blockedDates || [];
+              const filtered = existing.filter((d: string) => !datesToRemove.includes(d));
+              await updateCar(listingId, { blockedDates: filtered });
+            } else if (itemType === "yacht" && booking.yacht) {
+              datesToRemove = [format(booking.yacht.date, "yyyy-MM-dd")];
+              const yachtDoc = await getYachtById(listingId);
+              const existing = yachtDoc?.blockedDates || [];
+              const filtered = existing.filter((d: string) => !datesToRemove.includes(d));
+              await updateYacht(listingId, { blockedDates: filtered });
+            }
+          }
+        } catch (e) {
+          console.error(`Failed to unblock dates for ${itemType}:`, e);
+        }
+      }
+
+      // Subtract LTV if any items were approved
+      if (booking.customer?.uid) {
+        let approvedTotal = 0;
+        if (booking.villa?.status === "Approved") approvedTotal += booking.villa.price || 0;
+        if (booking.car?.status === "Approved") approvedTotal += booking.car.price || 0;
+        if (booking.yacht?.status === "Approved") approvedTotal += booking.yacht.price || 0;
+        if (approvedTotal > 0) {
+          try {
+            await updateDoc(doc(db, "users", booking.customer.uid), {
+              lifetimeValue: increment(-approvedTotal),
+            });
+          } catch (e) {
+            console.error("Failed to update user LTV:", e);
+          }
+        }
+      }
+
       await deleteDoc(doc(db, "bookingRequests", id));
       toast.success("Booking deleted");
       navigate("/");
