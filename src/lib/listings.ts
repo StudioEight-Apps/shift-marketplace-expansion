@@ -574,8 +574,41 @@ export const createBookingRequest = async (
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
   });
+
+  // Sync to GoHighLevel CRM (fire-and-forget — don't block the user)
+  syncToGHL({
+    bookingId: docRef.id,
+    guestName: request.guestName,
+    guestEmail: request.guestEmail,
+    guestPhone: request.guestPhone,
+    assetType: request.assetType,
+    assetName: request.assetName,
+    checkIn: request.checkIn.toISOString(),
+    checkOut: request.checkOut.toISOString(),
+    guests: request.guests,
+    hours: request.hours,
+    guestNotes: request.guestNotes,
+  }).catch((err) => console.error("GHL sync failed (non-blocking):", err));
+
   return docRef.id;
 };
+
+// ── GoHighLevel CRM sync ────────────────────────────────────────────────
+async function syncToGHL(data: Record<string, unknown>) {
+  const baseUrl = window.location.hostname === "localhost"
+    ? ""
+    : "https://adoring-ptolemy.vercel.app";
+  const res = await fetch(`${baseUrl}/api/ghl-sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GHL sync HTTP ${res.status}: ${text}`);
+  }
+  return res.json();
+}
 
 export const approveBookingRequest = async (requestId: string, adminNotes?: string) => {
   if (!db) throw new Error("Firestore not configured");
