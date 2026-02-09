@@ -64,7 +64,7 @@ export interface Car {
   id: string;
   name: string;
   brand: string;
-  model: string;
+  model?: string;
   location: string;
   description: string;
   pricePerDay: number;

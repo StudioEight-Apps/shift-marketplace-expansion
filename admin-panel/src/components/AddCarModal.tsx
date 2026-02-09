@@ -11,31 +11,30 @@ interface AddCarModalProps {
 
 interface BrandOption {
   name: string;
-  logo: string; // Short abbreviation for the logo badge
-  country: string;
+  logo: string; // URL to brand logo
 }
 
 const BRANDS: BrandOption[] = [
-  { name: "Lamborghini", logo: "L", country: "IT" },
-  { name: "Ferrari", logo: "F", country: "IT" },
-  { name: "Porsche", logo: "P", country: "DE" },
-  { name: "McLaren", logo: "Mc", country: "UK" },
-  { name: "Aston Martin", logo: "AM", country: "UK" },
-  { name: "Bentley", logo: "B", country: "UK" },
-  { name: "Rolls-Royce", logo: "RR", country: "UK" },
-  { name: "Mercedes-Benz", logo: "MB", country: "DE" },
-  { name: "BMW", logo: "BMW", country: "DE" },
-  { name: "Range Rover", logo: "RR", country: "UK" },
-  { name: "Land Rover", logo: "LR", country: "UK" },
-  { name: "Maserati", logo: "M", country: "IT" },
-  { name: "Bugatti", logo: "Bu", country: "FR" },
-  { name: "Cadillac", logo: "C", country: "US" },
-  { name: "Lucid", logo: "Lu", country: "US" },
-  { name: "Tesla", logo: "T", country: "US" },
-  { name: "Audi", logo: "A", country: "DE" },
-  { name: "Maybach", logo: "My", country: "DE" },
-  { name: "Genesis", logo: "G", country: "KR" },
-  { name: "Lexus", logo: "Lx", country: "JP" },
+  { name: "Lamborghini", logo: "https://www.carlogos.org/car-logos/lamborghini-logo.png" },
+  { name: "Ferrari", logo: "https://www.carlogos.org/car-logos/ferrari-logo.png" },
+  { name: "Porsche", logo: "https://www.carlogos.org/car-logos/porsche-logo.png" },
+  { name: "McLaren", logo: "https://www.carlogos.org/car-logos/mclaren-logo.png" },
+  { name: "Aston Martin", logo: "https://www.carlogos.org/car-logos/aston-martin-logo.png" },
+  { name: "Bentley", logo: "https://www.carlogos.org/car-logos/bentley-logo.png" },
+  { name: "Rolls-Royce", logo: "https://www.carlogos.org/car-logos/rolls-royce-logo.png" },
+  { name: "Mercedes-Benz", logo: "https://www.carlogos.org/car-logos/mercedes-benz-logo.png" },
+  { name: "BMW", logo: "https://www.carlogos.org/car-logos/bmw-logo.png" },
+  { name: "Range Rover", logo: "https://www.carlogos.org/car-logos/land-rover-logo.png" },
+  { name: "Land Rover", logo: "https://www.carlogos.org/car-logos/land-rover-logo.png" },
+  { name: "Maserati", logo: "https://www.carlogos.org/car-logos/maserati-logo.png" },
+  { name: "Bugatti", logo: "https://www.carlogos.org/car-logos/bugatti-logo.png" },
+  { name: "Cadillac", logo: "https://www.carlogos.org/car-logos/cadillac-logo.png" },
+  { name: "Lucid", logo: "https://www.carlogos.org/car-logos/lucid-motors-logo.png" },
+  { name: "Tesla", logo: "https://www.carlogos.org/car-logos/tesla-logo.png" },
+  { name: "Audi", logo: "https://www.carlogos.org/car-logos/audi-logo.png" },
+  { name: "Maybach", logo: "https://www.carlogos.org/car-logos/maybach-logo.png" },
+  { name: "Genesis", logo: "https://www.carlogos.org/car-logos/genesis-logo.png" },
+  { name: "Lexus", logo: "https://www.carlogos.org/car-logos/lexus-logo.png" },
 ];
 
 const BODY_STYLES = ["SUV", "Sedan", "Coupe", "Convertible", "Supercar"];
@@ -59,7 +58,6 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
   const [form, setForm] = useState({
     name: car?.name || "",
     brand: car?.brand || "",
-    model: car?.model || "",
     location: car?.location || "Miami, FL",
     description: car?.description || "",
     pricePerDay: car?.pricePerDay || 0,
@@ -144,7 +142,6 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
       const carData = {
         name: form.name,
         brand: form.brand,
-        model: form.model,
         location: form.location,
         description: form.description,
         pricePerDay: Number(form.pricePerDay),
@@ -199,8 +196,8 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
             />
           </div>
 
-          {/* Brand & Model */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Brand */}
+          <div>
             <div ref={brandDropdownRef} className="relative">
               <label className="block text-sm text-muted-foreground mb-1.5">Brand *</label>
               {/* Hidden input for form validation */}
@@ -220,9 +217,12 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
                 <span className="flex items-center gap-2.5">
                   {selectedBrand ? (
                     <>
-                      <span className="flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary text-xs font-bold shrink-0">
-                        {selectedBrand.logo}
-                      </span>
+                      <img
+                        src={selectedBrand.logo}
+                        alt={selectedBrand.name}
+                        className="w-6 h-6 object-contain shrink-0"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
                       <span>{selectedBrand.name}</span>
                     </>
                   ) : (
@@ -265,11 +265,13 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
                               : "text-foreground hover:bg-accent/50"
                           }`}
                         >
-                          <span className="flex items-center justify-center w-7 h-7 rounded-md bg-secondary text-foreground text-xs font-bold shrink-0">
-                            {brand.logo}
-                          </span>
+                          <img
+                            src={brand.logo}
+                            alt={brand.name}
+                            className="w-6 h-6 object-contain shrink-0"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                          />
                           <span className="flex-1 text-left">{brand.name}</span>
-                          <span className="text-xs text-muted-foreground">{brand.country}</span>
                           {form.brand === brand.name && (
                             <Check className="h-4 w-4 text-primary shrink-0" />
                           )}
@@ -279,16 +281,6 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
                   </div>
                 </div>
               )}
-            </div>
-            <div>
-              <label className="block text-sm text-muted-foreground mb-1.5">Model *</label>
-              <input
-                type="text"
-                value={form.model}
-                onChange={(e) => setForm({ ...form, model: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
-                required
-              />
             </div>
           </div>
 
