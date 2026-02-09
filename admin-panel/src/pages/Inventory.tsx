@@ -497,7 +497,7 @@ const Inventory = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             title="Copy public link"
                             onClick={() => {
                               const url = `${PUBLIC_BASE_URL}/listing/${listing.id}`;
@@ -508,14 +508,14 @@ const Inventory = () => {
                               });
                             }}
                           >
-                            <Link2 className="h-4 w-4 text-muted-foreground" />
+                            <Link2 className="h-4 w-4" />
                           </Button>
 
                           {/* Calendar */}
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-primary hover:text-primary"
                             title="Availability Calendar"
                             disabled={!canCalendar}
                             onClick={() => {
@@ -523,26 +523,26 @@ const Inventory = () => {
                               setCalendarOpen(true);
                             }}
                           >
-                            <Calendar className="h-4 w-4 text-primary" />
+                            <Calendar className="h-4 w-4" />
                           </Button>
 
                           {/* Edit */}
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             title="Edit"
                             disabled={!canAddEdit || !shiftFleet}
                             onClick={() => handleEdit(listing)}
                           >
-                            <Pencil className="h-4 w-4 text-muted-foreground" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
 
                           {/* Delete */}
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                             title="Delete"
                             disabled={!canDelete || !shiftFleet}
                             onClick={() => {
@@ -550,7 +550,7 @@ const Inventory = () => {
                               setDeleteOpen(true);
                             }}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>

@@ -86,7 +86,7 @@ const AvailabilityCalendar = ({
               <p className="text-xs text-muted-foreground capitalize">{itemType} Availability</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
           </Button>
         </div>
