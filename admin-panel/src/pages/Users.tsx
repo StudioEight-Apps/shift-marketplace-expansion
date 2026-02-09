@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, query, doc, updateDoc, deleteDoc, where, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, doc, deleteDoc, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { hasPermission, maskEmail, maskPhone } from "@/lib/permissions";
@@ -8,7 +8,6 @@ import { formatDate, formatPrice } from "@/lib/booking-utils";
 import { Search, MoreHorizontal, ChevronRight, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
-import { cn } from "@/lib/utils";
 
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +27,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -58,7 +56,6 @@ interface FirestoreUser {
   lastTripDate: Date | null;
   lifetimeValue: number;
   createdAt: Date;
-  status: "active" | "deactivated";
   notes: { text: string; author: string; timestamp: Date }[];
   bookings: string[];
 }
@@ -69,8 +66,6 @@ const Users = () => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("newest");
-  const [confirmUser, setConfirmUser] = useState<FirestoreUser | null>(null);
-  const [updating, setUpdating] = useState(false);
   const [deleteUser, setDeleteUser] = useState<FirestoreUser | null>(null);
   const [deleteChecking, setDeleteChecking] = useState(false);
   const [deleteBookingWarnings, setDeleteBookingWarnings] = useState<string[]>([]);
@@ -104,7 +99,6 @@ const Users = () => {
             lastTripDate: data.lastTripDate?.toDate() || null,
             lifetimeValue: data.lifetimeValue || 0,
             createdAt: data.createdAt?.toDate() || new Date(),
-            status: data.status || "active",
             notes:
               data.notes?.map(
                 (n: { text: string; author: string; timestamp: { toDate: () => Date } }) => ({
@@ -167,26 +161,6 @@ const Users = () => {
 
     return result;
   }, [users, search, sort]);
-
-  // Deactivate / Reactivate user
-  const handleToggleStatus = async () => {
-    if (!confirmUser) return;
-    setUpdating(true);
-    try {
-      const newStatus = confirmUser.status === "active" ? "deactivated" : "active";
-      await updateDoc(doc(db, "users", confirmUser.uid), { status: newStatus });
-      toast.success(
-        newStatus === "active"
-          ? `${confirmUser.name} has been reactivated`
-          : `${confirmUser.name} has been deactivated`
-      );
-    } catch (err) {
-      console.error("Error updating user status:", err);
-      toast.error("Failed to update user status");
-    }
-    setUpdating(false);
-    setConfirmUser(null);
-  };
 
   // Check for active bookings before allowing delete
   const handleDeleteClick = async (user: FirestoreUser) => {
@@ -313,7 +287,6 @@ const Users = () => {
                 <TableHead>Trips</TableHead>
                 <TableHead>Last Trip</TableHead>
                 <TableHead>Lifetime Value</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="w-[60px]">Actions</TableHead>
               </TableRow>
@@ -321,13 +294,13 @@ const Users = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                     Loading users...
                   </TableCell>
                 </TableRow>
               ) : filteredAndSortedUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                     {users.length === 0 ? "No users yet" : "No users match your search"}
                   </TableCell>
                 </TableRow>
@@ -366,13 +339,6 @@ const Users = () => {
                     <TableCell className="font-medium text-foreground">
                       {user.lifetimeValue ? formatPrice(user.lifetimeValue) : "-"}
                     </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={user.status === "active" ? "approved" : "declined"}
-                      >
-                        {user.status === "active" ? "Active" : "Deactivated"}
-                      </Badge>
-                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(user.createdAt)}
                     </TableCell>
@@ -404,24 +370,9 @@ const Users = () => {
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setConfirmUser(user);
-                              }}
-                              className={cn(
-                                user.status === "active"
-                                  ? "text-destructive focus:text-destructive"
-                                  : "text-status-approved focus:text-status-approved"
-                              )}
-                            >
-                              {user.status === "active" ? "Deactivate User" : "Reactivate User"}
-                            </DropdownMenuItem>
-                          )}
-                          {role && hasPermission(role, "edit_lifetime_value") && (
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
                                 handleDeleteClick(user);
                               }}
-                              className="text-destructive focus:text-destructive"
+                              className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete User
@@ -438,40 +389,6 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Deactivate / Reactivate Confirmation Dialog */}
-      <AlertDialog open={!!confirmUser} onOpenChange={() => setConfirmUser(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {confirmUser?.status === "active" ? "Deactivate User" : "Reactivate User"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmUser?.status === "active"
-                ? `Are you sure you want to deactivate ${confirmUser?.name}? They will no longer be able to access the platform.`
-                : `Are you sure you want to reactivate ${confirmUser?.name}? They will regain access to the platform.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={updating}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleToggleStatus}
-              disabled={updating}
-              className={cn(
-                confirmUser?.status === "active"
-                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  : ""
-              )}
-            >
-              {updating
-                ? "Updating..."
-                : confirmUser?.status === "active"
-                  ? "Deactivate"
-                  : "Reactivate"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Delete User Confirmation Dialog */}
       <AlertDialog
         open={!!deleteUser}
@@ -483,14 +400,14 @@ const Users = () => {
       >
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-destructive" />
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+              <Trash2 className="h-5 w-5 text-red-500" />
               Delete User
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>
-                  Are you sure you want to permanently delete <strong>{deleteUser?.name}</strong>?
+                <p className="text-muted-foreground">
+                  Are you sure you want to permanently delete <strong className="text-foreground">{deleteUser?.name}</strong>?
                   This removes their profile from the admin panel.
                 </p>
 
@@ -527,7 +444,7 @@ const Users = () => {
                       type="checkbox"
                       checked={deleteConfirmed}
                       onChange={(e) => setDeleteConfirmed(e.target.checked)}
-                      className="rounded border-border"
+                      className="rounded border-border accent-red-500"
                     />
                     <span className="text-sm text-foreground">
                       I understand this action cannot be undone
@@ -544,16 +461,17 @@ const Users = () => {
                 setDeleteConfirmed(false);
                 setDeleteBookingWarnings([]);
               }}
+              className="border-border text-foreground hover:bg-muted"
             >
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               onClick={handleDeleteUser}
               disabled={deleting || deleteChecking || !deleteConfirmed}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
             >
               {deleting ? "Deleting..." : "Delete User"}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
