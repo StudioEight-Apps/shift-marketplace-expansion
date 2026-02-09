@@ -1,58 +1,73 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { format } from "date-fns";
-import { Search, ChevronRight, AlertCircle, Home, Car, Ship } from "lucide-react";
-import Header from "@/components/Header";
+import { useAuth } from "@/context/AuthContext";
+import { hasPermission, maskEmail } from "@/lib/permissions";
 import {
-  ItemStatus,
-  BookingStatus,
   deriveBookingStatus,
-  bookingStatusColors,
-} from "@/lib/bookingStatus";
+  formatDate,
+  formatPrice,
+  getActiveTotal,
+  getStatusVariant,
+} from "@/lib/booking-utils";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Home, Car, Ship, Search, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { BookingRequest, BookingStatus, ItemStatus } from "@/lib/types";
 
-interface BookingRequest {
-  id: string;
-  createdAt: Date;
-  updatedAt?: Date;
-  customer: {
-    uid?: string;
-    name: string;
-    email: string;
-    phone: string;
+type SortOption = "newest" | "oldest" | "price-high" | "price-low" | "checkin-soon";
+
+const statusFilters: (BookingStatus | "All")[] = [
+  "All", "Pending", "Approved", "Partial", "Completed", "Declined",
+];
+
+function ItemIcon({ type, className }: { type: "villa" | "car" | "yacht"; className?: string }) {
+  switch (type) {
+    case "villa": return <Home className={cn("h-3.5 w-3.5", className)} />;
+    case "car": return <Car className={cn("h-3.5 w-3.5", className)} />;
+    case "yacht": return <Ship className={cn("h-3.5 w-3.5", className)} />;
+  }
+}
+
+function StatusDot({ status }: { status: ItemStatus }) {
+  const colors: Record<ItemStatus, string> = {
+    Approved: "bg-status-approved",
+    Declined: "bg-status-declined",
+    Pending: "bg-status-pending",
   };
-  villa: {
-    name: string;
-    price: number;
-    checkIn?: Date;
-    checkOut?: Date;
-    location?: string;
-    status?: ItemStatus;
-  } | null;
-  car: {
-    name: string;
-    price: number;
-    pickupDate?: Date;
-    dropoffDate?: Date;
-    status?: ItemStatus;
-  } | null;
-  yacht: {
-    name: string;
-    price: number;
-    date?: Date;
-    status?: ItemStatus;
-  } | null;
-  grandTotal: number;
+  return <div className={cn("h-1.5 w-1.5 rounded-full", colors[status])} />;
+}
+
+function getEarliestDate(b: BookingRequest): Date {
+  const dates: Date[] = [];
+  if (b.villa) dates.push(b.villa.checkIn);
+  if (b.car) dates.push(b.car.pickupDate);
+  if (b.yacht) dates.push(b.yacht.date);
+  return dates.length > 0
+    ? dates.sort((a, b) => a.getTime() - b.getTime())[0]
+    : new Date(0);
 }
 
 const Dashboard = () => {
   const [bookings, setBookings] = useState<BookingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<BookingStatus | "All">("All");
+  const [sort, setSort] = useState<SortOption>("newest");
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  const showPII = role ? hasPermission(role, "view_pii") : false;
 
   useEffect(() => {
     const q = query(collection(db, "bookingRequests"));
@@ -66,34 +81,50 @@ const Dashboard = () => {
             id: doc.id,
             createdAt: data.createdAt?.toDate() || new Date(),
             updatedAt: data.updatedAt?.toDate() || data.createdAt?.toDate() || new Date(),
-            customer: data.customer || { name: "Unknown", email: "", phone: "" },
+            customer: data.customer || { uid: "", name: "Unknown", email: "", phone: "" },
             villa: data.villa
               ? {
-                  ...data.villa,
-                  checkIn: data.villa.checkIn?.toDate(),
-                  checkOut: data.villa.checkOut?.toDate(),
+                  id: data.villa.id || "",
+                  name: data.villa.name || "",
+                  location: data.villa.location || "",
+                  checkIn: data.villa.checkIn?.toDate() || new Date(),
+                  checkOut: data.villa.checkOut?.toDate() || new Date(),
+                  nights: data.villa.nights || 0,
+                  pricePerNight: data.villa.pricePerNight || 0,
+                  price: data.villa.price || 0,
                   status: data.villa.status || "Pending",
                 }
               : null,
             car: data.car
               ? {
-                  ...data.car,
-                  pickupDate: data.car.pickupDate?.toDate(),
-                  dropoffDate: data.car.dropoffDate?.toDate(),
+                  id: data.car.id || "",
+                  name: data.car.name || "",
+                  pickupDate: data.car.pickupDate?.toDate() || new Date(),
+                  dropoffDate: data.car.dropoffDate?.toDate() || new Date(),
+                  days: data.car.days || 0,
+                  pricePerDay: data.car.pricePerDay || 0,
+                  price: data.car.price || 0,
                   status: data.car.status || "Pending",
                 }
               : null,
             yacht: data.yacht
               ? {
-                  ...data.yacht,
-                  date: data.yacht.date?.toDate(),
+                  id: data.yacht.id || "",
+                  name: data.yacht.name || "",
+                  date: data.yacht.date?.toDate() || new Date(),
+                  startTime: data.yacht.startTime || "",
+                  endTime: data.yacht.endTime || "",
+                  hours: data.yacht.hours || 0,
+                  pricePerHour: data.yacht.pricePerHour || 0,
+                  price: data.yacht.price || 0,
                   status: data.yacht.status || "Pending",
                 }
               : null,
             grandTotal: data.grandTotal || 0,
+            notes: data.notes || [],
+            activityLog: data.activityLog || [],
           };
         });
-        requests.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         setBookings(requests);
         setLoading(false);
         setError(null);
@@ -108,194 +139,243 @@ const Dashboard = () => {
     return () => unsubscribe();
   }, []);
 
-  const filteredBookings = bookings.filter((booking) => {
-    const bookingStatus = deriveBookingStatus(booking);
-    const matchesFilter = filter === "all" || bookingStatus === filter;
-    const matchesSearch =
-      search === "" ||
-      booking.customer.name.toLowerCase().includes(search.toLowerCase()) ||
-      booking.customer.email.toLowerCase().includes(search.toLowerCase()) ||
-      booking.id.toLowerCase().includes(search.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const filteredBookings = useMemo(() => {
+    let result = bookings.filter((b) => {
+      const status = deriveBookingStatus(b);
+      if (statusFilter !== "All" && status !== statusFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return (
+          b.customer.name.toLowerCase().includes(q) ||
+          b.customer.email.toLowerCase().includes(q) ||
+          b.id.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
 
-  // Get city from booking (villa location or first available)
-  const getBookingCity = (booking: BookingRequest): string => {
-    if (booking.villa?.location) return booking.villa.location;
-    return "-";
+    return [...result].sort((a, b) => {
+      switch (sort) {
+        case "newest": return b.createdAt.getTime() - a.createdAt.getTime();
+        case "oldest": return a.createdAt.getTime() - b.createdAt.getTime();
+        case "price-high": return getActiveTotal(b) - getActiveTotal(a);
+        case "price-low": return getActiveTotal(a) - getActiveTotal(b);
+        case "checkin-soon": return getEarliestDate(a).getTime() - getEarliestDate(b).getTime();
+        default: return 0;
+      }
+    });
+  }, [bookings, search, statusFilter, sort]);
+
+  const stats = useMemo(() => {
+    const counts: Record<string, number> = {
+      total: bookings.length,
+      Pending: 0, Approved: 0, Partial: 0, Completed: 0, Declined: 0,
+    };
+    bookings.forEach((b) => { counts[deriveBookingStatus(b)]++; });
+    return counts;
+  }, [bookings]);
+
+  const getDateRange = (b: BookingRequest) => {
+    const dates: Date[] = [];
+    if (b.villa) { dates.push(b.villa.checkIn, b.villa.checkOut); }
+    if (b.car) { dates.push(b.car.pickupDate, b.car.dropoffDate); }
+    if (b.yacht) dates.push(b.yacht.date);
+    if (dates.length === 0) return "—";
+    const sorted = dates.sort((a, b) => a.getTime() - b.getTime());
+    if (sorted.length === 1) return formatDate(sorted[0]);
+    return `${formatDate(sorted[0])} – ${formatDate(sorted[sorted.length - 1])}`;
   };
 
-  // Get date range from booking
-  const getBookingDates = (booking: BookingRequest): string => {
-    if (booking.villa?.checkIn && booking.villa?.checkOut) {
-      return `${format(booking.villa.checkIn, "MMM d")} - ${format(booking.villa.checkOut, "MMM d")}`;
-    }
-    if (booking.car?.pickupDate && booking.car?.dropoffDate) {
-      return `${format(booking.car.pickupDate, "MMM d")} - ${format(booking.car.dropoffDate, "MMM d")}`;
-    }
-    if (booking.yacht?.date) {
-      return format(booking.yacht.date, "MMM d, yyyy");
-    }
-    return "-";
-  };
+  const getLocation = (b: BookingRequest) => b.villa?.location ?? "—";
 
-  // Count by booking status
-  const statusCounts: Record<BookingStatus, number> = {
-    Pending: 0,
-    Approved: 0,
-    Partial: 0,
-    Declined: 0,
-  };
-
-  bookings.forEach((b) => {
-    const status = deriveBookingStatus(b);
-    statusCounts[status]++;
-  });
+  const statCards = [
+    { label: "Total", value: stats.total, color: "text-foreground", filter: "All" as const },
+    { label: "Pending", value: stats.Pending, color: "text-status-pending", filter: "Pending" as BookingStatus },
+    { label: "Approved", value: stats.Approved, color: "text-status-approved", filter: "Approved" as BookingStatus },
+    { label: "Partial", value: stats.Partial, color: "text-status-partial", filter: "Partial" as BookingStatus },
+    { label: "Completed", value: stats.Completed, color: "text-status-completed", filter: "Completed" as BookingStatus },
+    { label: "Declined", value: stats.Declined, color: "text-status-declined", filter: "Declined" as BookingStatus },
+  ];
 
   return (
-    <div className="flex flex-col h-full">
-      <Header title="Bookings" />
+    <div className="p-6 lg:p-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-foreground">Bookings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage and review booking requests
+        </p>
+      </div>
 
-      <div className="p-6 space-y-6">
-        {/* Filters */}
-        <div className="flex gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search by name, email, or ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary"
-            />
-          </div>
-
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="px-4 py-2.5 bg-card border border-border rounded-lg text-white focus:outline-none focus:border-primary"
+      {/* Stats */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {statCards.map((s) => (
+          <div
+            key={s.label}
+            onClick={() => setStatusFilter(s.filter)}
+            className={cn(
+              "cursor-pointer rounded-xl border bg-card px-4 py-3 transition-all duration-200 hover:shadow-md",
+              statusFilter === s.filter
+                ? "border-primary shadow-sm ring-1 ring-primary/20"
+                : "border-border"
+            )}
           >
-            <option value="all">All Status</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Partial">Partial</option>
-            <option value="Declined">Declined</option>
-          </select>
+            <p className="text-xs text-muted-foreground">{s.label}</p>
+            <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter Bar */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, email, or booking ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border-border bg-background pl-9"
+          />
         </div>
+        <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+          <SelectTrigger className="w-44 border-border bg-background text-foreground">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest first</SelectItem>
+            <SelectItem value="oldest">Oldest first</SelectItem>
+            <SelectItem value="price-high">Highest price</SelectItem>
+            <SelectItem value="price-low">Lowest price</SelectItem>
+            <SelectItem value="checkin-soon">Check-in soonest</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-5 gap-4">
-          <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Total</p>
-            <p className="text-2xl font-bold text-white">{bookings.length}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Pending</p>
-            <p className="text-2xl font-bold text-amber-400">{statusCounts.Pending}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Approved</p>
-            <p className="text-2xl font-bold text-green-400">{statusCounts.Approved}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Partial</p>
-            <p className="text-2xl font-bold text-blue-400">{statusCounts.Partial}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Declined</p>
-            <p className="text-2xl font-bold text-red-400">{statusCounts.Declined}</p>
-          </div>
+      {/* Status filter pills */}
+      <div className="mb-4 flex flex-wrap gap-1">
+        {statusFilters.map((sf) => (
+          <button
+            key={sf}
+            onClick={() => setStatusFilter(sf)}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+              statusFilter === sf
+                ? "bg-primary/15 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            )}
+          >
+            {sf}
+          </button>
+        ))}
+      </div>
+
+      {/* Error State */}
+      {error && (
+        <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4 flex items-center gap-3">
+          <p className="text-destructive text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="ml-auto px-3 py-1 bg-destructive/20 text-destructive rounded-lg text-sm hover:bg-destructive/30"
+          >
+            Retry
+          </button>
         </div>
+      )}
 
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-red-400" />
-            <p className="text-red-400">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="ml-auto px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-sm hover:bg-red-500/30"
-            >
-              Retry
-            </button>
+      {/* Booking List */}
+      <div className="space-y-2">
+        {loading ? (
+          <div className="rounded-xl border border-border bg-card py-12 text-center text-sm text-muted-foreground">
+            Loading bookings...
           </div>
-        )}
+        ) : filteredBookings.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card py-12 text-center text-sm text-muted-foreground">
+            {bookings.length === 0 ? "No bookings yet" : "No bookings match your search"}
+          </div>
+        ) : (
+          filteredBookings.map((booking) => {
+            const status = deriveBookingStatus(booking);
+            const activeTotal = getActiveTotal(booking);
 
-        {/* Bookings List */}
-        <div className="space-y-3">
-          {loading ? (
-            <div className="text-center py-12 text-gray-500">Loading bookings...</div>
-          ) : filteredBookings.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              {bookings.length === 0 ? "No bookings yet" : "No bookings match your search"}
-            </div>
-          ) : (
-            filteredBookings.map((booking) => {
-              const bookingStatus = deriveBookingStatus(booking);
-              return (
-                <div
-                  key={booking.id}
-                  className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 cursor-pointer transition-colors group"
-                  onClick={() => navigate(`/bookings/${booking.id}`)}
-                >
-                  <div className="flex items-center justify-between">
-                    {/* Left: Customer & Items */}
-                    <div className="flex items-center gap-6">
-                      {/* Customer */}
-                      <div className="min-w-[180px]">
-                        <p className="text-white font-medium">{booking.customer.name}</p>
-                        <p className="text-gray-500 text-sm">{booking.customer.email}</p>
-                      </div>
-
-                      {/* Items icons */}
-                      <div className="flex items-center gap-2">
-                        {booking.villa && (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 rounded-lg">
-                            <Home className="h-4 w-4 text-blue-400" />
-                            <span className="text-blue-400 text-sm">Villa</span>
-                          </div>
-                        )}
-                        {booking.car && (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-500/10 rounded-lg">
-                            <Car className="h-4 w-4 text-purple-400" />
-                            <span className="text-purple-400 text-sm">Car</span>
-                          </div>
-                        )}
-                        {booking.yacht && (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-cyan-500/10 rounded-lg">
-                            <Ship className="h-4 w-4 text-cyan-400" />
-                            <span className="text-cyan-400 text-sm">Yacht</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Dates & City */}
-                      <div className="text-gray-400 text-sm">
-                        {getBookingDates(booking)} · {getBookingCity(booking)}
-                      </div>
-                    </div>
-
-                    {/* Right: Price, Status, Arrow */}
-                    <div className="flex items-center gap-6">
-                      {/* Price */}
-                      <div className="text-right min-w-[100px]">
-                        <p className="text-white font-semibold">${booking.grandTotal.toLocaleString()}</p>
-                      </div>
-
-                      {/* Status */}
-                      <div className={`px-3 py-1 rounded-lg text-sm font-medium min-w-[90px] text-center ${bookingStatusColors[bookingStatus]}`}>
-                        {bookingStatus}
-                      </div>
-
-                      {/* Arrow */}
-                      <ChevronRight className="h-5 w-5 text-gray-500 group-hover:text-primary transition-colors" />
-                    </div>
-                  </div>
+            return (
+              <div
+                key={booking.id}
+                onClick={() => navigate(`/requests/${booking.id}`)}
+                className="flex cursor-pointer items-center gap-4 rounded-xl border border-border bg-card px-5 py-4 transition-all duration-200 hover:border-primary/20 hover:shadow-md"
+              >
+                {/* Customer */}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground">
+                    {booking.customer.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {showPII
+                      ? booking.customer.email
+                      : maskEmail(booking.customer.email)}
+                  </p>
                 </div>
-              );
-            })
-          )}
-        </div>
+
+                {/* Item badges with status dots */}
+                <div className="flex items-center gap-2">
+                  {booking.villa && (
+                    <div className="flex items-center gap-1.5 rounded-md bg-secondary px-2 py-1">
+                      <ItemIcon type="villa" className="text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Villa</span>
+                      <StatusDot status={booking.villa.status} />
+                    </div>
+                  )}
+                  {booking.car && (
+                    <div className="flex items-center gap-1.5 rounded-md bg-secondary px-2 py-1">
+                      <ItemIcon type="car" className="text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Car</span>
+                      <StatusDot status={booking.car.status} />
+                    </div>
+                  )}
+                  {booking.yacht && (
+                    <div className="flex items-center gap-1.5 rounded-md bg-secondary px-2 py-1">
+                      <ItemIcon type="yacht" className="text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Yacht</span>
+                      <StatusDot status={booking.yacht.status} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Date range */}
+                <div className="hidden w-40 text-xs text-muted-foreground lg:block">
+                  {getDateRange(booking)}
+                </div>
+
+                {/* Location */}
+                <div className="hidden w-28 text-xs text-muted-foreground xl:block">
+                  {getLocation(booking)}
+                </div>
+
+                {/* Price */}
+                <div className="w-28 text-right">
+                  <span className="text-sm font-semibold text-foreground">
+                    {formatPrice(activeTotal)}
+                  </span>
+                  {activeTotal !== booking.grandTotal && (
+                    <span className="ml-1 text-xs text-muted-foreground line-through">
+                      {formatPrice(booking.grandTotal)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Status */}
+                <Badge
+                  variant={getStatusVariant(status)}
+                  className="w-24 justify-center"
+                >
+                  {status}
+                </Badge>
+
+                {/* Chevron */}
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

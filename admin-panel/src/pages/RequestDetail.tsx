@@ -1,22 +1,46 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, Timestamp, arrayUnion } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, deleteDoc, Timestamp, arrayUnion, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { format } from "date-fns";
-import { ArrowLeft, Mail, Phone, Home, Car, Ship, Plus, Clock, Check, X, AlertCircle, RotateCcw } from "lucide-react";
-import Header from "@/components/Header";
+import {
+  ArrowLeft, Mail, Phone, Home, Car, Ship,
+  Plus, Clock, Check, X, AlertCircle, RotateCcw, Trash2,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { ItemStatus, deriveBookingStatus, bookingStatusColors, itemStatusColors } from "@/lib/bookingStatus";
-import { updateVilla, updateCar, updateYacht } from "@/lib/listings";
+import { hasPermission } from "@/lib/permissions";
+import {
+  deriveBookingStatus,
+  getActiveTotal,
+  formatPrice,
+  formatDate,
+  formatDateTime,
+  getStatusVariant,
+} from "@/lib/booking-utils";
+import type { BookingRequest, ItemStatus } from "@/lib/types";
+import {
+  updateVilla, updateCar, updateYacht,
+  getVillaById, getCarById, getYachtById,
+} from "@/lib/listings";
+import { toast } from "sonner";
 
-interface ActivityLogEntry {
-  action: string;
-  actor: string;
-  timestamp: Date;
-  details?: string;
-}
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
-interface BookingRequest {
+// Local interface for Firestore-parsed booking (same shape as BookingRequest from types
+// but with optional fields from Firestore)
+interface FirestoreBooking {
   id: string;
   createdAt: Date;
   updatedAt?: Date;
@@ -35,7 +59,7 @@ interface BookingRequest {
     pricePerNight: number;
     price: number;
     location: string;
-    status?: ItemStatus;
+    status: ItemStatus;
   } | null;
   car: {
     id?: string;
@@ -45,7 +69,7 @@ interface BookingRequest {
     days: number;
     pricePerDay: number;
     price: number;
-    status?: ItemStatus;
+    status: ItemStatus;
   } | null;
   yacht: {
     id?: string;
@@ -56,23 +80,30 @@ interface BookingRequest {
     hours: number;
     pricePerHour: number;
     price: number;
-    status?: ItemStatus;
+    status: ItemStatus;
   } | null;
   grandTotal: number;
-  notes?: { text: string; author: string; timestamp: Date }[];
-  activityLog?: ActivityLogEntry[];
+  notes: { text: string; author: string; timestamp: Date }[];
+  activityLog: { action: string; actor: string; timestamp: Date; details?: string }[];
 }
 
 const RequestDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [booking, setBooking] = useState<BookingRequest | null>(null);
+  const { user, role } = useAuth();
+  const [booking, setBooking] = useState<FirestoreBooking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [newNote, setNewNote] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
+  const canApproveDecline = role ? hasPermission(role, "approve_decline_items") : false;
+  const canAddNotes = role ? hasPermission(role, "add_notes") : false;
+  const canViewPii = role ? hasPermission(role, "view_pii") : false;
+
+  // Real-time listener on booking document
   useEffect(() => {
     if (!id) return;
 
@@ -111,10 +142,12 @@ const RequestDetail = () => {
               : null,
             grandTotal: data.grandTotal,
             notes:
-              data.notes?.map((n: { text: string; author: string; timestamp: { toDate: () => Date } }) => ({
-                ...n,
-                timestamp: n.timestamp?.toDate() || new Date(),
-              })) || [],
+              data.notes?.map(
+                (n: { text: string; author: string; timestamp: { toDate: () => Date } }) => ({
+                  ...n,
+                  timestamp: n.timestamp?.toDate() || new Date(),
+                })
+              ) || [],
             activityLog:
               data.activityLog?.map(
                 (a: { action: string; actor: string; timestamp: { toDate: () => Date }; details?: string }) => ({
@@ -142,20 +175,18 @@ const RequestDetail = () => {
   // Log activity with atomic update
   const logActivity = async (action: string) => {
     if (!id) return;
-
     const activity = {
       action,
       actor: user?.email || "Admin",
       timestamp: Timestamp.now(),
     };
-
     await updateDoc(doc(db, "bookingRequests", id), {
       activityLog: arrayUnion(activity),
       updatedAt: Timestamp.now(),
     });
   };
 
-  // Helper to get date range string for blocking
+  // Helper to get date range as string array for calendar blocking
   const getDateRange = (start: Date, end: Date): string[] => {
     const dates: string[] = [];
     const current = new Date(start);
@@ -166,38 +197,87 @@ const RequestDetail = () => {
     return dates;
   };
 
-  // Approve an item - sets status to Approved and blocks calendar dates
+  // Find a listing document ID by name when the booking doesn't store the listing ID
+  const findListingIdByName = async (
+    collectionName: string,
+    name: string
+  ): Promise<string | null> => {
+    const q = query(collection(db, collectionName), where("name", "==", name));
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0].id;
+    // Try trimmed match (Firestore names may have trailing spaces)
+    const q2 = query(collection(db, collectionName), where("name", "==", name.trim()));
+    const snap2 = await getDocs(q2);
+    return snap2.empty ? null : snap2.docs[0].id;
+  };
+
+  // Resolve listing ID — use stored id or look up by name
+  const resolveListingId = async (
+    itemType: "villa" | "car" | "yacht",
+    itemName: string,
+    storedId?: string
+  ): Promise<string | null> => {
+    if (storedId) return storedId;
+    const collectionMap = { villa: "villas", car: "cars", yacht: "yachts" };
+    return findListingIdByName(collectionMap[itemType], itemName);
+  };
+
+  // Approve an item - sets status to Approved and MERGES calendar dates
   const approveItem = async (itemType: "villa" | "car" | "yacht") => {
     if (!id || !booking) return;
     setSaving(true);
     try {
       const currentItem = booking[itemType];
 
-      // Update the booking document
+      // Update the booking document status
       await updateDoc(doc(db, "bookingRequests", id), {
         [`${itemType}.status`]: "Approved",
         updatedAt: Timestamp.now(),
       });
 
-      // Block the dates on the inventory item
-      if (currentItem?.id) {
-        let datesToBlock: string[] = [];
+      // Block the dates on the inventory item — MERGE with existing blocked dates
+      if (currentItem) {
+        const listingId = await resolveListingId(
+          itemType,
+          currentItem.name,
+          "id" in currentItem ? currentItem.id : undefined
+        );
 
-        if (itemType === "villa" && booking.villa) {
-          datesToBlock = getDateRange(booking.villa.checkIn, booking.villa.checkOut);
-          await updateVilla(currentItem.id, { blockedDates: datesToBlock });
-        } else if (itemType === "car" && booking.car) {
-          datesToBlock = getDateRange(booking.car.pickupDate, booking.car.dropoffDate);
-          await updateCar(currentItem.id, { blockedDates: datesToBlock });
-        } else if (itemType === "yacht" && booking.yacht) {
-          datesToBlock = [format(booking.yacht.date, "yyyy-MM-dd")];
-          await updateYacht(currentItem.id, { blockedDates: datesToBlock });
+        if (listingId) {
+          let newDatesToBlock: string[] = [];
+
+          if (itemType === "villa" && booking.villa) {
+            newDatesToBlock = getDateRange(booking.villa.checkIn, booking.villa.checkOut);
+            const villaDoc = await getVillaById(listingId);
+            const existing = villaDoc?.blockedDates || [];
+            const merged = [...new Set([...existing, ...newDatesToBlock])];
+            await updateVilla(listingId, { blockedDates: merged });
+          } else if (itemType === "car" && booking.car) {
+            newDatesToBlock = getDateRange(booking.car.pickupDate, booking.car.dropoffDate);
+            const carDoc = await getCarById(listingId);
+            const existing = carDoc?.blockedDates || [];
+            const merged = [...new Set([...existing, ...newDatesToBlock])];
+            await updateCar(listingId, { blockedDates: merged });
+          } else if (itemType === "yacht" && booking.yacht) {
+            newDatesToBlock = [format(booking.yacht.date, "yyyy-MM-dd")];
+            const yachtDoc = await getYachtById(listingId);
+            const existing = yachtDoc?.blockedDates || [];
+            const merged = [...new Set([...existing, ...newDatesToBlock])];
+            await updateYacht(listingId, { blockedDates: merged });
+          }
+
+          // Also store the resolved listing ID back on the booking for future use
+          await updateDoc(doc(db, "bookingRequests", id), {
+            [`${itemType}.id`]: listingId,
+          });
         }
       }
 
       await logActivity(`Approved ${itemType}`);
+      toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} approved`);
     } catch (error) {
       console.error("Error approving item:", error);
+      toast.error("Failed to approve item");
     }
     setSaving(false);
   };
@@ -211,27 +291,67 @@ const RequestDetail = () => {
         [`${itemType}.status`]: "Declined",
         updatedAt: Timestamp.now(),
       });
-
       await logActivity(`Declined ${itemType}`);
+      toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} declined`);
     } catch (error) {
       console.error("Error declining item:", error);
+      toast.error("Failed to decline item");
     }
     setSaving(false);
   };
 
-  // Undo a decision - set back to Pending
+  // Undo a decision — also UNBLOCKS dates if previously approved
   const undoDecision = async (itemType: "villa" | "car" | "yacht") => {
     if (!id || !booking) return;
     setSaving(true);
     try {
+      const currentItem = booking[itemType];
+      const wasApproved = currentItem && "status" in currentItem && currentItem.status === "Approved";
+
+      // Reset status to Pending
       await updateDoc(doc(db, "bookingRequests", id), {
         [`${itemType}.status`]: "Pending",
         updatedAt: Timestamp.now(),
       });
 
+      // If the item was previously approved, remove booking dates from listing's blockedDates
+      if (wasApproved && currentItem) {
+        const listingId = await resolveListingId(
+          itemType,
+          currentItem.name,
+          "id" in currentItem ? currentItem.id : undefined
+        );
+
+        if (listingId) {
+          let datesToRemove: string[] = [];
+
+          if (itemType === "villa" && booking.villa) {
+            datesToRemove = getDateRange(booking.villa.checkIn, booking.villa.checkOut);
+            const villaDoc = await getVillaById(listingId);
+            const existing = villaDoc?.blockedDates || [];
+            const filtered = existing.filter((d: string) => !datesToRemove.includes(d));
+            await updateVilla(listingId, { blockedDates: filtered });
+          } else if (itemType === "car" && booking.car) {
+            datesToRemove = getDateRange(booking.car.pickupDate, booking.car.dropoffDate);
+            const carDoc = await getCarById(listingId);
+            const existing = carDoc?.blockedDates || [];
+            const filtered = existing.filter((d: string) => !datesToRemove.includes(d));
+            await updateCar(listingId, { blockedDates: filtered });
+          } else if (itemType === "yacht" && booking.yacht) {
+            datesToRemove = [format(booking.yacht.date, "yyyy-MM-dd")];
+            const yachtDoc = await getYachtById(listingId);
+            const existing = yachtDoc?.blockedDates || [];
+            const filtered = existing.filter((d: string) => !datesToRemove.includes(d));
+            await updateYacht(listingId, { blockedDates: filtered });
+          }
+        }
+      }
+
       await logActivity(`Reset ${itemType} to pending`);
+      toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} reset to pending`);
     } catch (error) {
       console.error("Error undoing decision:", error);
+      toast.error("Failed to undo decision");
     }
     setSaving(false);
   };
@@ -250,17 +370,35 @@ const RequestDetail = () => {
         updatedAt: Timestamp.now(),
       });
       setNewNote("");
+      toast.success("Note added");
     } catch (error) {
       console.error("Error adding note:", error);
+      toast.error("Failed to add note");
     }
     setSaving(false);
+  };
+
+  const handleDeleteBooking = async () => {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      await deleteDoc(doc(db, "bookingRequests", id));
+      toast.success("Booking deleted");
+      navigate("/");
+    } catch (err) {
+      console.error("Error deleting booking:", err);
+      toast.error("Failed to delete booking");
+    }
+    setDeleting(false);
   };
 
   if (loading) {
     return (
       <div className="flex flex-col h-full">
-        <Header title="Loading..." />
-        <div className="p-6 text-gray-500">Loading booking details...</div>
+        <div className="border-b border-border px-6 py-4">
+          <h1 className="text-lg font-semibold text-foreground">Loading...</h1>
+        </div>
+        <div className="p-6 text-muted-foreground">Loading booking details...</div>
       </div>
     );
   }
@@ -268,30 +406,43 @@ const RequestDetail = () => {
   if (error || !booking) {
     return (
       <div className="flex flex-col h-full">
-        <Header title="Error" />
+        <div className="border-b border-border px-6 py-4">
+          <h1 className="text-lg font-semibold text-foreground">Error</h1>
+        </div>
         <div className="p-6">
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 flex flex-col items-center gap-4">
-            <AlertCircle className="h-12 w-12 text-red-400" />
-            <p className="text-red-400 text-lg">{error || "Booking not found"}</p>
-            <button
-              onClick={() => navigate("/")}
-              className="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary/90"
-            >
+          <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-6 flex flex-col items-center gap-4">
+            <AlertCircle className="h-12 w-12 text-destructive" />
+            <p className="text-destructive text-lg">{error || "Booking not found"}</p>
+            <Button onClick={() => navigate("/")} variant="outline">
               Back to Bookings
-            </button>
+            </Button>
           </div>
         </div>
       </div>
     );
   }
 
-  const overallStatus = deriveBookingStatus(booking);
+  // Derive statuses
+  const bookingForUtils: BookingRequest = {
+    id: booking.id,
+    createdAt: booking.createdAt,
+    updatedAt: booking.updatedAt || booking.createdAt,
+    customer: { uid: booking.customer.uid, name: booking.customer.name, email: booking.customer.email, phone: booking.customer.phone },
+    villa: booking.villa ? { id: booking.villa.id || "", name: booking.villa.name, location: booking.villa.location, checkIn: booking.villa.checkIn, checkOut: booking.villa.checkOut, nights: booking.villa.nights, pricePerNight: booking.villa.pricePerNight, price: booking.villa.price, status: booking.villa.status } : null,
+    car: booking.car ? { id: booking.car.id || "", name: booking.car.name, pickupDate: booking.car.pickupDate, dropoffDate: booking.car.dropoffDate, days: booking.car.days, pricePerDay: booking.car.pricePerDay, price: booking.car.price, status: booking.car.status } : null,
+    yacht: booking.yacht ? { id: booking.yacht.id || "", name: booking.yacht.name, date: booking.yacht.date, startTime: booking.yacht.startTime, endTime: booking.yacht.endTime, hours: booking.yacht.hours, pricePerHour: booking.yacht.pricePerHour, price: booking.yacht.price, status: booking.yacht.status } : null,
+    grandTotal: booking.grandTotal,
+    notes: booking.notes,
+    activityLog: booking.activityLog,
+  };
 
-  // Item card component for villa/car/yacht
+  const overallStatus = deriveBookingStatus(bookingForUtils);
+  const activeTotal = getActiveTotal(bookingForUtils);
+
+  // Item card component
   const ItemCard = ({
     type,
     icon: Icon,
-    iconColor,
     name,
     details,
     price,
@@ -299,108 +450,157 @@ const RequestDetail = () => {
   }: {
     type: "villa" | "car" | "yacht";
     icon: typeof Home;
-    iconColor: string;
     name: string;
     details: React.ReactNode;
     price: number;
     status: ItemStatus;
-  }) => (
-    <div className="bg-card border border-border rounded-xl p-6">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${iconColor}`}>
-            <Icon className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-white font-semibold">{name}</h3>
-            <p className="text-gray-400 text-sm capitalize">{type}</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-white font-semibold">${price.toLocaleString()}</p>
-        </div>
-      </div>
+  }) => {
+    const isDeclined = status === "Declined";
 
-      <div className="grid grid-cols-2 gap-3 text-sm mb-4">{details}</div>
-
-      {/* Action buttons or status display */}
-      <div className="pt-4 border-t border-border">
-        {status === "Pending" ? (
-          <div className="flex gap-3">
-            <button
-              onClick={() => approveItem(type)}
-              disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-            >
-              <Check className="h-4 w-4" />
-              Approve
-            </button>
-            <button
-              onClick={() => declineItem(type)}
-              disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium rounded-lg transition-colors disabled:opacity-50"
-            >
-              <X className="h-4 w-4" />
-              Decline
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${itemStatusColors[status]}`}>
-              {status === "Approved" && <Check className="h-4 w-4" />}
-              {status === "Declined" && <X className="h-4 w-4" />}
-              {status}
+    return (
+      <div className="bg-card border border-border rounded-xl p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "p-2 rounded-lg",
+              type === "villa" && "bg-blue-500/10 text-blue-500",
+              type === "car" && "bg-purple-500/10 text-purple-500",
+              type === "yacht" && "bg-cyan-500/10 text-cyan-500",
+            )}>
+              <Icon className="h-5 w-5" />
             </div>
-            <button
-              onClick={() => undoDecision(type)}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-gray-400 hover:text-white text-sm transition-colors disabled:opacity-50"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Undo
-            </button>
+            <div>
+              <h3 className="text-foreground font-semibold">{name}</h3>
+              <p className="text-muted-foreground text-sm capitalize">{type}</p>
+            </div>
+          </div>
+          <div className="text-right flex items-center gap-2">
+            <Badge variant={getStatusVariant(status)}>
+              {status}
+            </Badge>
+            <p className={cn("font-semibold", isDeclined ? "text-muted-foreground line-through" : "text-foreground")}>
+              {formatPrice(price)}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 text-sm mb-4">{details}</div>
+
+        {/* Action buttons or undo */}
+        {canApproveDecline && (
+          <div className="pt-4 border-t border-border">
+            {status === "Pending" ? (
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => approveItem(type)}
+                  disabled={saving}
+                  className="flex-1 bg-status-approved hover:bg-status-approved/90 text-white"
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  Approve
+                </Button>
+                <Button
+                  onClick={() => declineItem(type)}
+                  disabled={saving}
+                  variant="outline"
+                  className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Decline
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-end">
+                <Button
+                  onClick={() => undoDecision(type)}
+                  disabled={saving}
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  Undo
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={`Booking ${booking.id.slice(0, 8)}...`} />
+      {/* Page header */}
+      <div className="border-b border-border px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">
+              Booking {booking.id.slice(0, 8)}...
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Submitted {formatDateTime(booking.createdAt)}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Badge variant={getStatusVariant(overallStatus)} className="text-sm px-3 py-1">
+            {overallStatus}
+          </Badge>
+          {canApproveDecline && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
 
       <div className="p-6 space-y-6 overflow-auto">
-        {/* Back button */}
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Bookings
-        </button>
-
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column - 2/3 width */}
-          <div className="col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             {/* Customer Info */}
             <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Customer</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Customer</h2>
               <div className="space-y-3">
-                <p className="text-xl font-medium text-white">{booking.customer.name}</p>
-                <a
-                  href={`mailto:${booking.customer.email}`}
-                  className="flex items-center gap-2 text-primary hover:underline"
-                >
-                  <Mail className="h-4 w-4" />
-                  {booking.customer.email}
-                </a>
-                <a
-                  href={`tel:${booking.customer.phone}`}
-                  className="flex items-center gap-2 text-primary hover:underline"
-                >
-                  <Phone className="h-4 w-4" />
-                  {booking.customer.phone || "No phone"}
-                </a>
+                <p className="text-xl font-medium text-foreground">{booking.customer.name}</p>
+                {canViewPii ? (
+                  <>
+                    <a
+                      href={`mailto:${booking.customer.email}`}
+                      className="flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <Mail className="h-4 w-4" />
+                      {booking.customer.email}
+                    </a>
+                    <a
+                      href={`tel:${booking.customer.phone}`}
+                      className="flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <Phone className="h-4 w-4" />
+                      {booking.customer.phone || "No phone"}
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      <span>Email hidden</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                      <span>Phone hidden</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -409,27 +609,26 @@ const RequestDetail = () => {
               <ItemCard
                 type="villa"
                 icon={Home}
-                iconColor="bg-blue-500/20 text-blue-400"
                 name={booking.villa.name}
                 price={booking.villa.price}
-                status={booking.villa.status || "Pending"}
+                status={booking.villa.status}
                 details={
                   <>
                     <div>
-                      <p className="text-gray-400">Location</p>
-                      <p className="text-white">{booking.villa.location}</p>
+                      <p className="text-muted-foreground">Location</p>
+                      <p className="text-foreground">{booking.villa.location}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Duration</p>
-                      <p className="text-white">{booking.villa.nights} nights</p>
+                      <p className="text-muted-foreground">Duration</p>
+                      <p className="text-foreground">{booking.villa.nights} nights</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Check-in</p>
-                      <p className="text-white">{format(booking.villa.checkIn, "MMM d, yyyy")}</p>
+                      <p className="text-muted-foreground">Check-in</p>
+                      <p className="text-foreground">{formatDate(booking.villa.checkIn)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Check-out</p>
-                      <p className="text-white">{format(booking.villa.checkOut, "MMM d, yyyy")}</p>
+                      <p className="text-muted-foreground">Check-out</p>
+                      <p className="text-foreground">{formatDate(booking.villa.checkOut)}</p>
                     </div>
                   </>
                 }
@@ -441,23 +640,26 @@ const RequestDetail = () => {
               <ItemCard
                 type="car"
                 icon={Car}
-                iconColor="bg-purple-500/20 text-purple-400"
                 name={booking.car.name}
                 price={booking.car.price}
-                status={booking.car.status || "Pending"}
+                status={booking.car.status}
                 details={
                   <>
                     <div>
-                      <p className="text-gray-400">Pick-up</p>
-                      <p className="text-white">{format(booking.car.pickupDate, "MMM d, yyyy")}</p>
+                      <p className="text-muted-foreground">Pick-up</p>
+                      <p className="text-foreground">{formatDate(booking.car.pickupDate)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Drop-off</p>
-                      <p className="text-white">{format(booking.car.dropoffDate, "MMM d, yyyy")}</p>
+                      <p className="text-muted-foreground">Drop-off</p>
+                      <p className="text-foreground">{formatDate(booking.car.dropoffDate)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Duration</p>
-                      <p className="text-white">{booking.car.days} days</p>
+                      <p className="text-muted-foreground">Duration</p>
+                      <p className="text-foreground">{booking.car.days} days</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Rate</p>
+                      <p className="text-foreground">{formatPrice(booking.car.pricePerDay)}/day</p>
                     </div>
                   </>
                 }
@@ -469,23 +671,26 @@ const RequestDetail = () => {
               <ItemCard
                 type="yacht"
                 icon={Ship}
-                iconColor="bg-cyan-500/20 text-cyan-400"
                 name={booking.yacht.name}
                 price={booking.yacht.price}
-                status={booking.yacht.status || "Pending"}
+                status={booking.yacht.status}
                 details={
                   <>
                     <div>
-                      <p className="text-gray-400">Date</p>
-                      <p className="text-white">{format(booking.yacht.date, "MMM d, yyyy")}</p>
+                      <p className="text-muted-foreground">Date</p>
+                      <p className="text-foreground">{formatDate(booking.yacht.date)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Time</p>
-                      <p className="text-white">{booking.yacht.startTime} - {booking.yacht.endTime}</p>
+                      <p className="text-muted-foreground">Time</p>
+                      <p className="text-foreground">{booking.yacht.startTime} - {booking.yacht.endTime}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Duration</p>
-                      <p className="text-white">{booking.yacht.hours} hours</p>
+                      <p className="text-muted-foreground">Duration</p>
+                      <p className="text-foreground">{booking.yacht.hours} hours</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Rate</p>
+                      <p className="text-foreground">{formatPrice(booking.yacht.pricePerHour)}/hr</p>
                     </div>
                   </>
                 }
@@ -493,86 +698,97 @@ const RequestDetail = () => {
             )}
 
             {/* Notes */}
-            <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Internal Notes</h2>
+            {canAddNotes && (
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Internal Notes</h2>
 
-              <div className="space-y-3 mb-4">
-                {booking.notes && booking.notes.length > 0 ? (
-                  booking.notes
-                    .slice()
-                    .reverse()
-                    .map((note, i) => (
-                      <div key={i} className="bg-background rounded-lg p-3">
-                        <p className="text-white text-sm">{note.text}</p>
-                        <p className="text-gray-500 text-xs mt-1">
-                          {note.author} · {format(note.timestamp, "MMM d, h:mm a")}
-                        </p>
-                      </div>
-                    ))
-                ) : (
-                  <p className="text-gray-500 text-sm">No notes yet</p>
-                )}
-              </div>
+                <div className="space-y-3 mb-4">
+                  {booking.notes && booking.notes.length > 0 ? (
+                    booking.notes
+                      .slice()
+                      .reverse()
+                      .map((note, i) => (
+                        <div key={i} className="bg-background rounded-lg p-3">
+                          <p className="text-foreground text-sm">{note.text}</p>
+                          <p className="text-muted-foreground text-xs mt-1">
+                            {note.author} · {format(note.timestamp, "MMM d, h:mm a")}
+                          </p>
+                        </div>
+                      ))
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No notes yet</p>
+                  )}
+                </div>
 
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Add a note..."
-                  className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary"
-                  onKeyDown={(e) => e.key === "Enter" && addNote()}
-                />
-                <button
-                  onClick={addNote}
-                  disabled={saving || !newNote.trim()}
-                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-black font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add
-                </button>
+                <div className="flex gap-2">
+                  <Input
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Add a note..."
+                    onKeyDown={(e) => e.key === "Enter" && addNote()}
+                  />
+                  <Button
+                    onClick={addNote}
+                    disabled={saving || !newNote.trim()}
+                    size="sm"
+                    className="px-4"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right column - 1/3 width */}
           <div className="space-y-6">
-            {/* Overall Status */}
-            <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Booking Status</h2>
-              <div className={`inline-flex px-4 py-2 rounded-lg text-sm font-medium ${bookingStatusColors[overallStatus]}`}>
-                {overallStatus}
-              </div>
-              <p className="text-gray-500 text-xs mt-3">
-                Submitted {format(booking.createdAt, "MMM d, yyyy 'at' h:mm a")}
-              </p>
-            </div>
-
             {/* Pricing */}
             <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Pricing</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Pricing</h2>
               <div className="space-y-2 text-sm">
                 {booking.villa && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Villa</span>
-                    <span className="text-white">${booking.villa.price.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Villa</span>
+                    <span className={cn(
+                      booking.villa.status === "Declined" ? "text-muted-foreground line-through" : "text-foreground"
+                    )}>
+                      {formatPrice(booking.villa.price)}
+                    </span>
                   </div>
                 )}
                 {booking.car && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Car</span>
-                    <span className="text-white">${booking.car.price.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Car</span>
+                    <span className={cn(
+                      booking.car.status === "Declined" ? "text-muted-foreground line-through" : "text-foreground"
+                    )}>
+                      {formatPrice(booking.car.price)}
+                    </span>
                   </div>
                 )}
                 {booking.yacht && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Yacht</span>
-                    <span className="text-white">${booking.yacht.price.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Yacht</span>
+                    <span className={cn(
+                      booking.yacht.status === "Declined" ? "text-muted-foreground line-through" : "text-foreground"
+                    )}>
+                      {formatPrice(booking.yacht.price)}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between pt-2 border-t border-border">
-                  <span className="text-white font-medium">Total</span>
-                  <span className="text-primary font-bold text-lg">${booking.grandTotal.toLocaleString()}</span>
+                  <span className="text-foreground font-medium">Active Total</span>
+                  <div className="text-right">
+                    <span className="text-primary font-bold text-lg">
+                      {formatPrice(activeTotal)}
+                    </span>
+                    {activeTotal !== booking.grandTotal && (
+                      <span className="text-muted-foreground line-through text-xs ml-2">
+                        {formatPrice(booking.grandTotal)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -580,11 +796,10 @@ const RequestDetail = () => {
             {/* Activity History */}
             <div className="bg-card border border-border rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Clock className="h-5 w-5 text-gray-400" />
-                <h2 className="text-lg font-semibold text-white">Activity</h2>
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold text-foreground">Activity</h2>
               </div>
               <div className="space-y-3 max-h-64 overflow-auto">
-                {/* Activity log entries */}
                 {booking.activityLog &&
                   booking.activityLog
                     .slice()
@@ -593,8 +808,8 @@ const RequestDetail = () => {
                       <div key={i} className="flex items-start gap-3">
                         <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm text-gray-300">{activity.action}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-sm text-foreground">{activity.action}</p>
+                          <p className="text-xs text-muted-foreground">
                             {activity.actor} · {format(activity.timestamp, "MMM d, h:mm a")}
                           </p>
                         </div>
@@ -602,10 +817,12 @@ const RequestDetail = () => {
                     ))}
                 {/* Created entry */}
                 <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-status-approved mt-1.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-300">Booking submitted</p>
-                    <p className="text-xs text-gray-500">{format(booking.createdAt, "MMM d, yyyy 'at' h:mm a")}</p>
+                    <p className="text-sm text-foreground">Booking submitted</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDateTime(booking.createdAt)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -613,8 +830,41 @@ const RequestDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Booking Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+              <Trash2 className="h-5 w-5 text-red-500" />
+              Delete Booking
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Are you sure you want to permanently delete this booking from{" "}
+              <strong className="text-foreground">{booking.customer.name}</strong>?
+              This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={deleting}
+              className="border-border text-foreground hover:bg-muted"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              onClick={handleDeleteBooking}
+              disabled={deleting}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {deleting ? "Deleting..." : "Delete Booking"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
 export default RequestDetail;
+
