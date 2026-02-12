@@ -1,19 +1,19 @@
 import { Link } from "react-router-dom";
 import { Instagram, Youtube, Facebook } from "lucide-react";
+import { useContact } from "@/context/ContactContext";
 
 const Footer = () => {
+  const { openContact } = useContact();
+
   return (
     <footer className="border-t border-border-subtle bg-background py-8">
       <div className="container px-6 flex flex-col md:flex-row items-center justify-between gap-6">
         {/* Left - Links */}
         <div className="flex items-center gap-6 text-sm text-muted-foreground">
-          <Link to="#" className="hover:text-foreground transition-colors">
+          <button onClick={openContact} className="hover:text-foreground transition-colors">
             Contact Us
-          </Link>
-          <Link to="#" className="hover:text-foreground transition-colors">
-            Privacy Policy
-          </Link>
-          <Link to="#" className="hover:text-foreground transition-colors">
+          </button>
+          <Link to="/terms" className="hover:text-foreground transition-colors">
             Terms & Conditions
           </Link>
         </div>
@@ -47,10 +47,13 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Copyright */}
-      <div className="container px-6 mt-6 pt-6 border-t border-border-subtle">
+      {/* Copyright & Brand */}
+      <div className="container px-6 mt-6 pt-6 border-t border-border-subtle flex flex-col items-center gap-2">
         <p className="text-xs text-muted-foreground text-center">
-          © {new Date().getFullYear()} Shift. All rights reserved.
+          © 2021 Shift Rentals. All rights reserved.
+        </p>
+        <p className="text-[11px] text-muted-foreground/50 tracking-widest uppercase">
+          A <span className="text-muted-foreground/70 font-medium">Traventury</span> Company
         </p>
       </div>
     </footer>

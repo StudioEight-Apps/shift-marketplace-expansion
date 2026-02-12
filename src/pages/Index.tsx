@@ -9,7 +9,7 @@ import WhyShiftSection from "@/components/shift/WhyShiftSection";
 import { cities } from "@/components/shift/CitySelector";
 import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
-import QuickFilters from "@/components/shift/QuickFilters";
+import QuickFilters, { type FilterState } from "@/components/shift/QuickFilters";
 import ListingsGrid from "@/components/shift/ListingsGrid";
 import MobilePopularCarousel from "@/components/shift/MobilePopularCarousel";
 import EmptyState from "@/components/shift/EmptyState";
@@ -55,6 +55,7 @@ const Index = () => {
   const { cityId: searchCityId, startDate, endDate, setCityId, setSearchDates, hasDates } = useSearch();
   const [selectedCityId, setSelectedCityId] = useState(searchCityId || "");
   const [selectedType, setSelectedType] = useState<AssetType>("Stays");
+  const [quickFilters, setQuickFilters] = useState<FilterState | null>(null);
   const isMobile = useIsMobile();
 
   // Firestore data state
@@ -217,13 +218,60 @@ const Index = () => {
       });
     }
 
-    return filtered;
-  }, [selectedCityId, allListingsForType, hasDates, startDate, endDate, villas, cars, yachts]);
+    // Apply quick filters (price, guests, beds, brand, bodyStyle, length)
+    if (quickFilters) {
+      // Price filter
+      if (quickFilters.price) {
+        const [minPrice, maxPrice] = quickFilters.price;
+        filtered = filtered.filter(l => {
+          if (maxPrice >= 10000) return l.price >= minPrice;
+          return l.price >= minPrice && l.price <= maxPrice;
+        });
+      }
 
-  // Popular listings (show only featured listings, up to 8)
+      // Guests filter (minimum)
+      if (quickFilters.guests !== null) {
+        filtered = filtered.filter(l => l.guests >= quickFilters.guests!);
+      }
+
+      // Beds filter (minimum, stays only)
+      if (quickFilters.beds !== null) {
+        filtered = filtered.filter(l => (l.bedrooms ?? 0) >= quickFilters.beds!);
+      }
+
+      // Brand filter (cars only)
+      if (quickFilters.brand.length > 0) {
+        filtered = filtered.filter(l => l.brand && quickFilters.brand.includes(l.brand));
+      }
+
+      // Body style filter (cars only)
+      if (quickFilters.bodyStyle.length > 0) {
+        filtered = filtered.filter(l => l.bodyStyle && quickFilters.bodyStyle.includes(l.bodyStyle));
+      }
+
+      // Length filter (yachts only)
+      if (quickFilters.length) {
+        const [minLen, maxLen] = quickFilters.length;
+        filtered = filtered.filter(l => {
+          const len = l.length ?? 0;
+          if (maxLen >= 150) return len >= minLen;
+          return len >= minLen && len <= maxLen;
+        });
+      }
+    }
+
+    return filtered;
+  }, [selectedCityId, allListingsForType, hasDates, startDate, endDate, villas, cars, yachts, quickFilters]);
+
+  // Popular listings (show only featured listings, filtered by city, up to 8)
   const popularListings = useMemo(() => {
-    return allListingsForType.filter(l => l.badges.includes("Guest Favorite")).slice(0, 8);
-  }, [allListingsForType]);
+    let popular = allListingsForType.filter(l => l.badges.includes("Guest Favorite"));
+    const locationString = cityLocationMap[selectedCityId];
+    if (locationString) {
+      popular = popular.filter(l => l.location === locationString);
+    }
+    return popular.slice(0, 8);
+  }, [allListingsForType, selectedCityId]);
 
   const handleListingClick = (listing: Listing) => {
     navigate(`/listing/${listing.id}`);
@@ -279,7 +327,7 @@ const Index = () => {
           />
           
           {/* Tier 3: Dynamic Quick Filters - only show when dates selected */}
-          {hasDates && <QuickFilters assetType={selectedType} />}
+          {hasDates && <QuickFilters assetType={selectedType} onFiltersChange={setQuickFilters} />}
         </div>
       </section>
       

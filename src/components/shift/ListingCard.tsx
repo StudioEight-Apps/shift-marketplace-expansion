@@ -9,11 +9,14 @@ export interface Listing {
   guests: number;
   bedrooms?: number;
   length?: number;
+  brand?: string;
   bodyStyle?: string;
   seats?: number;
   power?: string;
   rating: number;
   price: number;
+  cleaningFee?: number;
+  depositAmount?: number;
   priceUnit: string;
   image: string;
   images?: string[]; // Array of images for gallery

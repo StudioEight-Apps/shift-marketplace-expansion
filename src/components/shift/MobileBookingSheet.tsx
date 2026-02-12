@@ -106,10 +106,20 @@ const MobileBookingSheet = ({
     return `${format(carDates.pickup, "MMM d")} – ${format(carDates.dropoff, "MMM d")}`;
   };
 
+  // Convert 24h time to 12h AM/PM
+  const to12Hour = (time: string | null) => {
+    if (!time) return "";
+    if (time.includes("AM") || time.includes("PM")) return time;
+    const [h] = time.split(":").map(Number);
+    if (h === 0) return "12:00 AM";
+    if (h === 12) return "12:00 PM";
+    return h > 12 ? `${h - 12}:00 PM` : `${h}:00 AM`;
+  };
+
   // Format yacht booking for display
   const getYachtLabel = () => {
     if (!yachtBooking.startDate) return "";
-    return `${format(yachtBooking.startDate, "MMM d")} · ${yachtBooking.startTime}–${yachtBooking.endTime}`;
+    return `${format(yachtBooking.startDate, "MMM d")} · ${to12Hour(yachtBooking.startTime)}–${to12Hour(yachtBooking.endTime)}`;
   };
 
   const handleBookingSubmit = async () => {
@@ -369,6 +379,16 @@ const MobileBookingSheet = ({
                     ${grandTotal.toLocaleString()}
                   </span>
                 </div>
+
+                {/* Deposit notice */}
+                {listing.depositAmount > 0 && (
+                  <div className="flex items-center justify-between text-sm bg-primary/5 rounded-lg px-3 py-2">
+                    <span className="text-muted-foreground text-xs">Deposit due once confirmed</span>
+                    <span className="text-primary font-semibold text-sm">
+                      ${listing.depositAmount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -389,6 +409,16 @@ const MobileBookingSheet = ({
                     ${primaryTotal.toLocaleString()}
                   </span>
                 </div>
+
+                {/* Deposit notice */}
+                {listing.depositAmount > 0 && (
+                  <div className="flex items-center justify-between text-sm bg-primary/5 rounded-lg px-3 py-2">
+                    <span className="text-muted-foreground text-xs">Deposit due once confirmed</span>
+                    <span className="text-primary font-semibold text-sm">
+                      ${listing.depositAmount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

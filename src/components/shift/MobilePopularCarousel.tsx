@@ -36,7 +36,7 @@ const MobilePopularCarousel = ({ listings, onListingClick }: MobilePopularCarous
                 {listing.title}
               </h3>
               <div className="mt-0.5 flex items-center gap-1 text-[12px] text-muted-foreground">
-                <span>${listing.price} / night</span>
+                <span>${listing.price} {listing.assetType === "Yachts" ? "/ hr" : listing.assetType === "Cars" ? "/ day" : "/ night"}</span>
                 <span>·</span>
                 <span>{listing.guests} Guests</span>
               </div>

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "./Logo";
-import { User } from "lucide-react";
+import { User, Phone } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import AuthModal from "./AuthModal";
 import { useAuth } from "@/context/AuthContext";
+import { useContact } from "@/context/ContactContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,7 @@ import {
 const Header = () => {
   const navigate = useNavigate();
   const { user, logout, loading } = useAuth();
+  const { openContact, openListWithUs } = useContact();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState<"login" | "signup">("login");
 
@@ -42,15 +44,30 @@ const Header = () => {
           <Logo />
           
           {/* Right navigation */}
-          <nav className="flex items-center gap-4 md:gap-6">
+          <nav className="flex items-center gap-2 md:gap-6">
             {/* Desktop links */}
-            <Link 
-              to="#" 
+            <button
+              onClick={openListWithUs}
+              className="hidden md:block text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              List with Us
+            </button>
+            <button
+              onClick={openContact}
               className="hidden md:block text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Contact Us
-            </Link>
-            
+            </button>
+
+            {/* Mobile contact button - visible, prominent */}
+            <button
+              onClick={openContact}
+              className="md:hidden flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+            >
+              <Phone className="h-3 w-3" />
+              Contact
+            </button>
+
             {/* Profile dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -61,23 +78,27 @@ const Header = () => {
               <DropdownMenuContent align="end" className="w-52 bg-card border-border-subtle">
                 {!loading && user ? (
                   <>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="cursor-pointer"
                       onClick={() => navigate("/trips")}
                     >
                       My Trips
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="cursor-pointer"
                       onClick={() => navigate("/profile")}
                     >
                       Profile
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-border-subtle" />
+                    <DropdownMenuItem className="cursor-pointer md:hidden" onClick={openListWithUs}>
+                      List with Us
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-border-subtle md:hidden" />
                     {/* Theme toggle - 3 state */}
                     <ThemeToggle />
                     <DropdownMenuSeparator className="bg-border-subtle" />
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="cursor-pointer text-destructive"
                       onClick={handleLogout}
                     >
@@ -86,21 +107,21 @@ const Header = () => {
                   </>
                 ) : (
                   <>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="cursor-pointer"
                       onClick={openLogin}
                     >
                       Log In
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="cursor-pointer"
                       onClick={openSignup}
                     >
                       Sign Up
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-border-subtle" />
-                    <DropdownMenuItem className="cursor-pointer md:hidden">
-                      Contact Us
+                    <DropdownMenuItem className="cursor-pointer md:hidden" onClick={openListWithUs}>
+                      List with Us
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-border-subtle md:hidden" />
                     {/* Theme toggle - 3 state */}

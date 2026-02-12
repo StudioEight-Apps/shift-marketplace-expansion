@@ -24,6 +24,8 @@ export interface Villa {
   location: string;
   description: string;
   pricePerNight: number;
+  cleaningFee: number;
+  depositAmount: number;
   bedrooms: number;
   bathrooms: number;
   maxGuests: number;
@@ -55,6 +57,7 @@ export interface Car {
   location: string;
   description: string;
   pricePerDay: number;
+  depositAmount: number;
   bodyStyle: string;
   seats: number;
   power: string;
@@ -83,6 +86,7 @@ export interface Yacht {
   location: string;
   description: string;
   pricePerHour: number;
+  depositAmount: number;
   maxGuests: number;
   crewIncluded: boolean;
   amenities: string[];
@@ -158,6 +162,8 @@ export const getVillas = (
         location: data.location || "",
         description: data.description || "",
         pricePerNight: data.pricePerNight || 0,
+        cleaningFee: data.cleaningFee || 0,
+        depositAmount: data.depositAmount || 0,
         bedrooms: data.bedrooms || 0,
         bathrooms: data.bathrooms || 0,
         maxGuests: data.maxGuests || 0,
@@ -205,6 +211,8 @@ export const getVillaById = async (id: string): Promise<Villa | null> => {
     location: data.location || "",
     description: data.description || "",
     pricePerNight: data.pricePerNight || 0,
+    cleaningFee: data.cleaningFee || 0,
+    depositAmount: data.depositAmount || 0,
     bedrooms: data.bedrooms || 0,
     bathrooms: data.bathrooms || 0,
     maxGuests: data.maxGuests || 0,
@@ -266,6 +274,7 @@ export const getCars = (
         location: data.location || "",
         description: data.description || "",
         pricePerDay: data.pricePerDay || 0,
+        depositAmount: data.depositAmount || 0,
         bodyStyle: data.bodyStyle || "",
         seats: data.seats || 0,
         power: data.power || "",
@@ -313,6 +322,7 @@ export const getCarById = async (id: string): Promise<Car | null> => {
     location: data.location || "",
     description: data.description || "",
     pricePerDay: data.pricePerDay || 0,
+    depositAmount: data.depositAmount || 0,
     bodyStyle: data.bodyStyle || "",
     seats: data.seats || 0,
     power: data.power || "",
@@ -371,6 +381,7 @@ export const getYachts = (
         location: data.location || "",
         description: data.description || "",
         pricePerHour: data.pricePerHour || 0,
+        depositAmount: data.depositAmount || 0,
         maxGuests: data.maxGuests || 0,
         crewIncluded: data.crewIncluded ?? true,
         amenities: data.amenities || [],
@@ -417,6 +428,7 @@ export const getYachtById = async (id: string): Promise<Yacht | null> => {
     location: data.location || "",
     description: data.description || "",
     pricePerHour: data.pricePerHour || 0,
+    depositAmount: data.depositAmount || 0,
     maxGuests: data.maxGuests || 0,
     crewIncluded: data.crewIncluded ?? true,
     amenities: data.amenities || [],
@@ -469,6 +481,8 @@ export const villaToListing = (villa: Villa): Listing => ({
   bedrooms: villa.bedrooms,
   rating: 0, // No ratings yet
   price: villa.pricePerNight,
+  cleaningFee: villa.cleaningFee || 0,
+  depositAmount: villa.depositAmount || 0,
   priceUnit: "per day",
   image: villa.images[0] || "",
   images: villa.images,
@@ -482,11 +496,13 @@ export const carToListing = (car: Car): Listing => ({
   title: car.name,
   location: car.location,
   guests: car.seats,
+  brand: car.brand,
   seats: car.seats,
   bodyStyle: car.bodyStyle,
   power: car.power,
   rating: 0, // No ratings yet
   price: car.pricePerDay,
+  depositAmount: car.depositAmount || 0,
   priceUnit: "per day",
   image: car.images[0] || "",
   images: car.images,
@@ -503,6 +519,7 @@ export const yachtToListing = (yacht: Yacht): Listing => ({
   length: yacht.length,
   rating: 0, // No ratings yet
   price: yacht.pricePerHour,
+  depositAmount: yacht.depositAmount || 0,
   priceUnit: "per hour",
   image: yacht.images[0] || "",
   images: yacht.images,

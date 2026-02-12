@@ -136,21 +136,23 @@ const ImageGallery = ({ images, title }: ImageGalleryProps) => {
 
       {/* Desktop: Grid Layout */}
       <div className="hidden md:block">
-        <div className="relative grid grid-cols-4 gap-2 rounded-xl overflow-hidden aspect-[2.2/1]">
+        <div className="relative grid grid-cols-4 grid-rows-2 gap-1.5 rounded-xl overflow-hidden" style={{ height: "60vh", maxHeight: "520px", minHeight: "360px" }}>
           {/* Hero Image - Left Side (Takes 2 columns) */}
-          <div className="relative col-span-2 row-span-2 h-full">
+          <div className="relative col-span-2 row-span-2 overflow-hidden cursor-pointer"
+            onClick={() => { setCurrentImageIndex(0); setIsModalOpen(true); }}
+          >
             <img
               src={galleryImages[0]}
               alt={title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
             {/* Gradient Overlay for text legibility - dark mode only */}
             <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent dark:block hidden" />
             <div className="absolute inset-0 bg-gradient-to-r from-background/30 via-transparent to-transparent dark:block hidden" />
-            
+
             {/* Back Button */}
             <button
-              onClick={() => navigate("/")}
+              onClick={(e) => { e.stopPropagation(); navigate("/"); }}
               className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors z-10"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -159,41 +161,50 @@ const ImageGallery = ({ images, title }: ImageGalleryProps) => {
           </div>
 
           {/* Supporting Images - Right Side (2 columns, 2 rows) */}
-          <div className="relative">
+          <div className="relative overflow-hidden cursor-pointer"
+            onClick={() => { setCurrentImageIndex(1); setIsModalOpen(true); }}
+          >
             <img
               src={galleryImages[1]}
               alt={`${title} - View 2`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <div className="relative">
+          <div className="relative overflow-hidden cursor-pointer"
+            onClick={() => { setCurrentImageIndex(2); setIsModalOpen(true); }}
+          >
             <img
               src={galleryImages[2]}
               alt={`${title} - View 3`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <div className="relative">
+          <div className="relative overflow-hidden cursor-pointer"
+            onClick={() => { setCurrentImageIndex(3); setIsModalOpen(true); }}
+          >
             <img
               src={galleryImages[3]}
               alt={`${title} - View 4`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <div className="relative">
+          <div className="relative overflow-hidden cursor-pointer"
+            onClick={() => { setCurrentImageIndex(4); setIsModalOpen(true); }}
+          >
             <img
               src={galleryImages[4]}
               alt={`${title} - View 5`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
-            
+
             {/* Show All Photos Button */}
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setCurrentImageIndex(0);
                 setIsModalOpen(true);
               }}
-              className="absolute bottom-3 right-3 px-4 py-2 rounded-lg bg-background/90 backdrop-blur-sm text-foreground text-sm font-medium hover:bg-background transition-colors border border-border/50"
+              className="absolute bottom-3 right-3 px-4 py-2 rounded-lg bg-background/90 backdrop-blur-sm text-foreground text-sm font-medium hover:bg-background transition-colors border border-border/50 z-10"
             >
               Show all photos
             </button>

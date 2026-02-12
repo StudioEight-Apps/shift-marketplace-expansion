@@ -50,11 +50,15 @@ const YachtBookingCard = ({
     setIsSubmitting(true);
 
     try {
+      const endHour24 = 10 + selectedHours;
+      const endHour12 = endHour24 > 12 ? endHour24 - 12 : endHour24;
+      const endAmPm = endHour24 >= 12 ? "PM" : "AM";
+
       const yachtData: BookingYacht = {
         name: listing.title,
         date: selectedDate,
         startTime: "10:00 AM",
-        endTime: `${10 + selectedHours}:00 PM`,
+        endTime: `${endHour12}:00 ${endAmPm}`,
         price: total,
         pricePerHour: listing.price,
         hours: selectedHours,
@@ -138,6 +142,16 @@ const YachtBookingCard = ({
               <span className="text-base font-semibold text-foreground">Total</span>
               <span className="text-xl font-bold text-primary">${total.toLocaleString()}</span>
             </div>
+
+            {/* Deposit notice */}
+            {listing.depositAmount > 0 && (
+              <div className="flex items-center justify-between text-sm bg-primary/5 rounded-lg px-3 py-2">
+                <span className="text-muted-foreground text-xs">Deposit due once confirmed</span>
+                <span className="text-primary font-semibold text-sm">
+                  ${listing.depositAmount.toLocaleString()}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

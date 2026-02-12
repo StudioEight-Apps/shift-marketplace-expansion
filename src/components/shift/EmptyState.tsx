@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
+import { useContact } from "@/context/ContactContext";
 
 interface EmptyStateProps {
   assetType: string;
@@ -7,6 +8,8 @@ interface EmptyStateProps {
 }
 
 const EmptyState = ({ assetType, city }: EmptyStateProps) => {
+  const { openContact } = useContact();
+
   return (
     <div className="flex flex-col items-center justify-center py-8 md:py-20 text-center">
       <div className="mb-6 rounded-full bg-secondary/30 p-4">
@@ -18,7 +21,7 @@ const EmptyState = ({ assetType, city }: EmptyStateProps) => {
       <p className="mt-2 max-w-md text-sm text-muted-foreground">
         Our concierge can source options not currently listed.
       </p>
-      <Button variant="cta" className="mt-6">
+      <Button variant="cta" className="mt-6" onClick={openContact}>
         Contact Concierge
       </Button>
     </div>

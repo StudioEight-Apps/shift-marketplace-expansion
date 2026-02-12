@@ -108,6 +108,13 @@ const ListingDetailContent = () => {
     }
   }, [listing, hasSearchDates, searchStartDate, searchEndDate]);
 
+  // For Yachts, inherit search date
+  useEffect(() => {
+    if (listing?.assetType === "Yachts" && hasSearchDates && searchStartDate && !yachtDate) {
+      setYachtDate(searchStartDate);
+    }
+  }, [listing, hasSearchDates, searchStartDate, yachtDate]);
+
   if (loadingListing) {
     return (
       <div className="min-h-screen bg-background">

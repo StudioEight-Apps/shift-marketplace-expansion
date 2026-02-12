@@ -9,7 +9,7 @@ type AssetType = "Stays" | "Cars" | "Yachts";
 
 type FilterType = "price" | "guests" | "beds" | "brand" | "bodyStyle" | "length" | null;
 
-interface FilterState {
+export interface FilterState {
   price: [number, number] | null;
   guests: number | null;
   beds: number | null;
@@ -43,16 +43,16 @@ const PRICE_DISTRIBUTION = [0.1, 0.15, 0.25, 0.35, 0.5, 0.7, 0.45, 0.3];
 
 // Brand data with logos
 const carBrands = [
-  { name: "Ferrari", logo: "FE" },
-  { name: "Lamborghini", logo: "LM" },
-  { name: "Porsche", logo: "PR" },
-  { name: "Mercedes", logo: "MB" },
-  { name: "McLaren", logo: "MC" },
-  { name: "Bentley", logo: "BT" },
-  { name: "Rolls-Royce", logo: "RR" },
-  { name: "Aston Martin", logo: "AM" },
-  { name: "BMW", logo: "BM" },
-  { name: "Range Rover", logo: "RR" },
+  { name: "Ferrari", logo: "https://www.carlogos.org/car-logos/ferrari-logo.png" },
+  { name: "Lamborghini", logo: "https://www.carlogos.org/car-logos/lamborghini-logo.png" },
+  { name: "Porsche", logo: "https://www.carlogos.org/car-logos/porsche-logo.png" },
+  { name: "Mercedes-Benz", logo: "https://www.carlogos.org/car-logos/mercedes-benz-logo.png" },
+  { name: "McLaren", logo: "https://www.carlogos.org/car-logos/mclaren-logo.png" },
+  { name: "Bentley", logo: "https://www.carlogos.org/car-logos/bentley-logo.png" },
+  { name: "Rolls-Royce", logo: "https://www.carlogos.org/car-logos/rolls-royce-logo.png" },
+  { name: "Aston Martin", logo: "https://www.carlogos.org/car-logos/aston-martin-logo.png" },
+  { name: "BMW", logo: "https://www.carlogos.org/car-logos/bmw-logo.png" },
+  { name: "Range Rover", logo: "https://www.carlogos.org/car-logos/land-rover-logo.png" },
 ];
 
 // Body style icons
@@ -89,17 +89,9 @@ const bodyStyleIcons: Record<string, React.ReactNode> = {
       <path d="M6 9h12l1.5 4" />
     </svg>
   ),
-  "Supercar": (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 16h18v-2l-3-5H6L3 14v2z" />
-      <circle cx="6.5" cy="16" r="1.5" />
-      <circle cx="17.5" cy="16" r="1.5" />
-      <path d="M6 9h12l2 4" />
-    </svg>
-  ),
 };
 
-const bodyStyles = ["SUV", "Sedan", "Coupe", "Convertible", "Supercar"];
+const bodyStyles = ["SUV", "Sedan", "Coupe", "Convertible"];
 
 // Format price for display
 const formatPriceValue = (value: number, compact = false): string => {
@@ -419,10 +411,11 @@ const PriceSlider = ({
           }}
           onMouseUp={commitChange}
           onTouchEnd={commitChange}
-          className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer z-10
+          className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-none z-10
             [&::-webkit-slider-thumb]:appearance-none
-            [&::-webkit-slider-thumb]:w-3
-            [&::-webkit-slider-thumb]:h-3
+            [&::-webkit-slider-thumb]:pointer-events-auto
+            [&::-webkit-slider-thumb]:w-4
+            [&::-webkit-slider-thumb]:h-4
             [&::-webkit-slider-thumb]:rounded-full
             [&::-webkit-slider-thumb]:bg-foreground
             [&::-webkit-slider-thumb]:border-2
@@ -430,8 +423,9 @@ const PriceSlider = ({
             [&::-webkit-slider-thumb]:shadow-sm
             [&::-webkit-slider-thumb]:cursor-grab
             [&::-webkit-slider-thumb]:active:cursor-grabbing
-            [&::-moz-range-thumb]:w-3
-            [&::-moz-range-thumb]:h-3
+            [&::-moz-range-thumb]:pointer-events-auto
+            [&::-moz-range-thumb]:w-4
+            [&::-moz-range-thumb]:h-4
             [&::-moz-range-thumb]:rounded-full
             [&::-moz-range-thumb]:bg-foreground
             [&::-moz-range-thumb]:border-2
@@ -452,10 +446,11 @@ const PriceSlider = ({
           }}
           onMouseUp={commitChange}
           onTouchEnd={commitChange}
-          className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer z-20
+          className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-none z-20
             [&::-webkit-slider-thumb]:appearance-none
-            [&::-webkit-slider-thumb]:w-3
-            [&::-webkit-slider-thumb]:h-3
+            [&::-webkit-slider-thumb]:pointer-events-auto
+            [&::-webkit-slider-thumb]:w-4
+            [&::-webkit-slider-thumb]:h-4
             [&::-webkit-slider-thumb]:rounded-full
             [&::-webkit-slider-thumb]:bg-foreground
             [&::-webkit-slider-thumb]:border-2
@@ -463,8 +458,9 @@ const PriceSlider = ({
             [&::-webkit-slider-thumb]:shadow-sm
             [&::-webkit-slider-thumb]:cursor-grab
             [&::-webkit-slider-thumb]:active:cursor-grabbing
-            [&::-moz-range-thumb]:w-3
-            [&::-moz-range-thumb]:h-3
+            [&::-moz-range-thumb]:pointer-events-auto
+            [&::-moz-range-thumb]:w-4
+            [&::-moz-range-thumb]:h-4
             [&::-moz-range-thumb]:rounded-full
             [&::-moz-range-thumb]:bg-foreground
             [&::-moz-range-thumb]:border-2
@@ -554,18 +550,20 @@ const LengthSlider = ({
           step={1}
           value={localMin}
           onChange={(e) => handleMinChange(parseInt(e.target.value))}
-          className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer z-10
+          className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-none z-10
             [&::-webkit-slider-thumb]:appearance-none
-            [&::-webkit-slider-thumb]:w-3.5
-            [&::-webkit-slider-thumb]:h-3.5
+            [&::-webkit-slider-thumb]:pointer-events-auto
+            [&::-webkit-slider-thumb]:w-4
+            [&::-webkit-slider-thumb]:h-4
             [&::-webkit-slider-thumb]:rounded-full
             [&::-webkit-slider-thumb]:bg-foreground
             [&::-webkit-slider-thumb]:border-2
             [&::-webkit-slider-thumb]:border-background
             [&::-webkit-slider-thumb]:shadow-sm
             [&::-webkit-slider-thumb]:cursor-grab
-            [&::-moz-range-thumb]:w-3.5
-            [&::-moz-range-thumb]:h-3.5
+            [&::-moz-range-thumb]:pointer-events-auto
+            [&::-moz-range-thumb]:w-4
+            [&::-moz-range-thumb]:h-4
             [&::-moz-range-thumb]:rounded-full
             [&::-moz-range-thumb]:bg-foreground
             [&::-moz-range-thumb]:border-2
@@ -579,18 +577,20 @@ const LengthSlider = ({
           step={1}
           value={localMax}
           onChange={(e) => handleMaxChange(parseInt(e.target.value))}
-          className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer z-20
+          className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-none z-20
             [&::-webkit-slider-thumb]:appearance-none
-            [&::-webkit-slider-thumb]:w-3.5
-            [&::-webkit-slider-thumb]:h-3.5
+            [&::-webkit-slider-thumb]:pointer-events-auto
+            [&::-webkit-slider-thumb]:w-4
+            [&::-webkit-slider-thumb]:h-4
             [&::-webkit-slider-thumb]:rounded-full
             [&::-webkit-slider-thumb]:bg-foreground
             [&::-webkit-slider-thumb]:border-2
             [&::-webkit-slider-thumb]:border-background
             [&::-webkit-slider-thumb]:shadow-sm
             [&::-webkit-slider-thumb]:cursor-grab
-            [&::-moz-range-thumb]:w-3.5
-            [&::-moz-range-thumb]:h-3.5
+            [&::-moz-range-thumb]:pointer-events-auto
+            [&::-moz-range-thumb]:w-4
+            [&::-moz-range-thumb]:h-4
             [&::-moz-range-thumb]:rounded-full
             [&::-moz-range-thumb]:bg-foreground
             [&::-moz-range-thumb]:border-2
@@ -637,13 +637,12 @@ const BrandGrid = ({
               : "hover:bg-secondary/50"
           )}
         >
-          <div className={cn(
-            "w-8 h-8 rounded flex items-center justify-center text-xs font-medium transition-colors relative",
-            selected.includes(brand.name)
-              ? "bg-foreground/10 text-foreground"
-              : "bg-secondary/60 text-muted-foreground"
-          )}>
-            {brand.logo}
+          <div className="relative w-8 h-8 shrink-0">
+            <img
+              src={brand.logo}
+              alt={brand.name}
+              className="w-8 h-8 object-contain"
+            />
             {selected.includes(brand.name) && (
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full flex items-center justify-center">
                 <Check className="w-2.5 h-2.5 text-background" />
@@ -718,7 +717,7 @@ const BodyStyleList = ({
 };
 
 // Main QuickFilters Component
-const QuickFilters = ({ assetType }: QuickFiltersProps) => {
+const QuickFilters = ({ assetType, onFiltersChange }: QuickFiltersProps) => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [openFilter, setOpenFilter] = useState<FilterType>(null);
   const [tempFilters, setTempFilters] = useState<FilterState>(defaultFilters);
@@ -727,6 +726,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
   useEffect(() => {
     setFilters(defaultFilters);
     setOpenFilter(null);
+    onFiltersChange?.(defaultFilters);
   }, [assetType]);
 
   const openFilterModal = (filterType: FilterType) => {
@@ -746,6 +746,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
   const applyTempFilters = () => {
     setFilters(tempFilters);
     setOpenFilter(null);
+    onFiltersChange?.(tempFilters);
   };
 
   const clearCurrentFilter = () => {
@@ -786,6 +787,7 @@ const QuickFilters = ({ assetType }: QuickFiltersProps) => {
     setFilters(defaultFilters);
     setTempFilters(defaultFilters);
     setOpenFilter(null);
+    onFiltersChange?.(defaultFilters);
   };
 
   const activeCount = getActiveFilterCount();

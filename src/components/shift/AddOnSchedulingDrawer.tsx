@@ -59,6 +59,15 @@ const yachtHourOptions = [
 
 const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
 
+// Convert 24h time string to 12h AM/PM format
+const to12Hour = (time24: string): string => {
+  const [hours] = time24.split(":").map(Number);
+  if (hours === 0) return "12:00 AM";
+  if (hours === 12) return "12:00 PM";
+  if (hours > 12) return `${hours - 12}:00 PM`;
+  return `${hours}:00 AM`;
+};
+
 const AddOnSchedulingDrawer = ({
   open,
   onOpenChange,
@@ -436,7 +445,7 @@ const AddOnSchedulingDrawer = ({
                           : "bg-secondary/50 text-foreground hover:bg-secondary border border-border-subtle"
                       )}
                     >
-                      {time}
+                      {to12Hour(time)}
                     </button>
                   );
                 })}
@@ -447,7 +456,7 @@ const AddOnSchedulingDrawer = ({
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-primary" />
                     <span className="text-foreground font-medium">
-                      {format(yachtDate!, "MMM d")} · {yachtStartTime} – {yachtEndTime}
+                      {format(yachtDate!, "MMM d")} · {to12Hour(yachtStartTime)} – {to12Hour(yachtEndTime)}
                     </span>
                   </div>
                 </div>
