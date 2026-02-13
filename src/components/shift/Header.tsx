@@ -58,15 +58,21 @@ const Header = () => {
             >
               Contact Us
             </button>
-
-            {/* Mobile contact button - visible, prominent */}
-            <button
-              onClick={openContact}
-              className="md:hidden flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+            <a
+              href="tel:+17868770975"
+              className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              <Phone className="h-3 w-3" />
-              Contact
-            </button>
+              <Phone className="h-3.5 w-3.5" />
+              Call Us
+            </a>
+
+            {/* Mobile call button - phone icon only */}
+            <a
+              href="tel:+17868770975"
+              className="md:hidden flex items-center justify-center rounded-full bg-primary/10 border border-primary/20 h-8 w-8 text-primary hover:bg-primary/20 transition-colors"
+            >
+              <Phone className="h-3.5 w-3.5" />
+            </a>
 
             {/* Profile dropdown */}
             <DropdownMenu>

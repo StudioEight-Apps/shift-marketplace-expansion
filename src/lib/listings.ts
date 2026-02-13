@@ -176,8 +176,8 @@ export const getVillas = (
         minimumStay: data.minimumStay || 1,
         status: data.status || "active",
         featured: data.featured || false,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt) : new Date()),
       };
     });
 
@@ -225,8 +225,8 @@ export const getVillaById = async (id: string): Promise<Villa | null> => {
     minimumStay: data.minimumStay || 1,
     status: data.status || "active",
     featured: data.featured || false,
-    createdAt: data.createdAt?.toDate() || new Date(),
-    updatedAt: data.updatedAt?.toDate() || new Date(),
+    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date()),
+    updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt) : new Date()),
   };
 };
 
@@ -285,8 +285,8 @@ export const getCars = (
         blockedDates: data.blockedDates || [],
         status: data.status || "active",
         featured: data.featured || false,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt) : new Date()),
       };
     });
 
@@ -333,8 +333,8 @@ export const getCarById = async (id: string): Promise<Car | null> => {
     blockedDates: data.blockedDates || [],
     status: data.status || "active",
     featured: data.featured || false,
-    createdAt: data.createdAt?.toDate() || new Date(),
-    updatedAt: data.updatedAt?.toDate() || new Date(),
+    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date()),
+    updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt) : new Date()),
   };
 };
 
@@ -392,8 +392,8 @@ export const getYachts = (
         blockedDates: data.blockedDates || [],
         status: data.status || "active",
         featured: data.featured || false,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt) : new Date()),
       };
     });
 
@@ -439,8 +439,8 @@ export const getYachtById = async (id: string): Promise<Yacht | null> => {
     blockedDates: data.blockedDates || [],
     status: data.status || "active",
     featured: data.featured || false,
-    createdAt: data.createdAt?.toDate() || new Date(),
-    updatedAt: data.updatedAt?.toDate() || new Date(),
+    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date()),
+    updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt) : new Date()),
   };
 };
 
@@ -558,8 +558,8 @@ export const getBookingRequests = (
         status: data.status || "pending",
         guestNotes: data.guestNotes,
         adminNotes: data.adminNotes,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt) : new Date()),
         reviewedAt: data.reviewedAt?.toDate(),
         reviewedBy: data.reviewedBy,
       };
