@@ -21,9 +21,10 @@ const BRANDS: BrandOption[] = [
   { name: "McLaren", logo: "https://www.carlogos.org/car-logos/mclaren-logo.png" },
   { name: "Aston Martin", logo: "https://www.carlogos.org/car-logos/aston-martin-logo.png" },
   { name: "Bentley", logo: "https://www.carlogos.org/car-logos/bentley-logo.png" },
-  { name: "Rolls-Royce", logo: "https://www.carlogos.org/car-logos/rolls-royce-logo.png" },
+  { name: "Rolls Royce", logo: "https://www.carlogos.org/car-logos/rolls-royce-logo.png" },
   { name: "Mercedes-Benz", logo: "https://www.carlogos.org/car-logos/mercedes-benz-logo.png" },
   { name: "BMW", logo: "https://www.carlogos.org/car-logos/bmw-logo.png" },
+  { name: "Chevrolet", logo: "https://www.carlogos.org/car-logos/chevrolet-logo.png" },
   { name: "Range Rover", logo: "https://www.carlogos.org/car-logos/land-rover-logo.png" },
   { name: "Land Rover", logo: "https://www.carlogos.org/car-logos/land-rover-logo.png" },
   { name: "Maserati", logo: "https://www.carlogos.org/car-logos/maserati-logo.png" },
@@ -37,7 +38,7 @@ const BRANDS: BrandOption[] = [
   { name: "Lexus", logo: "https://www.carlogos.org/car-logos/lexus-logo.png" },
 ];
 
-const BODY_STYLES = ["SUV", "Sedan", "Coupe", "Convertible", "Supercar"];
+const BODY_STYLES = ["SUV", "Sedan", "Coupe", "Convertible"];
 
 const MARKET_OPTIONS = [
   "Miami, FL",
@@ -47,6 +48,7 @@ const MARKET_OPTIONS = [
   "Scottsdale, AZ",
   "Aspen, CO",
   "Austin, TX",
+  "Chicago, IL",
   "Nashville, TN",
   "The Hamptons, NY",
   "Park City, UT"
@@ -60,9 +62,10 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
     brand: car?.brand || "",
     location: car?.location || "Miami, FL",
     description: car?.description || "",
-    pricePerDay: car?.pricePerDay || 0,
+    pricePerDay: car?.pricePerDay || "",
+    depositAmount: car?.depositAmount || "",
     bodyStyle: car?.bodyStyle || "SUV",
-    seats: car?.seats || 4,
+    seats: car?.seats || "",
     status: car?.status || "active" as const,
     featured: car?.featured || false,
   });
@@ -145,6 +148,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
         location: form.location,
         description: form.description,
         pricePerDay: Number(form.pricePerDay),
+        depositAmount: Number(form.depositAmount) || 0,
         bodyStyle: form.bodyStyle,
         seats: Number(form.seats),
         images: allImages,
@@ -317,10 +321,22 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
               <input
                 type="number"
                 value={form.pricePerDay}
-                onChange={(e) => setForm({ ...form, pricePerDay: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, pricePerDay: e.target.value })}
                 className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
-                min="0"
+                min="1"
+                placeholder="0"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1.5">Deposit Amount ($)</label>
+              <input
+                type="number"
+                value={form.depositAmount}
+                onChange={(e) => setForm({ ...form, depositAmount: e.target.value })}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
+                placeholder="0"
+                min="0"
               />
             </div>
             <div>
@@ -341,9 +357,10 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
               <input
                 type="number"
                 value={form.seats}
-                onChange={(e) => setForm({ ...form, seats: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, seats: e.target.value })}
                 className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="1"
+                placeholder="4"
                 required
               />
             </div>

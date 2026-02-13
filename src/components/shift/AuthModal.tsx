@@ -5,11 +5,19 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { z } from "zod";
 
+export interface GuestInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  defaultTab?: "login" | "signup";
+  onGuestSubmit?: (guestInfo: GuestInfo) => void;
+  defaultTab?: "login" | "signup" | "guest";
 }
 
 const emailSchema = z.string().trim().email("Invalid email address");
@@ -17,8 +25,8 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 const nameSchema = z.string().trim().min(1, "This field is required");
 const phoneSchema = z.string().trim().min(10, "Please enter a valid phone number");
 
-const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthModalProps) => {
-  const [activeTab, setActiveTab] = useState<"login" | "signup">(defaultTab);
+const AuthModal = ({ isOpen, onClose, onSuccess, onGuestSubmit, defaultTab = "login" }: AuthModalProps) => {
+  const [activeTab, setActiveTab] = useState<"login" | "signup" | "guest">(defaultTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -32,8 +40,8 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
   if (!isOpen) return null;
 
   const validateForm = () => {
-    // Validate signup-specific fields
-    if (activeTab === "signup") {
+    // Validate signup and guest fields (both need name/email/phone)
+    if (activeTab === "signup" || activeTab === "guest") {
       const firstNameResult = nameSchema.safeParse(firstName);
       if (!firstNameResult.success) {
         setError("First name is required");
@@ -56,10 +64,14 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
       setError(emailResult.error.errors[0].message);
       return false;
     }
-    const passwordResult = passwordSchema.safeParse(password);
-    if (!passwordResult.success) {
-      setError(passwordResult.error.errors[0].message);
-      return false;
+
+    // Only validate password for login/signup (not guest)
+    if (activeTab !== "guest") {
+      const passwordResult = passwordSchema.safeParse(password);
+      if (!passwordResult.success) {
+        setError(passwordResult.error.errors[0].message);
+        return false;
+      }
     }
     return true;
   };
@@ -72,6 +84,13 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
 
     setLoading(true);
     try {
+      if (activeTab === "guest") {
+        // Guest flow — no Firebase Auth, just pass info back
+        onGuestSubmit?.({ firstName, lastName, email, phone });
+        onClose();
+        return;
+      }
+
       if (activeTab === "login") {
         await login(email, password);
       } else {
@@ -154,12 +173,25 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
           >
             Sign Up
           </button>
+          <button
+            onClick={() => {
+              setActiveTab("guest");
+              setError("");
+            }}
+            className={`flex-1 pb-3 text-sm font-medium transition-colors ${
+              activeTab === "guest"
+                ? "text-foreground border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Guest
+          </button>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Signup-only fields */}
-          {activeTab === "signup" && (
+          {/* Name & phone fields for signup and guest */}
+          {(activeTab === "signup" || activeTab === "guest") && (
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -209,26 +241,29 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
               disabled={loading}
             />
           </div>
-          <div>
-            <label className="block text-sm text-muted-foreground mb-1.5">Password</label>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="bg-background border-border-subtle pr-10"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+          {/* Password field — only for login/signup, not guest */}
+          {activeTab !== "guest" && (
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1.5">Password</label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="bg-background border-border-subtle pr-10"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {error && (
             <p className="text-sm text-destructive">{error}</p>
@@ -239,14 +274,22 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultTab = "login" }: AuthMod
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-5"
             disabled={loading}
           >
-            {loading ? "Please wait..." : activeTab === "login" ? "Log In" : "Sign Up"}
+            {loading
+              ? "Please wait..."
+              : activeTab === "login"
+                ? "Log In"
+                : activeTab === "signup"
+                  ? "Sign Up"
+                  : "Continue as Guest"}
           </Button>
         </form>
 
         <p className="text-xs text-muted-foreground text-center mt-4">
           {activeTab === "login"
             ? "Don't have an account? Click Sign Up above."
-            : "Already have an account? Click Log In above."}
+            : activeTab === "signup"
+              ? "Already have an account? Click Log In above."
+              : "No account needed. We'll contact you to confirm your booking."}
         </p>
       </div>
     </div>

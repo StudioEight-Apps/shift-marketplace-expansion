@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "./Logo";
-import { User, Phone } from "lucide-react";
+import { User } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import AuthModal from "./AuthModal";
 import { useAuth } from "@/context/AuthContext";
@@ -58,22 +58,6 @@ const Header = () => {
             >
               Contact Us
             </button>
-            <a
-              href="tel:+17868770975"
-              className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Phone className="h-3.5 w-3.5" />
-              Call Us
-            </a>
-
-            {/* Mobile call button - phone icon only */}
-            <a
-              href="tel:+17868770975"
-              className="md:hidden flex items-center justify-center rounded-full bg-primary/10 border border-primary/20 h-8 w-8 text-primary hover:bg-primary/20 transition-colors"
-            >
-              <Phone className="h-3.5 w-3.5" />
-            </a>
-
             {/* Profile dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

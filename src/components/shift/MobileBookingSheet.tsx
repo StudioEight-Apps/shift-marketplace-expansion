@@ -4,7 +4,8 @@ import { X, Car, Anchor, Home } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useTrip } from "@/context/TripContext";
-import { useAuth, BookingRequestInput, BookingVilla, BookingCar, BookingYacht } from "@/context/AuthContext";
+import { useAuth, BookingRequestInput, BookingVilla, BookingCar, BookingYacht, GuestInfo } from "@/context/AuthContext";
+import { notifyBooking } from "@/lib/notify";
 import DateRangePicker from "./DateRangePicker";
 import YachtDatePicker from "./YachtDatePicker";
 import AuthModal from "./AuthModal";
@@ -122,7 +123,7 @@ const MobileBookingSheet = ({
     return `${format(yachtBooking.startDate, "MMM d")} · ${to12Hour(yachtBooking.startTime)}–${to12Hour(yachtBooking.endTime)}`;
   };
 
-  const handleBookingSubmit = async () => {
+  const handleBookingSubmit = async (guestInfo?: GuestInfo) => {
     if (!isValidBooking) return;
 
     setIsSubmitting(true);
@@ -191,9 +192,16 @@ const MobileBookingSheet = ({
         car: finalCar,
         yacht: finalYacht,
         grandTotal,
+        ...(guestInfo ? { guestInfo } : {}),
       };
 
       const requestId = await addBookingRequest(bookingInput);
+
+      // Fire-and-forget email notification
+      const customer = guestInfo
+        ? { uid: "guest", name: `${guestInfo.firstName} ${guestInfo.lastName}`.trim(), email: guestInfo.email, phone: guestInfo.phone }
+        : { uid: user!.uid, name: `${user!.displayName || ""}`.trim() || "Registered User", email: user!.email || "", phone: "" };
+      notifyBooking({ customer, villa: finalVilla, car: finalCar, yacht: finalYacht, grandTotal, requestId });
 
       setConfirmationData({
         requestId,
@@ -223,6 +231,10 @@ const MobileBookingSheet = ({
 
   const handleAuthSuccess = () => {
     handleBookingSubmit();
+  };
+
+  const handleGuestSubmit = (guestInfo: GuestInfo) => {
+    handleBookingSubmit(guestInfo);
   };
 
   return (
@@ -443,6 +455,7 @@ const MobileBookingSheet = ({
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}
+        onGuestSubmit={handleGuestSubmit}
         defaultTab="login"
       />
 

@@ -17,6 +17,7 @@ export interface City {
 export const cities: City[] = [
   { id: "aspen", name: "Aspen", state: "CO", hasYachts: false },
   { id: "austin", name: "Austin", state: "TX", hasYachts: false },
+  { id: "chicago", name: "Chicago", state: "IL", hasYachts: false },
   { id: "hamptons", name: "The Hamptons", state: "NY", hasYachts: true },
   { id: "las-vegas", name: "Las Vegas", state: "NV", hasYachts: false },
   { id: "los-angeles", name: "Los Angeles", state: "CA", hasYachts: true },

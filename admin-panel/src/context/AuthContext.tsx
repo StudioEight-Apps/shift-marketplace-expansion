@@ -2,10 +2,15 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import type { UserRole } from "@/lib/types";
+
+const ALLOWED_ROLES: UserRole[] = ["owner", "admin", "viewer"];
 
 interface AuthContextType {
   user: User | null;
+  role: UserRole | null;
   loading: boolean;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -14,24 +19,29 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Check if user has admin role in Firestore
+        // Check if user has an allowed role in Firestore
         const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
         const userData = userDoc.data();
+        const userRole = userData?.role as string;
 
-        if (userData?.role === "admin") {
+        if (userRole && ALLOWED_ROLES.includes(userRole as UserRole)) {
           setUser(firebaseUser);
+          setRole(userRole as UserRole);
         } else {
-          // Not an admin - sign them out and don't set user
+          // Not an authorized role - sign them out
           await signOut(auth);
           setUser(null);
+          setRole(null);
         }
       } else {
         setUser(null);
+        setRole(null);
       }
       setLoading(false);
     });
@@ -42,12 +52,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // First authenticate with Firebase
     const credential = await signInWithEmailAndPassword(auth, email, password);
 
-    // Then check if user has admin role in Firestore
+    // Then check if user has an allowed role in Firestore
     const userDoc = await getDoc(doc(db, "users", credential.user.uid));
     const userData = userDoc.data();
+    const userRole = userData?.role as string;
 
-    if (userData?.role !== "admin") {
-      // Not an admin - sign them out and throw error
+    if (!userRole || !ALLOWED_ROLES.includes(userRole as UserRole)) {
+      // Not authorized - sign them out and throw error
       await signOut(auth);
       throw new Error("Unauthorized access");
     }
@@ -58,7 +69,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        role,
+        loading,
+        isAuthenticated: !!user,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

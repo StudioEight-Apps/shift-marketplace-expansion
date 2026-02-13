@@ -95,9 +95,17 @@ function deriveStatus(data: any): BookingRequest["status"] {
   return "Pending";
 }
 
+export interface GuestInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
 // Input type for creating a new booking (without auto-generated fields)
 export type BookingRequestInput = Omit<BookingRequest, "id" | "status" | "createdAt" | "customer"> & {
   customer?: Partial<BookingRequest["customer"]>;
+  guestInfo?: GuestInfo;
 };
 
 interface AuthContextType {
@@ -254,18 +262,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const addBookingRequest = async (request: BookingRequestInput): Promise<string> => {
     if (!db) throw new Error("Firestore is not configured");
-    if (!user) throw new Error("User must be logged in to create a booking");
+    if (!user && !request.guestInfo) throw new Error("User must be logged in or provide guest info to create a booking");
+
+    // Build customer data — either from authenticated user or guest info
+    const customer = request.guestInfo
+      ? {
+          uid: "guest",
+          name: `${request.guestInfo.firstName} ${request.guestInfo.lastName}`.trim(),
+          email: request.guestInfo.email,
+          phone: request.guestInfo.phone,
+        }
+      : {
+          uid: user!.uid,
+          name: `${profile.firstName} ${profile.lastName}`.trim() || "Guest",
+          email: profile.email || user!.email || "",
+          phone: profile.phone || "",
+        };
 
     // Build the document with Firestore Timestamps
     const bookingDoc = {
       status: "Pending" as const,
       createdAt: Timestamp.now(),
-      customer: {
-        uid: user.uid,
-        name: `${profile.firstName} ${profile.lastName}`.trim() || "Guest",
-        email: profile.email || user.email || "",
-        phone: profile.phone || "",
-      },
+      customer,
       villa: request.villa ? {
         name: request.villa.name,
         checkIn: Timestamp.fromDate(request.villa.checkIn),

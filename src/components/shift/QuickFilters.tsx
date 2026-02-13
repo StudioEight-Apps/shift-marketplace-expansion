@@ -49,10 +49,15 @@ const carBrands = [
   { name: "Mercedes-Benz", logo: "https://www.carlogos.org/car-logos/mercedes-benz-logo.png" },
   { name: "McLaren", logo: "https://www.carlogos.org/car-logos/mclaren-logo.png" },
   { name: "Bentley", logo: "https://www.carlogos.org/car-logos/bentley-logo.png" },
-  { name: "Rolls-Royce", logo: "https://www.carlogos.org/car-logos/rolls-royce-logo.png" },
+  { name: "Rolls Royce", logo: "https://www.carlogos.org/car-logos/rolls-royce-logo.png" },
   { name: "Aston Martin", logo: "https://www.carlogos.org/car-logos/aston-martin-logo.png" },
   { name: "BMW", logo: "https://www.carlogos.org/car-logos/bmw-logo.png" },
+  { name: "Chevrolet", logo: "https://www.carlogos.org/car-logos/chevrolet-logo.png" },
+  { name: "Cadillac", logo: "https://www.carlogos.org/car-logos/cadillac-logo.png" },
   { name: "Range Rover", logo: "https://www.carlogos.org/car-logos/land-rover-logo.png" },
+  { name: "Audi", logo: "https://www.carlogos.org/car-logos/audi-logo.png" },
+  { name: "Maserati", logo: "https://www.carlogos.org/car-logos/maserati-logo.png" },
+  { name: "Tesla", logo: "https://www.carlogos.org/car-logos/tesla-logo.png" },
 ];
 
 // Body style icons

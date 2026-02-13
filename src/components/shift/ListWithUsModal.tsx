@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useContact } from "@/context/ContactContext";
+import { notifyListWithUs } from "@/lib/notify";
 import { toast } from "sonner";
 
 type ListingType = "villa" | "car" | "yacht" | null;
@@ -14,6 +15,7 @@ const MAX_PHOTOS = 8;
 const MARKETS = [
   "Aspen, CO",
   "Austin, TX",
+  "Chicago, IL",
   "Las Vegas, NV",
   "Los Angeles, CA",
   "Miami, FL",
@@ -197,6 +199,18 @@ const ListWithUsModal = () => {
         photoUrls.length > 0 ? `Photos: ${photoUrls.length} uploaded` : null,
         notes.trim() ? `Notes: ${notes.trim()}` : null,
       ].filter(Boolean).join("\n");
+
+      // Fire-and-forget email notification
+      notifyListWithUs({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        market,
+        listingType: typeLabel,
+        details,
+        notes: notes.trim(),
+        photoCount: photoUrls.length,
+      });
 
       // Sync to GHL (fire-and-forget)
       syncToGHL({

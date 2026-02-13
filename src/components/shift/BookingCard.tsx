@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { differenceInDays, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useTrip } from "@/context/TripContext";
-import { useAuth, BookingRequestInput, BookingVilla, BookingCar, BookingYacht } from "@/context/AuthContext";
+import { useAuth, BookingRequestInput, BookingVilla, BookingCar, BookingYacht, GuestInfo } from "@/context/AuthContext";
+import { notifyBooking } from "@/lib/notify";
 import DateRangePicker from "./DateRangePicker";
 import AuthModal from "./AuthModal";
 import BookingConfirmation from "./BookingConfirmation";
@@ -87,7 +88,7 @@ const BookingCard = ({
     return `${format(yachtBooking.startDate, "MMM d")} · ${to12Hour(yachtBooking.startTime)}–${to12Hour(yachtBooking.endTime)}`;
   };
 
-  const handleBookingSubmit = async () => {
+  const handleBookingSubmit = async (guestInfo?: GuestInfo) => {
     if (!currentDates.start || !currentDates.end) return;
 
     setIsSubmitting(true);
@@ -159,9 +160,16 @@ const BookingCard = ({
         car: finalCar,
         yacht: finalYacht,
         grandTotal,
+        ...(guestInfo ? { guestInfo } : {}),
       };
 
       const requestId = await addBookingRequest(bookingInput);
+
+      // Fire-and-forget email notification
+      const customer = guestInfo
+        ? { uid: "guest", name: `${guestInfo.firstName} ${guestInfo.lastName}`.trim(), email: guestInfo.email, phone: guestInfo.phone }
+        : { uid: user!.uid, name: `${user!.displayName || ""}`.trim() || "Registered User", email: user!.email || "", phone: "" };
+      notifyBooking({ customer, villa: finalVilla, car: finalCar, yacht: finalYacht, grandTotal, requestId });
 
       setConfirmationData({
         requestId,
@@ -188,8 +196,13 @@ const BookingCard = ({
   };
 
   const handleAuthSuccess = () => {
-    // After successful login, proceed with booking
+    // After successful login/signup, proceed with booking
     handleBookingSubmit();
+  };
+
+  const handleGuestSubmit = (guestInfo: GuestInfo) => {
+    // Guest chose to continue without account — submit booking with guest info
+    handleBookingSubmit(guestInfo);
   };
 
   return (
@@ -310,6 +323,7 @@ const BookingCard = ({
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}
+        onGuestSubmit={handleGuestSubmit}
         defaultTab="login"
       />
 

@@ -11,6 +11,9 @@ import {
   Download,
   Loader2,
   Link2,
+  ArrowUpDown,
+  MapPin,
+  X,
 } from "lucide-react";
 import Header from "@/components/Header";
 import {
@@ -64,7 +67,22 @@ const PUBLIC_BASE_URL = "https://adoring-ptolemy.vercel.app";
 // ---------------------------------------------------------------------------
 type TabType = "villas" | "cars" | "yachts";
 type SourceFilter = "all" | "shift_fleet" | "external";
+type SortOption = "name_asc" | "name_desc" | "price_asc" | "price_desc" | "newest" | "oldest";
 type AnyListing = Villa | CarType | Yacht;
+
+const MARKET_OPTIONS = [
+  "Aspen, CO",
+  "Austin, TX",
+  "Chicago, IL",
+  "Las Vegas, NV",
+  "Los Angeles, CA",
+  "Miami, FL",
+  "Nashville, TN",
+  "New York City, NY",
+  "Park City, UT",
+  "Scottsdale, AZ",
+  "The Hamptons, NY",
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -122,6 +140,12 @@ function getLocation(listing: AnyListing): string {
   return listing.location ?? "";
 }
 
+function getRawPrice(listing: AnyListing, tab: TabType): number {
+  if (tab === "villas") return (listing as Villa).pricePerNight || 0;
+  if (tab === "cars") return (listing as CarType).pricePerDay || 0;
+  return (listing as Yacht).pricePerHour || 0;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -138,6 +162,8 @@ const Inventory = () => {
   const [activeTab, setActiveTab] = useState<TabType>("villas");
   const [searchQuery, setSearchQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
+  const [sortOption, setSortOption] = useState<SortOption>("newest");
 
   // Modal state
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -189,9 +215,13 @@ const Inventory = () => {
       items = items.filter((item) => {
         const key = getSourceKey(item, activeTab);
         if (sourceFilter === "shift_fleet") return key === "shift_fleet";
-        // "external" means anything that is not shift_fleet
         return key !== "shift_fleet";
       });
+    }
+
+    // City filter
+    if (cityFilter !== "all") {
+      items = items.filter((item) => getLocation(item) === cityFilter);
     }
 
     // Search
@@ -204,8 +234,27 @@ const Inventory = () => {
       );
     }
 
+    // Sort
+    items = [...items].sort((a, b) => {
+      switch (sortOption) {
+        case "name_asc":
+          return a.name.localeCompare(b.name);
+        case "name_desc":
+          return b.name.localeCompare(a.name);
+        case "price_asc":
+          return getRawPrice(a, activeTab) - getRawPrice(b, activeTab);
+        case "price_desc":
+          return getRawPrice(b, activeTab) - getRawPrice(a, activeTab);
+        case "oldest":
+          return ((a as any).createdAt?.seconds || 0) - ((b as any).createdAt?.seconds || 0);
+        case "newest":
+        default:
+          return ((b as any).createdAt?.seconds || 0) - ((a as any).createdAt?.seconds || 0);
+      }
+    });
+
     return items;
-  }, [activeTab, villas, cars, yachts, sourceFilter, searchQuery]);
+  }, [activeTab, villas, cars, yachts, sourceFilter, cityFilter, searchQuery, sortOption]);
 
   // ---- Permissions ----
   const canAddEdit = role ? hasPermission(role, "add_edit_listings") : false;
@@ -331,6 +380,8 @@ const Inventory = () => {
                   setActiveTab(tab.id);
                   setSearchQuery("");
                   setSourceFilter("all");
+                  setCityFilter("all");
+                  setSortOption("newest");
                 }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors",
@@ -372,7 +423,7 @@ const Inventory = () => {
           </div>
         </div>
 
-        {/* ---- Search + source filter ---- */}
+        {/* ---- Search + filters ---- */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -384,6 +435,44 @@ const Inventory = () => {
             />
           </div>
 
+          {/* City filter */}
+          <div className="relative">
+            <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <select
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              className={cn(
+                "pl-8 pr-8 py-1.5 rounded-md text-sm font-medium border appearance-none cursor-pointer transition-colors",
+                cityFilter !== "all"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card text-muted-foreground border-border hover:text-foreground",
+              )}
+            >
+              <option value="all">All Cities</option>
+              {MARKET_OPTIONS.map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort */}
+          <div className="relative">
+            <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value as SortOption)}
+              className="pl-8 pr-8 py-1.5 rounded-md text-sm font-medium bg-card text-muted-foreground border border-border appearance-none cursor-pointer hover:text-foreground transition-colors"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="price_desc">Price: High → Low</option>
+              <option value="price_asc">Price: Low → High</option>
+              <option value="name_asc">Name: A → Z</option>
+              <option value="name_desc">Name: Z → A</option>
+            </select>
+          </div>
+
+          {/* Source filter pills */}
           <div className="flex gap-1">
             {sourceFilters.map((sf) => (
               <button
@@ -400,6 +489,22 @@ const Inventory = () => {
               </button>
             ))}
           </div>
+
+          {/* Active filter indicator */}
+          {(cityFilter !== "all" || sortOption !== "newest" || sourceFilter !== "all" || searchQuery) && (
+            <button
+              onClick={() => {
+                setCityFilter("all");
+                setSortOption("newest");
+                setSourceFilter("all");
+                setSearchQuery("");
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <X className="h-3 w-3" />
+              Clear all
+            </button>
+          )}
         </div>
 
         {/* ---- Table ---- */}
@@ -532,7 +637,7 @@ const Inventory = () => {
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             title="Edit"
-                            disabled={!canAddEdit || !shiftFleet}
+                            disabled={!canAddEdit}
                             onClick={() => handleEdit(listing)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -544,7 +649,7 @@ const Inventory = () => {
                             size="icon"
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                             title="Delete"
-                            disabled={!canDelete || !shiftFleet}
+                            disabled={!canDelete}
                             onClick={() => {
                               setSelectedListing(listing);
                               setDeleteOpen(true);

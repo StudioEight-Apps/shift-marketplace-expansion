@@ -23,6 +23,7 @@ const MARKET_OPTIONS = [
   "Scottsdale, AZ",
   "Aspen, CO",
   "Austin, TX",
+  "Chicago, IL",
   "Nashville, TN",
   "The Hamptons, NY",
   "Park City, UT"
@@ -41,6 +42,8 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
     zipCode: villa?.zipCode || "",
     description: villa?.description || "",
     pricePerNight: villa?.pricePerNight || "",
+    cleaningFee: villa?.cleaningFee || "",
+    depositAmount: villa?.depositAmount || "",
     bedrooms: villa?.bedrooms || "",
     bathrooms: villa?.bathrooms || "",
     maxGuests: villa?.maxGuests || "",
@@ -291,6 +294,8 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
         location: form.market,
         description: form.description,
         pricePerNight: Number(form.pricePerNight),
+        cleaningFee: Number(form.cleaningFee) || 0,
+        depositAmount: Number(form.depositAmount) || 0,
         bedrooms: Number(form.bedrooms),
         bathrooms: Number(form.bathrooms),
         maxGuests: Number(form.maxGuests),
@@ -364,34 +369,34 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-card border border-border rounded-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
         <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex justify-between items-center z-10">
-          <h2 className="text-xl font-semibold text-white">
+          <h2 className="text-xl font-semibold text-foreground">
             {isEditing ? "Edit Villa" : "Add New Villa"}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
-            <X className="h-5 w-5 text-gray-400" />
+          <button onClick={onClose} className="p-2 hover:bg-accent rounded-lg">
+            <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Name */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Name *</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Name *</label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               required
             />
           </div>
 
           {/* Market */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Market *</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Market *</label>
             <select
               value={form.market}
               onChange={(e) => setForm({ ...form, market: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               required
             >
               {MARKET_OPTIONS.map((market) => (
@@ -402,7 +407,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
 
           {/* Address */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">
+            <label className="block text-sm text-muted-foreground mb-1.5">
               Street Address *
             </label>
             <input
@@ -410,13 +415,13 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
               type="text"
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               autoComplete="new-password"
               name="address-autocomplete-disabled"
               id="address-field-unique"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               This address will not be available to users view unless they book it successfully
             </p>
           </div>
@@ -424,33 +429,33 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
           {/* City, State, Zip */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">City *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">City *</label>
               <input
                 type="text"
                 value={form.city}
                 onChange={(e) => setForm({ ...form, city: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">State *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">State *</label>
               <input
                 type="text"
                 value={form.state}
                 onChange={(e) => setForm({ ...form, state: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 maxLength={2}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Zip Code *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Zip Code *</label>
               <input
                 type="text"
                 value={form.zipCode}
                 onChange={(e) => setForm({ ...form, zipCode: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 required
               />
             </div>
@@ -458,22 +463,22 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
 
           {/* Neighborhood */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Neighborhood</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Neighborhood</label>
             <input
               type="text"
               value={form.neighborhood}
               onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Description *</label>
+            <label className="block text-sm text-muted-foreground mb-1.5">Description *</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white resize-none"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground resize-none"
               rows={3}
               required
             />
@@ -482,57 +487,79 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
           {/* Grid: Price, Bedrooms, Bathrooms, Guests */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Price per Night *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Price per Night *</label>
               <input
                 type="number"
                 value={form.pricePerNight}
                 onChange={(e) => setForm({ ...form, pricePerNight: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="1"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Minimum Stay (nights) *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Minimum Stay (nights) *</label>
               <input
                 type="number"
                 value={form.minimumStay}
                 onChange={(e) => setForm({ ...form, minimumStay: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="1"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Bedrooms *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Cleaning Fee ($)</label>
+              <input
+                type="number"
+                value={form.cleaningFee}
+                onChange={(e) => setForm({ ...form, cleaningFee: e.target.value })}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1.5">Deposit Amount ($)</label>
+              <input
+                type="number"
+                value={form.depositAmount}
+                onChange={(e) => setForm({ ...form, depositAmount: e.target.value })}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1.5">Bedrooms *</label>
               <input
                 type="number"
                 value={form.bedrooms}
                 onChange={(e) => setForm({ ...form, bedrooms: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="1"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Bathrooms *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Bathrooms *</label>
               <input
                 type="number"
                 value={form.bathrooms}
                 onChange={(e) => setForm({ ...form, bathrooms: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="0.5"
                 step="0.5"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Max Guests *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Max Guests *</label>
               <input
                 type="number"
                 value={form.maxGuests}
                 onChange={(e) => setForm({ ...form, maxGuests: e.target.value })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="1"
                 required
               />
@@ -541,23 +568,23 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
 
           {/* Amenities */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Amenities</label>
+            <label className="block text-sm text-muted-foreground mb-2">Amenities</label>
 
             {/* Selected Amenities */}
             {form.amenities.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs text-gray-500 mb-2">Selected Amenities</p>
+                <p className="text-xs text-muted-foreground mb-2">Selected Amenities</p>
                 <div className="flex flex-wrap gap-2">
                   {form.amenities.map((amenity) => (
                     <div
                       key={amenity}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-black rounded-lg text-sm"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm"
                     >
                       <span>{amenity}</span>
                       <button
                         type="button"
                         onClick={() => removeAmenity(amenity)}
-                        className="ml-1 hover:bg-black/10 rounded p-0.5"
+                        className="ml-1 hover:bg-primary-foreground/10 rounded p-0.5"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -568,7 +595,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
             )}
 
             {/* Quick Select Amenities */}
-            <p className="text-xs text-gray-500 mb-2">Quick Select</p>
+            <p className="text-xs text-muted-foreground mb-2">Quick Select</p>
             <div className="flex flex-wrap gap-2 mb-3">
               {AMENITIES_OPTIONS.map((amenity) => (
                 <button
@@ -577,8 +604,8 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
                   onClick={() => toggleAmenity(amenity)}
                   className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                     form.amenities.includes(amenity)
-                      ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                      : "bg-background border border-border text-gray-400 hover:text-white hover:border-primary"
+                      ? "bg-muted text-muted-foreground cursor-not-allowed"
+                      : "bg-background border border-border text-muted-foreground hover:text-foreground hover:border-primary"
                   }`}
                   disabled={form.amenities.includes(amenity)}
                 >
@@ -594,12 +621,12 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
                 value={customAmenity}
                 onChange={(e) => setCustomAmenity(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomAmenity())}
-                className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-white text-sm"
+                className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-foreground text-sm"
               />
               <button
                 type="button"
                 onClick={addCustomAmenity}
-                className="px-4 py-2 bg-primary text-black text-sm font-medium rounded-lg hover:bg-primary/90"
+                className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90"
               >
                 Add
               </button>
@@ -608,14 +635,14 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
 
           {/* Photos */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">
+            <label className="block text-sm text-muted-foreground mb-2">
               Photos {(existingPhotos.length + photoFiles.length) > 0 && `(${existingPhotos.length + photoFiles.length} photos)`}
             </label>
 
             {/* Existing Photos */}
             {existingPhotos.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs text-gray-500 mb-2">Existing Photos</p>
+                <p className="text-xs text-muted-foreground mb-2">Existing Photos</p>
                 <div className="grid grid-cols-4 gap-3">
                   {existingPhotos.map((url, index) => (
                     <div key={url} className="relative group">
@@ -625,7 +652,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
                         className="w-full h-24 object-cover rounded-lg border border-border"
                       />
                       {index === 0 && (
-                        <div className="absolute top-1 left-1 bg-primary text-black text-xs px-2 py-0.5 rounded font-medium">
+                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-medium">
                           Main
                         </div>
                       )}
@@ -634,7 +661,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
                         onClick={() => removeExistingPhoto(index)}
                         className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="h-3 w-3 text-white" />
+                        <Trash2 className="h-3 w-3 text-foreground" />
                       </button>
                     </div>
                   ))}
@@ -645,7 +672,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
             {/* New Photos Preview */}
             {photoFiles.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs text-gray-500 mb-2">New Photos (will upload on save)</p>
+                <p className="text-xs text-muted-foreground mb-2">New Photos (will upload on save)</p>
                 <div className="grid grid-cols-4 gap-3">
                   {photoFiles.map((file, index) => (
                     <div key={index} className="relative group">
@@ -655,7 +682,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
                         className="w-full h-24 object-cover rounded-lg border border-border"
                       />
                       {existingPhotos.length === 0 && index === 0 && (
-                        <div className="absolute top-1 left-1 bg-primary text-black text-xs px-2 py-0.5 rounded font-medium">
+                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-medium">
                           Main
                         </div>
                       )}
@@ -664,7 +691,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
                         onClick={() => removePhoto(index)}
                         className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="h-3 w-3 text-white" />
+                        <Trash2 className="h-3 w-3 text-foreground" />
                       </button>
                     </div>
                   ))}
@@ -673,7 +700,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
             )}
 
             {/* Upload Button */}
-            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-background border-2 border-dashed border-border rounded-lg text-gray-400 hover:text-white hover:border-primary cursor-pointer transition-colors">
+            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-background border-2 border-dashed border-border rounded-lg text-muted-foreground hover:text-foreground hover:border-primary cursor-pointer transition-colors">
               <Upload className="h-5 w-5" />
               <span>Click to upload photos</span>
               <input
@@ -684,17 +711,17 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
                 className="hidden"
               />
             </label>
-            <p className="text-xs text-gray-500 mt-1">First photo will be the main image. Upload multiple at once.</p>
+            <p className="text-xs text-muted-foreground mt-1">First photo will be the main image. Upload multiple at once.</p>
           </div>
 
           {/* Status & Featured */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Status *</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Status *</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "hidden" })}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 required
               >
                 <option value="active">Active (Visible)</option>
@@ -702,7 +729,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Featured</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Featured</label>
               <div className="flex items-center h-full">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -711,7 +738,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
                     onChange={(e) => setForm({ ...form, featured: e.target.checked })}
                     className="w-5 h-5 rounded border-border bg-background checked:bg-primary"
                   />
-                  <span className="text-white">Mark as featured</span>
+                  <span className="text-foreground">Mark as featured</span>
                 </label>
               </div>
             </div>
@@ -723,14 +750,14 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
               type="button"
               onClick={onClose}
               disabled={uploading || saving}
-              className="flex-1 py-3 bg-background border border-border text-white rounded-lg hover:bg-white/5 disabled:opacity-50"
+              className="flex-1 py-3 bg-background border border-border text-foreground rounded-lg hover:bg-accent/50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={uploading || saving}
-              className="flex-1 py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50"
+              className="flex-1 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
               {uploading ? "Uploading Photos..." : saving ? "Saving..." : isEditing ? "Update Villa" : "Add Villa"}
             </button>

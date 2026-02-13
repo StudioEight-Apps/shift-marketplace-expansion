@@ -3,7 +3,7 @@ import Sidebar from "./Sidebar";
 
 const AdminLayout = () => {
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen w-full bg-background">
       <Sidebar />
       <main className="flex-1 overflow-auto">
         <Outlet />

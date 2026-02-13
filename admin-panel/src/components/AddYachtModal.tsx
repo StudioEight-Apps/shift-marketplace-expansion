@@ -22,6 +22,7 @@ const MARKET_OPTIONS = [
   "Scottsdale, AZ",
   "Aspen, CO",
   "Austin, TX",
+  "Chicago, IL",
   "Nashville, TN",
   "The Hamptons, NY",
   "Park City, UT"
@@ -32,11 +33,12 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
 
   const [form, setForm] = useState({
     name: yacht?.name || "",
-    length: yacht?.length || 0,
+    length: yacht?.length || "",
     location: yacht?.location || "Miami, FL",
     description: yacht?.description || "",
-    pricePerHour: yacht?.pricePerHour || 0,
-    maxGuests: yacht?.maxGuests || 0,
+    pricePerHour: yacht?.pricePerHour || "",
+    depositAmount: yacht?.depositAmount || "",
+    maxGuests: yacht?.maxGuests || "",
     captainIncluded: yacht?.captainIncluded ?? (yacht as any)?.crewIncluded ?? true,
     amenities: yacht?.amenities || [],
     status: yacht?.status || "active" as const,
@@ -100,6 +102,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
         location: form.location,
         description: form.description,
         pricePerHour: Number(form.pricePerHour),
+        depositAmount: Number(form.depositAmount) || 0,
         maxGuests: Number(form.maxGuests),
         captainIncluded: form.captainIncluded,
         amenities: form.amenities,
@@ -218,10 +221,22 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
               <input
                 type="number"
                 value={form.pricePerHour}
-                onChange={(e) => setForm({ ...form, pricePerHour: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, pricePerHour: e.target.value })}
                 className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
-                min="0"
+                min="1"
+                placeholder="0"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1.5">Deposit Amount ($)</label>
+              <input
+                type="number"
+                value={form.depositAmount}
+                onChange={(e) => setForm({ ...form, depositAmount: e.target.value })}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
+                placeholder="0"
+                min="0"
               />
             </div>
             <div>
@@ -229,9 +244,10 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
               <input
                 type="number"
                 value={form.length}
-                onChange={(e) => setForm({ ...form, length: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, length: e.target.value })}
                 className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
-                min="0"
+                min="1"
+                placeholder="0"
                 required
               />
             </div>
@@ -240,9 +256,10 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
               <input
                 type="number"
                 value={form.maxGuests}
-                onChange={(e) => setForm({ ...form, maxGuests: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, maxGuests: e.target.value })}
                 className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
                 min="1"
+                placeholder="0"
                 required
               />
             </div>

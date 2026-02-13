@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { useAuth, BookingRequestInput, BookingYacht } from "@/context/AuthContext";
+import { useAuth, BookingRequestInput, BookingYacht, GuestInfo } from "@/context/AuthContext";
+import { notifyBooking } from "@/lib/notify";
 import YachtDatePicker from "./YachtDatePicker";
 import AuthModal from "./AuthModal";
 import BookingConfirmation from "./BookingConfirmation";
@@ -44,7 +45,7 @@ const YachtBookingCard = ({
 
   const isValidBooking = selectedDate && selectedHours && selectedHours > 0;
 
-  const handleBookingSubmit = async () => {
+  const handleBookingSubmit = async (guestInfo?: GuestInfo) => {
     if (!selectedDate || !selectedHours) return;
 
     setIsSubmitting(true);
@@ -69,9 +70,16 @@ const YachtBookingCard = ({
         car: null,
         yacht: yachtData,
         grandTotal: total,
+        ...(guestInfo ? { guestInfo } : {}),
       };
 
       const requestId = await addBookingRequest(bookingInput);
+
+      // Fire-and-forget email notification
+      const customer = guestInfo
+        ? { uid: "guest", name: `${guestInfo.firstName} ${guestInfo.lastName}`.trim(), email: guestInfo.email, phone: guestInfo.phone }
+        : { uid: user!.uid, name: `${user!.displayName || ""}`.trim() || "Registered User", email: user!.email || "", phone: "" };
+      notifyBooking({ customer, villa: null, car: null, yacht: yachtData, grandTotal: total, requestId });
 
       setConfirmationData({
         requestId,
@@ -99,6 +107,10 @@ const YachtBookingCard = ({
 
   const handleAuthSuccess = () => {
     handleBookingSubmit();
+  };
+
+  const handleGuestSubmit = (guestInfo: GuestInfo) => {
+    handleBookingSubmit(guestInfo);
   };
 
   return (
@@ -174,6 +186,7 @@ const YachtBookingCard = ({
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}
+        onGuestSubmit={handleGuestSubmit}
         defaultTab="login"
       />
 

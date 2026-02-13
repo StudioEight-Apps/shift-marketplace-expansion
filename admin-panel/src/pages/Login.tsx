@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import shiftLogo from "@/assets/shift-logo-horizontal.png";
 
 const Login = () => {
@@ -40,45 +43,49 @@ const Login = () => {
             className="h-12 mx-auto mb-6"
           />
           <h1 className="text-3xl font-bold text-primary mb-2">Admin Panel</h1>
-          <p className="text-gray-400">Sign in to manage bookings</p>
+          <p className="text-muted-foreground">Sign in to manage bookings</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl border border-border p-6 space-y-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Email</label>
-            <input
+        <form
+          onSubmit={handleSubmit}
+          className="bg-card rounded-xl border border-border p-6 space-y-4"
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary"
               placeholder="admin@shiftrentals.com"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Password</label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary"
               placeholder="••••••••"
               required
             />
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm">{error}</p>
+            <p className="text-destructive text-sm">{error}</p>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-primary hover:bg-primary/90 text-black font-semibold rounded-lg transition-colors disabled:opacity-50"
+            className="w-full"
+            size="lg"
           >
             {loading ? "Signing in..." : "Sign In"}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Package, MessageSquare, Upload, LogOut } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -9,8 +9,10 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Bookings", path: "/", icon: LayoutDashboard },
+  { label: "Inquiries", path: "/inquiries", icon: MessageSquare },
   { label: "Users", path: "/users", icon: Users },
   { label: "Inventory", path: "/inventory", icon: Package },
+  { label: "Import", path: "/import", icon: Upload },
 ];
 
 const Sidebar = () => {

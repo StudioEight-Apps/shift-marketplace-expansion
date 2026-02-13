@@ -20,6 +20,8 @@ export interface Villa {
   name: string;
   description: string;
   pricePerNight: number;
+  cleaningFee: number;
+  depositAmount: number;
   bedrooms: number;
   bathrooms: number;
   maxGuests: number;
@@ -68,6 +70,7 @@ export interface Car {
   location: string;
   description: string;
   pricePerDay: number;
+  depositAmount: number;
   bodyStyle: string;
   seats: number;
   images: string[];
@@ -95,6 +98,7 @@ export interface Yacht {
   location: string;
   description: string;
   pricePerHour: number;
+  depositAmount: number;
   maxGuests: number;
   captainIncluded: boolean;
   amenities: string[];
@@ -136,6 +140,8 @@ export const getVillas = (
         name: data.name || "",
         description: data.description || "",
         pricePerNight: data.pricePerNight || 0,
+        cleaningFee: data.cleaningFee || 0,
+        depositAmount: data.depositAmount || 0,
         bedrooms: data.bedrooms || 0,
         bathrooms: data.bathrooms || 0,
         maxGuests: data.maxGuests || 0,
@@ -195,6 +201,7 @@ export const getVillaById = async (id: string): Promise<Villa | null> => {
     name: data.name || "",
     description: data.description || "",
     pricePerNight: data.pricePerNight || 0,
+    cleaningFee: data.cleaningFee || 0,
     bedrooms: data.bedrooms || 0,
     bathrooms: data.bathrooms || 0,
     maxGuests: data.maxGuests || 0,
@@ -269,6 +276,7 @@ export const getCars = (
         location: data.location || "",
         description: data.description || "",
         pricePerDay: data.pricePerDay || 0,
+        depositAmount: data.depositAmount || 0,
         bodyStyle: data.bodyStyle || "",
         seats: data.seats || 0,
         images: data.images || [],
@@ -372,6 +380,7 @@ export const getYachts = (
         location: data.location || "",
         description: data.description || "",
         pricePerHour: data.pricePerHour || 0,
+        depositAmount: data.depositAmount || 0,
         maxGuests: data.maxGuests || 0,
         captainIncluded: data.captainIncluded ?? data.crewIncluded ?? true,
         amenities: data.amenities || [],
