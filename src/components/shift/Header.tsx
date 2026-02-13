@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "./Logo";
-import { User } from "lucide-react";
+import { User, Phone } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import AuthModal from "./AuthModal";
 import { useAuth } from "@/context/AuthContext";
@@ -58,6 +58,14 @@ const Header = () => {
             >
               Contact Us
             </button>
+            {/* Mobile contact button - theme accent phone icon */}
+            <button
+              onClick={openContact}
+              className="md:hidden flex h-8 w-8 items-center justify-center rounded-full bg-primary hover:bg-primary/80 transition-colors"
+            >
+              <Phone className="h-4 w-4 text-primary-foreground" />
+            </button>
+
             {/* Profile dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
