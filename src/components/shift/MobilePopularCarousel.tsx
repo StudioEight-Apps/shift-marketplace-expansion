@@ -1,3 +1,4 @@
+import { Star } from "lucide-react";
 import type { Listing } from "./ListingCard";
 
 interface MobilePopularCarouselProps {
@@ -36,9 +37,12 @@ const MobilePopularCarousel = ({ listings, onListingClick }: MobilePopularCarous
                 {listing.title}
               </h3>
               <div className="mt-0.5 flex items-center gap-1 text-[12px] text-muted-foreground">
-                <span>${listing.price} {listing.assetType === "Yachts" ? "/ hr" : listing.assetType === "Cars" ? "/ day" : "/ night"}</span>
+                <span>${listing.price}</span>
                 <span>·</span>
-                <span>{listing.guests} Guests</span>
+                <span className="flex items-center gap-0.5">
+                  <Star className="h-3 w-3 fill-current" />
+                  {listing.rating}
+                </span>
               </div>
             </div>
           </div>
