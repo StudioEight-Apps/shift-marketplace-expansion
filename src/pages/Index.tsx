@@ -53,13 +53,10 @@ const cityLocationMap: Record<string, string> = {
   "los-angeles": "Los Angeles, CA",
   "new-york": "New York City, NY",
   "las-vegas": "Las Vegas, NV",
-  "scottsdale": "Scottsdale, AZ",
   "aspen": "Aspen, CO",
-  "austin": "Austin, TX",
   "chicago": "Chicago, IL",
   "nashville": "Nashville, TN",
   "hamptons": "The Hamptons, NY",
-  "park-city": "Park City, UT",
 };
 
 // Get popular listing titles by asset type

@@ -14,15 +14,12 @@ const MAX_PHOTOS = 8;
 
 const MARKETS = [
   "Aspen, CO",
-  "Austin, TX",
   "Chicago, IL",
   "Las Vegas, NV",
   "Los Angeles, CA",
   "Miami, FL",
   "Nashville, TN",
   "New York City, NY",
-  "Park City, UT",
-  "Scottsdale, AZ",
   "The Hamptons, NY",
 ];
 

@@ -16,7 +16,6 @@ export interface City {
 
 export const cities: City[] = [
   { id: "aspen", name: "Aspen", state: "CO", hasYachts: false },
-  { id: "austin", name: "Austin", state: "TX", hasYachts: false },
   { id: "chicago", name: "Chicago", state: "IL", hasYachts: false },
   { id: "hamptons", name: "The Hamptons", state: "NY", hasYachts: true },
   { id: "las-vegas", name: "Las Vegas", state: "NV", hasYachts: false },
@@ -24,8 +23,6 @@ export const cities: City[] = [
   { id: "miami", name: "Miami", state: "FL", hasYachts: true },
   { id: "nashville", name: "Nashville", state: "TN", hasYachts: false },
   { id: "new-york", name: "New York City", state: "NY", hasYachts: true },
-  { id: "park-city", name: "Park City", state: "UT", hasYachts: false },
-  { id: "scottsdale", name: "Scottsdale", state: "AZ", hasYachts: false },
 ];
 
 interface CitySelectorProps {
