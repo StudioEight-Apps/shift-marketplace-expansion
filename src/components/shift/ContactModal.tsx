@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { X, Send, CheckCircle2 } from "lucide-react";
+import { X, Send, CheckCircle2, Phone } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useContact } from "@/context/ContactContext";
+import { notifyContact } from "@/lib/notify";
 import { toast } from "sonner";
 
 const ContactModal = () => {
@@ -42,6 +43,14 @@ const ContactModal = () => {
         userId: user?.uid || null,
         createdAt: serverTimestamp(),
         status: "new",
+      });
+
+      // Fire-and-forget email notification
+      notifyContact({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        message: message.trim(),
       });
 
       // Sync to GHL (fire-and-forget)
@@ -108,6 +117,20 @@ const ContactModal = () => {
           <p className="text-sm text-muted-foreground">
             Have a question or need help sourcing a listing? Our concierge team will get back to you shortly.
           </p>
+
+          <a
+            href="tel:+17868770975"
+            className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors text-sm"
+          >
+            <Phone className="h-4 w-4" />
+            Call (786) 877-0975
+          </a>
+
+          <div className="relative flex items-center gap-3">
+            <div className="flex-1 border-t border-border-subtle" />
+            <span className="text-xs text-muted-foreground">or send a message</span>
+            <div className="flex-1 border-t border-border-subtle" />
+          </div>
 
           <div>
             <label className="block text-sm text-muted-foreground mb-1">Name *</label>
