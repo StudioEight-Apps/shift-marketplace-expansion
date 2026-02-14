@@ -483,7 +483,7 @@ export const villaToListing = (villa: Villa): Listing => ({
   price: villa.pricePerNight,
   cleaningFee: villa.cleaningFee || 0,
   depositAmount: villa.depositAmount || 0,
-  priceUnit: "per day",
+  priceUnit: "per night",
   image: villa.images[0] || "",
   images: villa.images,
   attributes: villa.amenities, // Show all amenities instead of slicing to 3
