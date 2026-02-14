@@ -21,12 +21,12 @@ const features = [
 
 const WhyShiftSection = () => {
   return (
-    <section className="w-full bg-black dark:bg-black">
+    <section className="w-full bg-background">
       <div className="flex flex-row">
         {/* Left: Text Content */}
         <div className="w-1/2 px-4 md:px-12 lg:px-16 py-6 md:py-16 flex flex-col justify-center">
           {/* Heading */}
-          <h2 className="text-xl md:text-3xl lg:text-4xl font-light italic text-white mb-6 md:mb-14">
+          <h2 className="text-xl md:text-3xl lg:text-4xl font-light italic text-foreground mb-6 md:mb-14">
             Why Shift
           </h2>
 
@@ -37,18 +37,18 @@ const WhyShiftSection = () => {
                 {/* Icon */}
                 <div className="flex-shrink-0 mt-0.5">
                   <feature.icon 
-                    className="w-5 h-5 md:w-7 md:h-7 text-gray-400" 
+                    className="w-5 h-5 md:w-7 md:h-7 text-muted-foreground" 
                     strokeWidth={1.25}
                   />
                 </div>
                 
                 {/* Text */}
                 <div>
-                  <h3 className="text-sm md:text-lg font-semibold text-white md:mb-2">
+                  <h3 className="text-sm md:text-lg font-semibold text-foreground md:mb-2">
                     {feature.title}
                   </h3>
                   {/* Body text - hidden on mobile */}
-                  <p className="hidden md:block text-[15px] text-gray-400 leading-relaxed">
+                  <p className="hidden md:block text-[15px] text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
