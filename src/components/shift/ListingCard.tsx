@@ -35,11 +35,16 @@ interface ListingCardProps {
 const ListingCard = ({ listing, className, onClick, compact = false }: ListingCardProps) => {
   // Get price display based on asset type
   const getPriceDisplay = () => {
+    if (listing.priceUnit) {
+      return { price: listing.price, unit: "/ " + listing.priceUnit.replace("per ", "") };
+    }
     const assetType = listing.assetType || "Villas";
     switch (assetType) {
       case "Yachts":
         return { price: listing.price, unit: "/ hour" };
-      default: // Stays and Cars use per day
+      case "Stays":
+        return { price: listing.price, unit: "/ night" };
+      default:
         return { price: listing.price, unit: "/ day" };
     }
   };
