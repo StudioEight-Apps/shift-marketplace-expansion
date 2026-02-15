@@ -31,6 +31,9 @@ import {
   ChevronRight,
   Plus,
   User,
+  Pencil,
+  Check,
+  X as XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
@@ -126,6 +129,42 @@ const UserDetail = () => {
 
   const [userRole, setUserRole] = useState<string | null>(null);
   const [savingRole, setSavingRole] = useState(false);
+
+  // Editing contact info
+  const [editingContact, setEditingContact] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [savingContact, setSavingContact] = useState(false);
+
+  const startEditingContact = () => {
+    setEditName(user?.name || "");
+    setEditEmail(user?.email || "");
+    setEditPhone(user?.phone || "");
+    setEditingContact(true);
+  };
+
+  const cancelEditingContact = () => {
+    setEditingContact(false);
+  };
+
+  const saveContact = async () => {
+    if (!userId) return;
+    setSavingContact(true);
+    try {
+      await updateDoc(doc(db, "users", userId), {
+        name: editName.trim(),
+        email: editEmail.trim(),
+        phone: editPhone.trim(),
+      });
+      setEditingContact(false);
+      toast.success("Contact info updated");
+    } catch (err) {
+      console.error("Error updating contact:", err);
+      toast.error("Failed to update contact info");
+    }
+    setSavingContact(false);
+  };
 
   // ---- Fetch user doc ----
   useEffect(() => {
@@ -376,47 +415,112 @@ const UserDetail = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Contact Info Card */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-lg">Contact Info</CardTitle>
+                  {canViewPii && !editingContact && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={startEditingContact}
+                      className="gap-1.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-6 w-6 text-primary" />
+                  {editingContact ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Name</label>
+                        <Input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          placeholder="Full name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Email</label>
+                        <Input
+                          value={editEmail}
+                          onChange={(e) => setEditEmail(e.target.value)}
+                          placeholder="Email address"
+                          type="email"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Phone</label>
+                        <Input
+                          value={editPhone}
+                          onChange={(e) => setEditPhone(e.target.value)}
+                          placeholder="Phone number"
+                          type="tel"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          onClick={saveContact}
+                          disabled={savingContact}
+                          className="gap-1.5"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          {savingContact ? "Saving..." : "Save"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={cancelEditingContact}
+                          disabled={savingContact}
+                          className="gap-1.5"
+                        >
+                          <XIcon className="h-3.5 w-3.5" />
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-lg font-semibold text-foreground">{fullName}</p>
-                      <Badge
-                        variant={user.status === "active" ? "approved" : "declined"}
-                        className="mt-1"
-                      >
-                        {user.status === "active" ? "Active" : "Deactivated"}
-                      </Badge>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold text-foreground">{fullName}</p>
+                          <Badge
+                            variant={user.status === "active" ? "approved" : "declined"}
+                            className="mt-1"
+                          >
+                            {user.status === "active" ? "Active" : "Deactivated"}
+                          </Badge>
+                        </div>
+                      </div>
 
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Mail className="h-4 w-4 shrink-0" />
-                      <span className="text-foreground">
-                        {canViewPii ? user.email : maskEmail(user.email)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Phone className="h-4 w-4 shrink-0" />
-                      <span className="text-foreground">
-                        {user.phone
-                          ? canViewPii
-                            ? user.phone
-                            : maskPhone(user.phone)
-                          : "No phone"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="h-4 w-4 shrink-0" />
-                      <span>Customer since {formatDate(user.createdAt)}</span>
-                    </div>
-                  </div>
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Mail className="h-4 w-4 shrink-0" />
+                          <span className="text-foreground">
+                            {canViewPii ? user.email : maskEmail(user.email)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="h-4 w-4 shrink-0" />
+                          <span className="text-foreground">
+                            {user.phone
+                              ? canViewPii
+                                ? user.phone
+                                : maskPhone(user.phone)
+                              : "No phone"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar className="h-4 w-4 shrink-0" />
+                          <span>Customer since {formatDate(user.createdAt)}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
