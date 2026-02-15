@@ -9,7 +9,8 @@ import {
   updateDoc,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { updateEmail } from "firebase/auth";
+import { db, auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { hasPermission, maskEmail, maskPhone } from "@/lib/permissions";
 import { formatDate, formatPrice, formatDateTime } from "@/lib/booking-utils";
@@ -152,13 +153,32 @@ const UserDetail = () => {
     if (!userId) return;
     setSavingContact(true);
     try {
+      // Update Firestore profile
       await updateDoc(doc(db, "users", userId), {
         name: editName.trim(),
         email: editEmail.trim(),
         phone: editPhone.trim(),
       });
+
+      // If editing own profile and email changed, update Firebase Auth email too
+      const currentAuthUser = auth.currentUser;
+      if (currentAuthUser && currentAuthUser.uid === userId && editEmail.trim() !== currentAuthUser.email) {
+        try {
+          await updateEmail(currentAuthUser, editEmail.trim());
+          toast.success("Contact info and login email updated");
+        } catch (authErr: unknown) {
+          const msg = authErr instanceof Error ? authErr.message : "Unknown error";
+          console.error("Failed to update auth email:", authErr);
+          toast.error("Profile saved but login email update failed: " + msg);
+          setSavingContact(false);
+          setEditingContact(false);
+          return;
+        }
+      } else {
+        toast.success("Contact info updated");
+      }
+
       setEditingContact(false);
-      toast.success("Contact info updated");
     } catch (err) {
       console.error("Error updating contact:", err);
       toast.error("Failed to update contact info");
@@ -558,15 +578,19 @@ const UserDetail = () => {
                   <CardContent>
                     <div className="flex items-center gap-4">
                       <select
-                        value={userRole || "none"}
+                        value={
+                          userRole && ["owner", "admin", "viewer"].includes(userRole)
+                            ? userRole
+                            : "none"
+                        }
                         onChange={(e) => {
-                          const val = e.target.value === "none" ? null : e.target.value;
+                          const val = e.target.value === "none" ? "customer" : e.target.value;
                           updateUserRole(val);
                         }}
                         disabled={savingRole}
                         className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                       >
-                        <option value="none">No access</option>
+                        <option value="none">Customer (no admin access)</option>
                         <option value="viewer">Viewer — read-only</option>
                         <option value="admin">Admin — full access</option>
                         <option value="owner">Owner — full access + manage admins</option>
@@ -574,7 +598,7 @@ const UserDetail = () => {
                       {savingRole && (
                         <span className="text-sm text-muted-foreground">Saving...</span>
                       )}
-                      {userRole && !savingRole && (
+                      {userRole && !savingRole && ["owner", "admin", "viewer"].includes(userRole) && (
                         <Badge variant="approved">{userRole}</Badge>
                       )}
                     </div>
