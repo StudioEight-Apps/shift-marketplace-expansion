@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, deleteDoc, Timestamp, arrayUnion, increment, collection, getDocs, query, where } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, deleteDoc, Timestamp, arrayUnion, increment, collection, getDocs, getDoc, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { format } from "date-fns";
 import {
@@ -360,12 +360,14 @@ const RequestDetail = () => {
         }
       }
 
-      // If was approved, subtract from customer's lifetime value
+      // If was approved, subtract from customer's lifetime value (floor at 0)
       if (wasApproved && booking.customer?.uid && currentItem && "price" in currentItem) {
         const price = currentItem.price || 0;
         try {
+          const userSnap = await getDoc(doc(db, "users", booking.customer.uid));
+          const currentLtv = userSnap.data()?.lifetimeValue || 0;
           await updateDoc(doc(db, "users", booking.customer.uid), {
-            lifetimeValue: increment(-price),
+            lifetimeValue: Math.max(0, currentLtv - price),
           });
         } catch (e) {
           console.error("Failed to update user LTV:", e);
@@ -448,7 +450,7 @@ const RequestDetail = () => {
         }
       }
 
-      // Subtract LTV if any items were approved
+      // Subtract LTV if any items were approved (floor at 0)
       if (booking.customer?.uid) {
         let approvedTotal = 0;
         if (booking.villa?.status === "Approved") approvedTotal += booking.villa.price || 0;
@@ -456,8 +458,10 @@ const RequestDetail = () => {
         if (booking.yacht?.status === "Approved") approvedTotal += booking.yacht.price || 0;
         if (approvedTotal > 0) {
           try {
+            const userSnap = await getDoc(doc(db, "users", booking.customer.uid));
+            const currentLtv = userSnap.data()?.lifetimeValue || 0;
             await updateDoc(doc(db, "users", booking.customer.uid), {
-              lifetimeValue: increment(-approvedTotal),
+              lifetimeValue: Math.max(0, currentLtv - approvedTotal),
             });
           } catch (e) {
             console.error("Failed to update user LTV:", e);
