@@ -122,6 +122,10 @@ const UserDetail = () => {
   const canViewPii = role ? hasPermission(role, "view_pii") : false;
   const canAddNotes = role ? hasPermission(role, "add_user_notes") : false;
   const canEditLtv = role ? hasPermission(role, "edit_lifetime_value") : false;
+  const canManageAdmins = role ? hasPermission(role, "manage_admins") : false;
+
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [savingRole, setSavingRole] = useState(false);
 
   // ---- Fetch user doc ----
   useEffect(() => {
@@ -155,6 +159,7 @@ const UserDetail = () => {
                 })
               ) || [],
           });
+          setUserRole(data.role || null);
           setError(null);
         } else {
           setError("User not found");
@@ -243,6 +248,26 @@ const UserDetail = () => {
 
     return () => unsubscribe();
   }, [userId]);
+
+  // ---- Update role ----
+  const updateUserRole = async (newRole: string | null) => {
+    if (!userId) return;
+    setSavingRole(true);
+    try {
+      if (newRole) {
+        await updateDoc(doc(db, "users", userId), { role: newRole });
+      } else {
+        // Remove role by setting to deleteField would need import, just set to null
+        await updateDoc(doc(db, "users", userId), { role: null });
+      }
+      setUserRole(newRole);
+      toast.success(newRole ? `Role updated to ${newRole}` : "Admin access removed");
+    } catch (err) {
+      console.error("Error updating role:", err);
+      toast.error("Failed to update role");
+    }
+    setSavingRole(false);
+  };
 
   // ---- Add note ----
   const addNote = async () => {
@@ -416,6 +441,42 @@ const UserDetail = () => {
                 </CardContent>
               </Card>
             </div>
+
+              {/* Admin Access Card — only visible to owners */}
+              {canManageAdmins && (
+                <Card className="md:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Admin Panel Access</CardTitle>
+                    <CardDescription>
+                      Grant this user access to the admin panel
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4">
+                      <select
+                        value={userRole || "none"}
+                        onChange={(e) => {
+                          const val = e.target.value === "none" ? null : e.target.value;
+                          updateUserRole(val);
+                        }}
+                        disabled={savingRole}
+                        className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        <option value="none">No access</option>
+                        <option value="viewer">Viewer — read-only</option>
+                        <option value="admin">Admin — full access</option>
+                        <option value="owner">Owner — full access + manage admins</option>
+                      </select>
+                      {savingRole && (
+                        <span className="text-sm text-muted-foreground">Saving...</span>
+                      )}
+                      {userRole && !savingRole && (
+                        <Badge variant="approved">{userRole}</Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
           </TabsContent>
 
           {/* ========== BOOKINGS TAB ========== */}
