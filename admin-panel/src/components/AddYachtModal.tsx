@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, Upload, Trash2 } from "lucide-react";
+import PhotoGrid from "./PhotoGrid";
 import { Yacht, addYacht, updateYacht } from "@/lib/listings";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
@@ -343,85 +344,15 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
           </div>
 
           {/* Photos */}
-          <div>
-            <label className="block text-sm text-muted-foreground mb-2">
-              Photos {(existingPhotos.length + photoFiles.length) > 0 && `(${existingPhotos.length + photoFiles.length} photos)`}
-            </label>
-
-            {/* Existing Photos */}
-            {existingPhotos.length > 0 && (
-              <div className="mb-3">
-                <p className="text-xs text-muted-foreground mb-2">Existing Photos</p>
-                <div className="grid grid-cols-4 gap-3">
-                  {existingPhotos.map((url, index) => (
-                    <div key={url} className="relative group">
-                      <img
-                        src={url}
-                        alt={`Photo ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg border border-border"
-                      />
-                      {index === 0 && (
-                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-medium">
-                          Main
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeExistingPhoto(index)}
-                        className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="h-3 w-3 text-foreground" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* New Photos Preview */}
-            {photoFiles.length > 0 && (
-              <div className="mb-3">
-                <p className="text-xs text-muted-foreground mb-2">New Photos (will upload on save)</p>
-                <div className="grid grid-cols-4 gap-3">
-                  {photoFiles.map((file, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={`New ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg border border-border"
-                      />
-                      {existingPhotos.length === 0 && index === 0 && (
-                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-medium">
-                          Main
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(index)}
-                        className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="h-3 w-3 text-foreground" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Upload Button */}
-            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-background border-2 border-dashed border-border rounded-lg text-muted-foreground hover:text-foreground hover:border-primary cursor-pointer transition-colors">
-              <Upload className="h-5 w-5" />
-              <span>Click to upload photos</span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handlePhotoSelect}
-                className="hidden"
-              />
-            </label>
-            <p className="text-xs text-muted-foreground mt-1">First photo will be the main image. Upload multiple at once.</p>
-          </div>
+          <PhotoGrid
+            existingPhotos={existingPhotos}
+            photoFiles={photoFiles}
+            onReorderExisting={setExistingPhotos}
+            onReorderNew={setPhotoFiles}
+            onRemoveExisting={removeExistingPhoto}
+            onRemoveNew={removePhoto}
+            onAddFiles={(files) => setPhotoFiles((prev) => [...prev, ...files])}
+          />
 
           {/* Status & Featured */}
           <div className="grid grid-cols-2 gap-4">
