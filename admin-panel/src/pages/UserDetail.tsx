@@ -153,9 +153,16 @@ const UserDetail = () => {
     if (!userId) return;
     setSavingContact(true);
     try {
-      // Update Firestore profile
+      // Split name into firstName and lastName
+      const nameParts = editName.trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      // Update Firestore profile — including firstName/lastName
       await updateDoc(doc(db, "users", userId), {
         name: editName.trim(),
+        firstName,
+        lastName,
         email: editEmail.trim(),
         phone: editPhone.trim(),
       });

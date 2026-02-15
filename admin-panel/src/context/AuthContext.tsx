@@ -1,14 +1,20 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import type { UserRole } from "@/lib/types";
 
 const ALLOWED_ROLES: UserRole[] = ["owner", "admin", "viewer"];
 
+interface ProfileInfo {
+  name: string;
+  email: string;
+}
+
 interface AuthContextType {
   user: User | null;
   role: UserRole | null;
+  profile: ProfileInfo | null;
   loading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -20,7 +26,37 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
+  const [profile, setProfile] = useState<ProfileInfo | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Listen to Firestore profile changes in real-time
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+
+    const unsubscribe = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const name =
+          data.name ||
+          `${data.firstName || ""} ${data.lastName || ""}`.trim() ||
+          "";
+        setProfile({
+          name,
+          email: data.email || user.email || "",
+        });
+        // Also keep role in sync
+        const userRole = data.role as string;
+        if (userRole && ALLOWED_ROLES.includes(userRole as UserRole)) {
+          setRole(userRole as UserRole);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -73,6 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         user,
         role,
+        profile,
         loading,
         isAuthenticated: !!user,
         login,

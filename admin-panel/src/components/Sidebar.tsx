@@ -16,7 +16,7 @@ const navItems = [
 ];
 
 const Sidebar = () => {
-  const { user, role, logout } = useAuth();
+  const { user, role, profile, logout } = useAuth();
   const location = useLocation();
   const { theme } = useTheme();
 
@@ -65,11 +65,16 @@ const Sidebar = () => {
         <div className="px-2">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-              {user?.email?.charAt(0)?.toUpperCase() ?? "?"}
+              {(profile?.name || profile?.email || user?.email)?.charAt(0)?.toUpperCase() ?? "?"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-foreground">
-                {user?.email}
+              {profile?.name && (
+                <p className="truncate text-xs font-medium text-foreground">
+                  {profile.name}
+                </p>
+              )}
+              <p className="truncate text-xs text-muted-foreground">
+                {profile?.email || user?.email}
               </p>
               {role && (
                 <span className="mt-0.5 inline-block rounded border border-border px-1.5 py-0 text-[10px] capitalize text-muted-foreground">
