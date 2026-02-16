@@ -559,14 +559,18 @@ const RequestDetail = () => {
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className={cn(
-              "p-2 rounded-lg",
-              type === "villa" && "bg-blue-500/10 text-blue-500",
-              type === "car" && "bg-purple-500/10 text-purple-500",
-              type === "yacht" && "bg-cyan-500/10 text-cyan-500",
-            )}>
-              <Icon className="h-5 w-5" />
-            </div>
+            {image ? (
+              <img src={image} alt={name} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" />
+            ) : (
+              <div className={cn(
+                "p-2 rounded-lg",
+                type === "villa" && "bg-blue-500/10 text-blue-500",
+                type === "car" && "bg-purple-500/10 text-purple-500",
+                type === "yacht" && "bg-cyan-500/10 text-cyan-500",
+              )}>
+                <Icon className="h-5 w-5" />
+              </div>
+            )}
             <div>
               <h3 className="text-foreground font-semibold">{name}</h3>
               <p className="text-muted-foreground text-sm capitalize">
