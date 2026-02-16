@@ -99,6 +99,7 @@ const Dashboard = () => {
               ? {
                   id: data.car.id || "",
                   name: data.car.name || "",
+                  location: data.car.location || "",
                   pickupDate: data.car.pickupDate?.toDate() || new Date(),
                   dropoffDate: data.car.dropoffDate?.toDate() || new Date(),
                   days: data.car.days || 0,
@@ -111,6 +112,7 @@ const Dashboard = () => {
               ? {
                   id: data.yacht.id || "",
                   name: data.yacht.name || "",
+                  location: data.yacht.location || "",
                   date: data.yacht.date?.toDate() || new Date(),
                   startTime: data.yacht.startTime || "",
                   endTime: data.yacht.endTime || "",
@@ -186,7 +188,7 @@ const Dashboard = () => {
     return `${formatDate(sorted[0])} – ${formatDate(sorted[sorted.length - 1])}`;
   };
 
-  const getLocation = (b: BookingRequest) => b.villa?.location ?? "—";
+  const getLocation = (b: BookingRequest) => b.villa?.location || b.car?.location || b.yacht?.location || "—";
 
   const statCards = [
     { label: "Total", value: stats.total, color: "text-foreground", filter: "All" as const },
