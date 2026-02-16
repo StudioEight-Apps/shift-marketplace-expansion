@@ -131,7 +131,9 @@ const MobileBookingSheet = ({
     try {
       // Build villa data (for stays)
       const villaData: BookingVilla | null = isStay && currentDates?.start && currentDates?.end ? {
+        id: listing.id,
         name: listing.title,
+        image: listing.image || listing.images?.[0] || "",
         checkIn: currentDates.start,
         checkOut: currentDates.end,
         price: stayTotal,
@@ -142,7 +144,10 @@ const MobileBookingSheet = ({
 
       // Build car data if added
       const carData: BookingCar | null = hasCarAddOn && car && carDates.pickup && carDates.dropoff ? {
+        id: car.id,
         name: car.title,
+        image: car.image || car.images?.[0] || "",
+        location: car.location || listing.location,
         pickupDate: carDates.pickup,
         dropoffDate: carDates.dropoff,
         price: carTotal,
@@ -152,7 +157,10 @@ const MobileBookingSheet = ({
 
       // Build yacht data if added (as trip add-on)
       const yachtAddOnData: BookingYacht | null = hasYachtAddOn && yachtBooking.yacht && yachtBooking.startDate ? {
+        id: yachtBooking.yacht.id,
         name: yachtBooking.yacht.title,
+        image: yachtBooking.yacht.image || yachtBooking.yacht.images?.[0] || "",
+        location: yachtBooking.yacht.location || listing.location,
         date: yachtBooking.startDate,
         startTime: yachtBooking.startTime,
         endTime: yachtBooking.endTime,
@@ -168,7 +176,10 @@ const MobileBookingSheet = ({
 
       if (isYacht && yachtDate && yachtHours) {
         finalYacht = {
+          id: listing.id,
           name: listing.title,
+          image: listing.image || listing.images?.[0] || "",
+          location: listing.location,
           date: yachtDate,
           startTime: "10:00 AM",
           endTime: `${10 + yachtHours}:00 PM`,
@@ -178,7 +189,10 @@ const MobileBookingSheet = ({
         };
       } else if (listing.assetType === "Cars" && currentDates?.start && currentDates?.end) {
         finalCar = {
+          id: listing.id,
           name: listing.title,
+          image: listing.image || listing.images?.[0] || "",
+          location: listing.location,
           pickupDate: currentDates.start,
           dropoffDate: currentDates.end,
           price: primaryTotal,

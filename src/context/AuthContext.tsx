@@ -28,7 +28,9 @@ export interface UserProfile {
 
 // Booking item details
 export interface BookingVilla {
+  id?: string;
   name: string;
+  image?: string;
   checkIn: Date;
   checkOut: Date;
   price: number;
@@ -38,7 +40,10 @@ export interface BookingVilla {
 }
 
 export interface BookingCar {
+  id?: string;
   name: string;
+  image?: string;
+  location?: string;
   pickupDate: Date;
   dropoffDate: Date;
   price: number;
@@ -47,7 +52,10 @@ export interface BookingCar {
 }
 
 export interface BookingYacht {
+  id?: string;
   name: string;
+  image?: string;
+  location?: string;
   date: Date;
   startTime: string;
   endTime: string;
@@ -333,7 +341,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       createdAt: Timestamp.now(),
       customer,
       villa: request.villa ? {
+        ...(request.villa.id && { id: request.villa.id }),
         name: request.villa.name,
+        ...(request.villa.image && { image: request.villa.image }),
         checkIn: Timestamp.fromDate(request.villa.checkIn),
         checkOut: Timestamp.fromDate(request.villa.checkOut),
         price: request.villa.price,
@@ -342,7 +352,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         location: request.villa.location,
       } : null,
       car: request.car ? {
+        ...(request.car.id && { id: request.car.id }),
         name: request.car.name,
+        ...(request.car.image && { image: request.car.image }),
+        ...(request.car.location && { location: request.car.location }),
         pickupDate: Timestamp.fromDate(request.car.pickupDate),
         dropoffDate: Timestamp.fromDate(request.car.dropoffDate),
         price: request.car.price,
@@ -350,7 +363,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         days: request.car.days,
       } : null,
       yacht: request.yacht ? {
+        ...(request.yacht.id && { id: request.yacht.id }),
         name: request.yacht.name,
+        ...(request.yacht.image && { image: request.yacht.image }),
+        ...(request.yacht.location && { location: request.yacht.location }),
         date: Timestamp.fromDate(request.yacht.date),
         startTime: request.yacht.startTime,
         endTime: request.yacht.endTime,

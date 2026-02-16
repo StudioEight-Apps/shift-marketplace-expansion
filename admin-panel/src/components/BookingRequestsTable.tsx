@@ -25,6 +25,7 @@ interface BookingRequest {
   } | null;
   car: {
     name: string;
+    location?: string;
     pickupDate: Date;
     dropoffDate: Date;
     price: number;
@@ -33,6 +34,7 @@ interface BookingRequest {
   } | null;
   yacht: {
     name: string;
+    location?: string;
     date: Date;
     startTime: string;
     endTime: string;
@@ -119,6 +121,11 @@ const BookingRequestsTable = () => {
     Approved: requests.filter((r) => getBookingStatus(r) === "Approved").length,
     Partial: requests.filter((r) => getBookingStatus(r) === "Partial").length,
     Declined: requests.filter((r) => getBookingStatus(r) === "Declined").length,
+  };
+
+  // Get location from any item in the booking
+  const getLocation = (booking: BookingRequest): string => {
+    return booking.villa?.location || booking.car?.location || booking.yacht?.location || "";
   };
 
   // Get date range display
@@ -218,6 +225,13 @@ const BookingRequestsTable = () => {
                     <div className="text-gray-400 text-sm">
                       {getDateRange(booking)}
                     </div>
+
+                    {/* Location */}
+                    {getLocation(booking) && (
+                      <div className="text-gray-500 text-sm">
+                        {getLocation(booking)}
+                      </div>
+                    )}
                   </div>
 
                   {/* Right: Price, Status, Arrow */}

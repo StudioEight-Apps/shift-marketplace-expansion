@@ -53,6 +53,7 @@ interface FirestoreBooking {
   villa: {
     id?: string;
     name: string;
+    image?: string;
     checkIn: Date;
     checkOut: Date;
     nights: number;
@@ -64,6 +65,8 @@ interface FirestoreBooking {
   car: {
     id?: string;
     name: string;
+    image?: string;
+    location?: string;
     pickupDate: Date;
     dropoffDate: Date;
     days: number;
@@ -74,6 +77,8 @@ interface FirestoreBooking {
   yacht: {
     id?: string;
     name: string;
+    image?: string;
+    location?: string;
     date: Date;
     startTime: string;
     endTime: string;
@@ -531,6 +536,8 @@ const RequestDetail = () => {
     type,
     icon: Icon,
     name,
+    image,
+    location,
     details,
     price,
     status,
@@ -538,6 +545,8 @@ const RequestDetail = () => {
     type: "villa" | "car" | "yacht";
     icon: typeof Home;
     name: string;
+    image?: string;
+    location?: string;
     details: React.ReactNode;
     price: number;
     status: ItemStatus;
@@ -546,6 +555,12 @@ const RequestDetail = () => {
 
     return (
       <div className="bg-card border border-border rounded-xl p-6">
+        {/* Listing image */}
+        {image && (
+          <div className="mb-4 rounded-lg overflow-hidden">
+            <img src={image} alt={name} className="w-full h-40 object-cover" />
+          </div>
+        )}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className={cn(
@@ -558,7 +573,9 @@ const RequestDetail = () => {
             </div>
             <div>
               <h3 className="text-foreground font-semibold">{name}</h3>
-              <p className="text-muted-foreground text-sm capitalize">{type}</p>
+              <p className="text-muted-foreground text-sm capitalize">
+                {type}{location ? ` · ${location}` : ""}
+              </p>
             </div>
           </div>
           <div className="text-right flex items-center gap-2">
@@ -697,6 +714,8 @@ const RequestDetail = () => {
                 type="villa"
                 icon={Home}
                 name={booking.villa.name}
+                image={booking.villa.image}
+                location={booking.villa.location}
                 price={booking.villa.price}
                 status={booking.villa.status}
                 details={
@@ -728,6 +747,8 @@ const RequestDetail = () => {
                 type="car"
                 icon={Car}
                 name={booking.car.name}
+                image={booking.car.image}
+                location={booking.car.location}
                 price={booking.car.price}
                 status={booking.car.status}
                 details={
@@ -759,6 +780,8 @@ const RequestDetail = () => {
                 type="yacht"
                 icon={Ship}
                 name={booking.yacht.name}
+                image={booking.yacht.image}
+                location={booking.yacht.location}
                 price={booking.yacht.price}
                 status={booking.yacht.status}
                 details={

@@ -96,7 +96,9 @@ const BookingCard = ({
     try {
       // Build villa data (for stays) or null
       const villaData: BookingVilla | null = isStay ? {
+        id: listing.id,
         name: listing.title,
+        image: listing.image || listing.images?.[0] || "",
         checkIn: currentDates.start,
         checkOut: currentDates.end,
         price: primaryTotal,
@@ -107,7 +109,10 @@ const BookingCard = ({
 
       // Build car data if added
       const carData: BookingCar | null = hasCarAddOn && car && carDates.pickup && carDates.dropoff ? {
+        id: car.id,
         name: car.title,
+        image: car.image || car.images?.[0] || "",
+        location: car.location || listing.location,
         pickupDate: carDates.pickup,
         dropoffDate: carDates.dropoff,
         price: carAddOnTotal,
@@ -117,7 +122,10 @@ const BookingCard = ({
 
       // Build yacht data if added
       const yachtData: BookingYacht | null = hasYachtAddOn && yachtBooking.yacht && yachtBooking.startDate ? {
+        id: yachtBooking.yacht.id,
         name: yachtBooking.yacht.title,
+        image: yachtBooking.yacht.image || yachtBooking.yacht.images?.[0] || "",
+        location: yachtBooking.yacht.location || listing.location,
         date: yachtBooking.startDate,
         startTime: yachtBooking.startTime,
         endTime: yachtBooking.endTime,
@@ -133,7 +141,10 @@ const BookingCard = ({
 
       if (listing.assetType === "Cars") {
         finalCar = {
+          id: listing.id,
           name: listing.title,
+          image: listing.image || listing.images?.[0] || "",
+          location: listing.location,
           pickupDate: currentDates.start,
           dropoffDate: currentDates.end,
           price: primaryTotal,
@@ -145,7 +156,10 @@ const BookingCard = ({
         const yachtEnd12 = yachtEnd24 > 12 ? yachtEnd24 - 12 : yachtEnd24;
         const yachtEndAmPm = yachtEnd24 >= 12 ? "PM" : "AM";
         finalYacht = {
+          id: listing.id,
           name: listing.title,
+          image: listing.image || listing.images?.[0] || "",
+          location: listing.location,
           date: currentDates.start,
           startTime: "10:00 AM",
           endTime: `${yachtEnd12}:00 ${yachtEndAmPm}`,
