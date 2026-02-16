@@ -537,6 +537,7 @@ const RequestDetail = () => {
     icon: Icon,
     name,
     image,
+    itemId,
     location,
     details,
     price,
@@ -546,6 +547,7 @@ const RequestDetail = () => {
     icon: typeof Home;
     name: string;
     image?: string;
+    itemId?: string;
     location?: string;
     details: React.ReactNode;
     price: number;
@@ -557,23 +559,22 @@ const RequestDetail = () => {
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            {image ? (
-              <img src={image} alt={name} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" />
-            ) : (
-              <div className={cn(
-                "p-2 rounded-lg",
-                type === "villa" && "bg-blue-500/10 text-blue-500",
-                type === "car" && "bg-purple-500/10 text-purple-500",
-                type === "yacht" && "bg-cyan-500/10 text-cyan-500",
-              )}>
-                <Icon className="h-5 w-5" />
-              </div>
-            )}
+            <div className={cn(
+              "p-2 rounded-lg",
+              type === "villa" && "bg-blue-500/10 text-blue-500",
+              type === "car" && "bg-purple-500/10 text-purple-500",
+              type === "yacht" && "bg-cyan-500/10 text-cyan-500",
+            )}>
+              <Icon className="h-5 w-5" />
+            </div>
             <div>
               <h3 className="text-foreground font-semibold">{name}</h3>
               <p className="text-muted-foreground text-sm capitalize">
                 {type}{location ? ` · ${location}` : ""}
               </p>
+              {itemId && (
+                <p className="text-muted-foreground text-xs font-mono">{itemId}</p>
+              )}
             </div>
           </div>
           <div className="text-right flex items-center gap-2">
@@ -713,6 +714,7 @@ const RequestDetail = () => {
                 icon={Home}
                 name={booking.villa.name}
                 image={booking.villa.image}
+                itemId={booking.villa.id}
                 location={booking.villa.location}
                 price={booking.villa.price}
                 status={booking.villa.status}
@@ -746,6 +748,7 @@ const RequestDetail = () => {
                 icon={Car}
                 name={booking.car.name}
                 image={booking.car.image}
+                itemId={booking.car.id}
                 location={booking.car.location}
                 price={booking.car.price}
                 status={booking.car.status}
@@ -779,6 +782,7 @@ const RequestDetail = () => {
                 icon={Ship}
                 name={booking.yacht.name}
                 image={booking.yacht.image}
+                itemId={booking.yacht.id}
                 location={booking.yacht.location}
                 price={booking.yacht.price}
                 status={booking.yacht.status}
