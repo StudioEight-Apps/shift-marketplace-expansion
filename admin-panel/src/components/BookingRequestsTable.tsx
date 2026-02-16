@@ -227,11 +227,9 @@ const BookingRequestsTable = () => {
                     </div>
 
                     {/* Location */}
-                    {getLocation(booking) && (
-                      <div className="text-gray-500 text-sm">
-                        {getLocation(booking)}
-                      </div>
-                    )}
+                    <div className="text-gray-400 text-sm min-w-[120px]">
+                      {getLocation(booking) || "—"}
+                    </div>
                   </div>
 
                   {/* Right: Price, Status, Arrow */}

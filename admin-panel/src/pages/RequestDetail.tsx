@@ -410,6 +410,30 @@ const RequestDetail = () => {
     setSaving(false);
   };
 
+  const deleteNote = async (noteIndex: number) => {
+    if (!id || !booking) return;
+    setSaving(true);
+    try {
+      // Notes are displayed in reverse order, so convert display index back to original index
+      const originalIndex = booking.notes.length - 1 - noteIndex;
+      const updatedNotes = booking.notes.filter((_, i) => i !== originalIndex);
+      // Firestore arrayRemove won't work with timestamps, so overwrite the whole array
+      await updateDoc(doc(db, "bookingRequests", id), {
+        notes: updatedNotes.map((n) => ({
+          text: n.text,
+          author: n.author,
+          timestamp: Timestamp.fromDate(n.timestamp),
+        })),
+        updatedAt: Timestamp.now(),
+      });
+      toast.success("Note deleted");
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      toast.error("Failed to delete note");
+    }
+    setSaving(false);
+  };
+
   const handleDeleteBooking = async () => {
     if (!id || !booking) return;
     setDeleting(true);
@@ -824,11 +848,24 @@ const RequestDetail = () => {
                       .slice()
                       .reverse()
                       .map((note, i) => (
-                        <div key={i} className="bg-background rounded-lg p-3">
-                          <p className="text-foreground text-sm">{note.text}</p>
-                          <p className="text-muted-foreground text-xs mt-1">
-                            {note.author} · {format(note.timestamp, "MMM d, h:mm a")}
-                          </p>
+                        <div key={i} className="bg-background rounded-lg p-3 group">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-foreground text-sm">{note.text}</p>
+                              <p className="text-muted-foreground text-xs mt-1">
+                                {note.author} · {format(note.timestamp, "MMM d, h:mm a")}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => deleteNote(i)}
+                              disabled={saving}
+                              variant="ghost"
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       ))
                   ) : (
