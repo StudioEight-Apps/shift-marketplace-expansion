@@ -11,6 +11,7 @@ import {
   addDoc,
   doc,
   setDoc,
+  getDoc,
   query,
   where,
   onSnapshot,
@@ -135,13 +136,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [bookingRequests, setBookingRequests] = useState<BookingRequest[]>([]);
 
-  // Load user profile from localStorage
-  const loadProfile = (uid: string, email: string) => {
+  // Load user profile — try Firestore first (source of truth), fall back to localStorage
+  const loadProfile = async (uid: string, email: string) => {
+    // Immediately load from localStorage for fast UI (if available)
     const savedProfile = localStorage.getItem(`profile_${uid}`);
     if (savedProfile) {
       setProfile(JSON.parse(savedProfile));
     } else {
       setProfile({ ...DEFAULT_PROFILE, email });
+    }
+
+    // Then fetch from Firestore (source of truth) and overwrite
+    if (db) {
+      try {
+        const userDoc = await getDoc(doc(db, "users", uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const firestoreProfile: UserProfile = {
+            firstName: data.firstName || data.name?.split(/\s+/)[0] || "",
+            lastName: data.lastName || data.name?.split(/\s+/).slice(1).join(" ") || "",
+            email: data.email || email,
+            phone: data.phone || "",
+          };
+          setProfile(firestoreProfile);
+          // Update localStorage cache so next load is instant
+          localStorage.setItem(`profile_${uid}`, JSON.stringify(firestoreProfile));
+        }
+      } catch (err) {
+        console.error("Failed to load profile from Firestore:", err);
+      }
     }
   };
 
@@ -265,19 +288,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user && !request.guestInfo) throw new Error("User must be logged in or provide guest info to create a booking");
 
     // Build customer data — either from authenticated user or guest info
-    const customer = request.guestInfo
-      ? {
-          uid: "guest",
-          name: `${request.guestInfo.firstName} ${request.guestInfo.lastName}`.trim(),
-          email: request.guestInfo.email,
-          phone: request.guestInfo.phone,
+    let customer;
+    if (request.guestInfo) {
+      customer = {
+        uid: "guest",
+        name: `${request.guestInfo.firstName} ${request.guestInfo.lastName}`.trim(),
+        email: request.guestInfo.email,
+        phone: request.guestInfo.phone,
+      };
+    } else {
+      // Start with local profile data
+      let firstName = profile.firstName;
+      let lastName = profile.lastName;
+      let email = profile.email || user!.email || "";
+      let phone = profile.phone || "";
+
+      // If profile name is empty, fetch from Firestore as fallback
+      if (!firstName && !lastName && db) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user!.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            firstName = data.firstName || data.name?.split(/\s+/)[0] || "";
+            lastName = data.lastName || data.name?.split(/\s+/).slice(1).join(" ") || "";
+            email = data.email || email;
+            phone = data.phone || phone;
+          }
+        } catch (err) {
+          console.error("Failed to fetch profile for booking:", err);
         }
-      : {
-          uid: user!.uid,
-          name: `${profile.firstName} ${profile.lastName}`.trim() || "Guest",
-          email: profile.email || user!.email || "",
-          phone: profile.phone || "",
-        };
+      }
+
+      customer = {
+        uid: user!.uid,
+        name: `${firstName} ${lastName}`.trim() || user!.email || "Customer",
+        email,
+        phone,
+      };
+    }
 
     // Build the document with Firestore Timestamps
     const bookingDoc = {
