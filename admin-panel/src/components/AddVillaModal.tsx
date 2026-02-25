@@ -50,6 +50,8 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
     maxGuests: villa?.maxGuests || "",
     amenities: villa?.amenities || [],
     minimumStay: villa?.minimumStay || "",
+    sourceType: villa?.sourceType || "shift_fleet" as const,
+    sourceName: villa?.sourceName || "shift",
     status: villa?.status || "active" as const,
     featured: villa?.featured || false,
   });
@@ -238,9 +240,12 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
         const url = await getDownloadURL(storageRef);
         uploadedUrls.push(url);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading photos:", error);
-      alert("Failed to upload photos");
+      const code = error?.code || "unknown";
+      const msg = error?.message || String(error);
+      alert(`Failed to upload photos\n\nCode: ${code}\nDetails: ${msg}`);
+      throw error; // re-throw so handleSubmit stops
     } finally {
       setUploading(false);
     }
@@ -305,8 +310,8 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
         mainImageUrl,
         lat: geoData?.lat ?? null,
         lng: geoData?.lng ?? null,
-        sourceType: villa?.sourceType || ("shift_fleet" as const),
-        sourceName: villa?.sourceName || "shift",
+        sourceType: form.sourceType as "shift_fleet" | "pms" | "api",
+        sourceName: form.sourceName,
         externalId: villa?.externalId || null,
         syncStatus: villa?.syncStatus || ("n/a" as const),
         lastSyncedAt: villa?.lastSyncedAt || null,
@@ -644,6 +649,40 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
             onRemoveNew={removePhoto}
             onAddFiles={(files) => setPhotoFiles((prev) => [...prev, ...files])}
           />
+
+          {/* Source */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1.5">Source Type *</label>
+              <select
+                value={form.sourceType}
+                onChange={(e) => {
+                  const val = e.target.value as "shift_fleet" | "pms" | "api";
+                  setForm({ ...form, sourceType: val, sourceName: val === "shift_fleet" ? "shift" : form.sourceName === "shift" ? "" : form.sourceName });
+                }}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
+                required
+              >
+                <option value="shift_fleet">Shift Fleet (Internal)</option>
+                <option value="pms">PMS / Host</option>
+                <option value="api">API / External</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1.5">
+                Source Name {form.sourceType !== "shift_fleet" ? "*" : ""}
+              </label>
+              <input
+                type="text"
+                value={form.sourceName}
+                onChange={(e) => setForm({ ...form, sourceName: e.target.value })}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
+                placeholder={form.sourceType === "pms" ? "e.g. Guesty, Hostaway, Host Name" : form.sourceType === "api" ? "e.g. travelwithaspect" : "shift"}
+                disabled={form.sourceType === "shift_fleet"}
+                required={form.sourceType !== "shift_fleet"}
+              />
+            </div>
+          </div>
 
           {/* Status & Featured */}
           <div className="grid grid-cols-2 gap-4">

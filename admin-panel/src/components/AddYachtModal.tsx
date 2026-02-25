@@ -42,6 +42,8 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
     maxGuests: yacht?.maxGuests || "",
     captainIncluded: yacht?.captainIncluded ?? (yacht as any)?.crewIncluded ?? true,
     amenities: yacht?.amenities || [],
+    source: yacht?.source || "manual" as const,
+    provider: yacht?.provider || "shift_fleet",
     status: yacht?.status || "active" as const,
     featured: yacht?.featured || false,
   });
@@ -79,9 +81,12 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
         const url = await getDownloadURL(storageRef);
         uploadedUrls.push(url);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading photos:", error);
-      alert("Failed to upload photos");
+      const code = error?.code || "unknown";
+      const msg = error?.message || String(error);
+      alert(`Failed to upload photos\n\nCode: ${code}\nDetails: ${msg}`);
+      throw error; // re-throw so handleSubmit stops
     } finally {
       setUploading(false);
     }
@@ -108,9 +113,9 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
         captainIncluded: form.captainIncluded,
         amenities: form.amenities,
         images: allImages,
-        provider: yacht?.provider || "shift_fleet",
+        provider: form.provider,
         providerId: yacht?.providerId || `manual_${Date.now()}`,
-        source: yacht?.source || ("manual" as const),
+        source: form.source as "manual" | "api",
         blockedDates: yacht?.blockedDates || [],
         status: form.status,
         featured: form.featured,
@@ -353,6 +358,39 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
             onRemoveNew={removePhoto}
             onAddFiles={(files) => setPhotoFiles((prev) => [...prev, ...files])}
           />
+
+          {/* Source */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1.5">Source *</label>
+              <select
+                value={form.source}
+                onChange={(e) => {
+                  const val = e.target.value as "manual" | "api";
+                  setForm({ ...form, source: val, provider: val === "manual" ? "shift_fleet" : form.provider === "shift_fleet" ? "" : form.provider });
+                }}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
+                required
+              >
+                <option value="manual">Manual (Shift Fleet)</option>
+                <option value="api">API / External</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1.5">
+                Provider {form.source === "api" ? "*" : ""}
+              </label>
+              <input
+                type="text"
+                value={form.provider}
+                onChange={(e) => setForm({ ...form, provider: e.target.value })}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
+                placeholder={form.source === "api" ? "e.g. boatsetter, host name" : "shift_fleet"}
+                disabled={form.source === "manual"}
+                required={form.source === "api"}
+              />
+            </div>
+          </div>
 
           {/* Status & Featured */}
           <div className="grid grid-cols-2 gap-4">
