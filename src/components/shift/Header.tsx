@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "./Logo";
-import { User, Phone } from "lucide-react";
+import { User, Phone, MessageCircle } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import AuthModal from "./AuthModal";
 import { useAuth } from "@/context/AuthContext";
 import { useContact } from "@/context/ContactContext";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,7 @@ const Header = () => {
 
   const handleLogout = async () => {
     await logout();
+    toast("Peace out! You've been signed out ✌️", { duration: 2500, position: "top-center" });
     navigate("/");
   };
 
@@ -58,6 +60,14 @@ const Header = () => {
             >
               Contact Us
             </button>
+            {/* Mobile text/SMS button */}
+            <a
+              href="sms:+17868770975"
+              className="md:hidden flex h-8 w-8 items-center justify-center rounded-full bg-primary hover:bg-primary/80 transition-colors"
+              aria-label="Text us"
+            >
+              <MessageCircle className="h-4 w-4 text-primary-foreground" />
+            </a>
             {/* Mobile contact button - theme accent phone icon */}
             <button
               onClick={openContact}

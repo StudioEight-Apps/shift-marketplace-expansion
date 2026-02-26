@@ -159,16 +159,9 @@ const AuthModal = ({ isOpen, onClose, onSuccess, onGuestSubmit, defaultTab = "lo
     }
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-      onClick={handleOverlayClick}
     >
       <div className="relative w-full max-w-md mx-4 rounded-xl bg-card border border-border-subtle p-6 shadow-xl">
         {/* Close Button */}

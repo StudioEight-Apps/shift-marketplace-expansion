@@ -56,7 +56,10 @@ const YachtBookingCard = ({
       const endAmPm = endHour24 >= 12 ? "PM" : "AM";
 
       const yachtData: BookingYacht = {
+        id: listing.id,
         name: listing.title,
+        image: listing.image || listing.images?.[0] || "",
+        location: listing.location,
         date: selectedDate,
         startTime: "10:00 AM",
         endTime: `${endHour12}:00 ${endAmPm}`,

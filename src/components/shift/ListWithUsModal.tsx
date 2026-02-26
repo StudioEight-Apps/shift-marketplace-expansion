@@ -1,8 +1,7 @@
 import { useState, useRef } from "react";
 import { X, Home, Car, Ship, ArrowLeft, Send, CheckCircle2, ImagePlus, Trash2 } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useContact } from "@/context/ContactContext";
 import { notifyListWithUs } from "@/lib/notify";
@@ -53,6 +52,9 @@ const ListWithUsModal = () => {
   const [yachtLength, setYachtLength] = useState("");
   const [captainIncluded, setCaptainIncluded] = useState(true);
 
+  // iCal link (for future availability sync)
+  const [icalLink, setIcalLink] = useState("");
+
   // Photo upload
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
@@ -78,6 +80,7 @@ const ListWithUsModal = () => {
     setYachtName("");
     setYachtLength("");
     setCaptainIncluded(true);
+    setIcalLink("");
     setPhotos([]);
     setPhotoPreviews([]);
   };
@@ -121,21 +124,65 @@ const ListWithUsModal = () => {
     setPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Convert File to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Strip the data:...;base64, prefix
+        resolve(result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const uploadPhotos = async (): Promise<string[]> => {
-    if (!storage || photos.length === 0) return [];
+    if (photos.length === 0) return [];
+
     setUploadingPhotos(true);
     const urls: string[] = [];
+    const baseUrl = window.location.hostname === "localhost"
+      ? ""
+      : "https://adoring-ptolemy.vercel.app";
 
-    for (const photo of photos) {
-      const timestamp = Date.now();
-      const safeName = photo.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const storageRef = ref(storage, `list-with-us/${timestamp}_${safeName}`);
-      const snapshot = await uploadBytes(storageRef, photo);
-      const url = await getDownloadURL(snapshot.ref);
-      urls.push(url);
+    try {
+      for (const photo of photos) {
+        const timestamp = Date.now();
+        const safeName = photo.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const fileName = `list-with-us/${timestamp}_${safeName}`;
+        console.log(`[Upload] Starting: ${fileName} (${(photo.size / 1024).toFixed(0)} KB)`);
+
+        const base64Data = await fileToBase64(photo);
+
+        const res = await fetch(`${baseUrl}/api/upload-photo`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName,
+            contentType: photo.type || "image/jpeg",
+            data: base64Data,
+          }),
+        });
+
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`Upload API returned ${res.status}: ${errBody}`);
+        }
+
+        const { url } = await res.json();
+        console.log(`[Upload] Success: ${fileName}`);
+        urls.push(url);
+      }
+    } catch (error: any) {
+      console.error("[Upload] FAILED:", error);
+      toast.error("Photo upload failed. Submitting without photos.");
+      return [];
+    } finally {
+      setUploadingPhotos(false);
     }
 
-    setUploadingPhotos(false);
     return urls;
   };
 
@@ -169,6 +216,7 @@ const ListWithUsModal = () => {
         notes: notes.trim(),
         details,
         photos: photoUrls,
+        icalLink: icalLink.trim() || null,
         userId: user?.uid || null,
         createdAt: serverTimestamp(),
         status: "new",
@@ -194,6 +242,7 @@ const ListWithUsModal = () => {
           `Captain Included: ${captainIncluded ? "Yes" : "No"}`,
         ] : []),
         photoUrls.length > 0 ? `Photos: ${photoUrls.length} uploaded` : null,
+        icalLink.trim() ? `iCal Link: ${icalLink.trim()}` : null,
         notes.trim() ? `Notes: ${notes.trim()}` : null,
       ].filter(Boolean).join("\n");
 
@@ -376,6 +425,21 @@ const ListWithUsModal = () => {
                 </label>
               </>
             )}
+
+            {/* iCal Link */}
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1">iCal Link</label>
+              <input
+                type="url"
+                value={icalLink}
+                onChange={(e) => setIcalLink(e.target.value)}
+                className={inputClass}
+                placeholder="https://calendar.google.com/calendar/ical/..."
+              />
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                Optional — helps us sync availability from Airbnb, VRBO, or Google Calendar
+              </p>
+            </div>
 
             {/* Photo Upload Section */}
             <div className="border-t border-border-subtle pt-4">

@@ -7,6 +7,7 @@ import Footer from "@/components/shift/Footer";
 import HeroTagline from "@/components/shift/HeroTagline";
 import AboutSection from "@/components/shift/AboutSection";
 import WhyShiftSection from "@/components/shift/WhyShiftSection";
+import HowItWorks from "@/components/shift/HowItWorks";
 import { cities } from "@/components/shift/CitySelector";
 import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
@@ -272,9 +273,11 @@ const Index = () => {
         filtered = filtered.filter(l => (l.bedrooms ?? 0) >= quickFilters.beds!);
       }
 
-      // Brand filter (cars only)
+      // Brand filter (cars only) — normalize to handle hyphens/spaces (e.g. "Rolls-Royce" vs "Rolls Royce")
       if (quickFilters.brand.length > 0) {
-        filtered = filtered.filter(l => l.brand && quickFilters.brand.includes(l.brand));
+        const normalizeBrand = (b: string) => b.toLowerCase().replace(/[-\s]/g, "");
+        const normalizedFilterBrands = quickFilters.brand.map(normalizeBrand);
+        filtered = filtered.filter(l => l.brand && normalizedFilterBrands.includes(normalizeBrand(l.brand)));
       }
 
       // Body style filter (cars only)
@@ -522,6 +525,7 @@ const Index = () => {
         <>
           <AboutSection />
           <WhyShiftSection />
+          <HowItWorks />
         </>
       )}
 

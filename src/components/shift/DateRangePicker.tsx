@@ -52,6 +52,8 @@ const DateRangePicker = ({
       const nextStart = day;
       const nextEnd = endDate && endDate < nextStart ? null : endDate;
       onDateChange(nextStart, nextEnd);
+      // Auto-advance to end date selection so user picks check-out next
+      setActiveField("end");
       return;
     }
 
