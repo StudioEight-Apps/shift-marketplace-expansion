@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { differenceInDays, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useTrip } from "@/context/TripContext";
@@ -201,6 +201,18 @@ const BookingCard = ({
     }
   };
 
+  // Pending booking flag: when user logs in/signs up via AuthModal,
+  // React state for `user` hasn't updated yet. We set this flag and
+  // let a useEffect fire the submission once `user` is populated.
+  const [pendingBooking, setPendingBooking] = useState(false);
+
+  useEffect(() => {
+    if (pendingBooking && user) {
+      setPendingBooking(false);
+      handleBookingSubmit();
+    }
+  }, [pendingBooking, user]);
+
   const handleRequestToBook = () => {
     if (!user) {
       setShowAuthModal(true);
@@ -210,8 +222,9 @@ const BookingCard = ({
   };
 
   const handleAuthSuccess = () => {
-    // After successful login/signup, proceed with booking
-    handleBookingSubmit();
+    // Don't call handleBookingSubmit() directly — user state isn't updated yet.
+    // Set flag and let useEffect handle it once React re-renders with the new user.
+    setPendingBooking(true);
   };
 
   const handleGuestSubmit = (guestInfo: GuestInfo) => {

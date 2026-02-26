@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { differenceInDays, format } from "date-fns";
 import { X, Car, Anchor, Home } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -234,6 +234,15 @@ const MobileBookingSheet = ({
     }
   };
 
+  const [pendingBooking, setPendingBooking] = useState(false);
+
+  useEffect(() => {
+    if (pendingBooking && user) {
+      setPendingBooking(false);
+      handleBookingSubmit();
+    }
+  }, [pendingBooking, user]);
+
   const handleRequestToBook = () => {
     if (!user) {
       onClose();
@@ -244,7 +253,7 @@ const MobileBookingSheet = ({
   };
 
   const handleAuthSuccess = () => {
-    handleBookingSubmit();
+    setPendingBooking(true);
   };
 
   const handleGuestSubmit = (guestInfo: GuestInfo) => {

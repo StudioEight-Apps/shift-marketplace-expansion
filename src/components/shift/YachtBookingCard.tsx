@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useAuth, BookingRequestInput, BookingYacht, GuestInfo } from "@/context/AuthContext";
@@ -97,6 +97,15 @@ const YachtBookingCard = ({
     }
   };
 
+  const [pendingBooking, setPendingBooking] = useState(false);
+
+  useEffect(() => {
+    if (pendingBooking && user) {
+      setPendingBooking(false);
+      handleBookingSubmit();
+    }
+  }, [pendingBooking, user]);
+
   const handleRequestToBook = () => {
     if (!user) {
       setShowAuthModal(true);
@@ -106,7 +115,7 @@ const YachtBookingCard = ({
   };
 
   const handleAuthSuccess = () => {
-    handleBookingSubmit();
+    setPendingBooking(true);
   };
 
   const handleGuestSubmit = (guestInfo: GuestInfo) => {
