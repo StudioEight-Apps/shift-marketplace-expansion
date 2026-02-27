@@ -124,17 +124,30 @@ const ListWithUsModal = () => {
     setPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Convert File to base64
-  const fileToBase64 = (file: File): Promise<string> => {
+  // Compress image: resize to max 1600px wide, convert to JPEG, return base64 (no prefix)
+  const compressImage = (file: File, maxWidth = 1600, quality = 0.85): Promise<{ base64: string; contentType: string }> => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Strip the data:...;base64, prefix
-        resolve(result.split(",")[1]);
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round(height * (maxWidth / width));
+          width = maxWidth;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas not supported"));
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve({
+          base64: dataUrl.split(",")[1],
+          contentType: "image/jpeg",
+        });
       };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = URL.createObjectURL(file);
     });
   };
 
@@ -150,18 +163,19 @@ const ListWithUsModal = () => {
     try {
       for (const photo of photos) {
         const timestamp = Date.now();
-        const safeName = photo.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const safeName = photo.name.replace(/[^a-zA-Z0-9.-]/g, "_").replace(/\.\w+$/, ".jpg");
         const fileName = `list-with-us/${timestamp}_${safeName}`;
-        console.log(`[Upload] Starting: ${fileName} (${(photo.size / 1024).toFixed(0)} KB)`);
+        console.log(`[Upload] Starting: ${fileName} (${(photo.size / 1024).toFixed(0)} KB original)`);
 
-        const base64Data = await fileToBase64(photo);
+        const { base64: base64Data, contentType } = await compressImage(photo);
+        console.log(`[Upload] Compressed to ${(base64Data.length * 0.75 / 1024).toFixed(0)} KB`);
 
         const res = await fetch(`${baseUrl}/api/upload-photo`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fileName,
-            contentType: photo.type || "image/jpeg",
+            contentType,
             data: base64Data,
           }),
         });
