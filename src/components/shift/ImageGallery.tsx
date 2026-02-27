@@ -139,16 +139,17 @@ const ImageGallery = ({ images, title }: ImageGalleryProps) => {
       {/* Desktop: Grid Layout — adapts to number of unique images */}
       <div className="hidden md:block">
         {imageCount === 1 ? (
-          /* Single image — full width hero */
-          <div className="relative rounded-xl overflow-hidden cursor-pointer" style={{ height: "60vh", maxHeight: "520px", minHeight: "360px" }}
-            onClick={() => { setCurrentImageIndex(0); setIsModalOpen(true); }}
-          >
-            <img src={galleryImages[0]} alt={title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent dark:block hidden" />
-            <button onClick={(e) => { e.stopPropagation(); navigate("/"); }}
+          /* Single image — constrained to natural proportions, similar to hero in standard grid */
+          <div className="relative">
+            <button onClick={() => navigate("/")}
               className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors z-10">
               <ArrowLeft className="h-4 w-4" /><span className="text-sm font-medium">Back</span>
             </button>
+            <div className="mx-auto max-w-3xl rounded-xl overflow-hidden cursor-pointer aspect-[3/2]"
+              onClick={() => { setCurrentImageIndex(0); setIsModalOpen(true); }}
+            >
+              <img src={galleryImages[0]} alt={title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+            </div>
           </div>
         ) : imageCount === 2 ? (
           /* 2 images — hero left, 1 right */
