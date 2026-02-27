@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { X, Send, CheckCircle2, Phone, Calendar, MapPin, Users, Home, Car, Ship } from "lucide-react";
+import { X, Send, CheckCircle2, Phone, CalendarIcon, MapPin, Users, Home, Car, Ship } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useContact } from "@/context/ContactContext";
 import { notifyContact } from "@/lib/notify";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const CITIES = [
   "Miami, FL",
@@ -28,8 +31,10 @@ const ContactModal = () => {
   const [email, setEmail] = useState(user?.email || "");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
+  const [checkIn, setCheckIn] = useState<Date | undefined>();
+  const [checkOut, setCheckOut] = useState<Date | undefined>();
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const [checkOutOpen, setCheckOutOpen] = useState(false);
   const [needs, setNeeds] = useState<string[]>([]);
   const [groupSize, setGroupSize] = useState("");
   const [notes, setNotes] = useState("");
@@ -43,8 +48,8 @@ const ContactModal = () => {
     setEmail(user?.email || "");
     setPhone("");
     setCity("");
-    setCheckIn("");
-    setCheckOut("");
+    setCheckIn(undefined);
+    setCheckOut(undefined);
     setNeeds([]);
     setGroupSize("");
     setNotes("");
@@ -63,13 +68,16 @@ const ContactModal = () => {
     setSending(true);
 
     try {
+      const checkInStr = checkIn ? format(checkIn, "yyyy-MM-dd") : "";
+      const checkOutStr = checkOut ? format(checkOut, "yyyy-MM-dd") : "";
+
       const inquiryData = {
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
         city,
-        checkIn,
-        checkOut,
+        checkIn: checkInStr,
+        checkOut: checkOutStr,
         needs,
         groupSize: groupSize ? Number(groupSize) : null,
         message: notes.trim(),
@@ -85,7 +93,7 @@ const ContactModal = () => {
       const needsStr = needs.length > 0 ? needs.join(", ") : "Not specified";
       const fullMessage = [
         `City: ${city || "Not specified"}`,
-        `Dates: ${checkIn || "TBD"} → ${checkOut || "TBD"}`,
+        `Dates: ${checkInStr || "TBD"} → ${checkOutStr || "TBD"}`,
         `Needs: ${needsStr}`,
         `Group Size: ${groupSize || "Not specified"}`,
         notes.trim() ? `Notes: ${notes.trim()}` : "",
@@ -257,27 +265,57 @@ const ContactModal = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm text-muted-foreground mb-1">
-                    <Calendar className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />
+                    <CalendarIcon className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />
                     Check-in
                   </label>
-                  <input
-                    type="date"
-                    value={checkIn}
-                    onChange={(e) => setCheckIn(e.target.value)}
-                    className={inputClass}
-                  />
+                  <Popover open={checkInOpen} onOpenChange={setCheckInOpen}>
+                    <PopoverTrigger asChild>
+                      <button type="button" className={`${inputClass} text-left ${!checkIn ? "text-muted-foreground" : ""}`}>
+                        {checkIn ? format(checkIn, "MMM d, yyyy") : "Select date"}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start" avoidCollisions collisionPadding={16}>
+                      <Calendar
+                        mode="single"
+                        selected={checkIn}
+                        onSelect={(day) => {
+                          setCheckIn(day);
+                          setCheckInOpen(false);
+                          // Auto-open check-out if not set
+                          if (!checkOut) setTimeout(() => setCheckOutOpen(true), 150);
+                        }}
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <label className="block text-sm text-muted-foreground mb-1">
-                    <Calendar className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />
+                    <CalendarIcon className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />
                     Check-out
                   </label>
-                  <input
-                    type="date"
-                    value={checkOut}
-                    onChange={(e) => setCheckOut(e.target.value)}
-                    className={inputClass}
-                  />
+                  <Popover open={checkOutOpen} onOpenChange={setCheckOutOpen}>
+                    <PopoverTrigger asChild>
+                      <button type="button" className={`${inputClass} text-left ${!checkOut ? "text-muted-foreground" : ""}`}>
+                        {checkOut ? format(checkOut, "MMM d, yyyy") : "Select date"}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start" avoidCollisions collisionPadding={16}>
+                      <Calendar
+                        mode="single"
+                        selected={checkOut}
+                        onSelect={(day) => {
+                          setCheckOut(day);
+                          setCheckOutOpen(false);
+                        }}
+                        disabled={(date) =>
+                          date < (checkIn || new Date(new Date().setHours(0, 0, 0, 0)))
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
