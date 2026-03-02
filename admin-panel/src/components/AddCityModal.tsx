@@ -31,7 +31,7 @@ const AddCityModal = ({
   const [locationKey, setLocationKey] = useState("");
   const [hasYachts, setHasYachts] = useState(false);
   const [sharedWith, setSharedWith] = useState<string[]>([]);
-  const [sortOrder, setSortOrder] = useState(0);
+
   const [enabled, setEnabled] = useState(true);
 
   const isEditing = !!editCity;
@@ -44,7 +44,6 @@ const AddCityModal = ({
       setLocationKey(editCity.locationKey);
       setHasYachts(editCity.hasYachts);
       setSharedWith(editCity.sharedWith);
-      setSortOrder(editCity.sortOrder);
       setEnabled(editCity.enabled);
     } else {
       setName("");
@@ -52,7 +51,6 @@ const AddCityModal = ({
       setLocationKey("");
       setHasYachts(false);
       setSharedWith([]);
-      setSortOrder(existingCities.length);
       setEnabled(true);
     }
   }, [editCity, open, existingCities.length]);
@@ -95,7 +93,6 @@ const AddCityModal = ({
           locationKey: locationKey.trim(),
           hasYachts,
           sharedWith,
-          sortOrder,
           enabled,
         });
         toast.success(`${name} updated`);
@@ -118,7 +115,7 @@ const AddCityModal = ({
           locationKey: locationKey.trim(),
           hasYachts,
           sharedWith,
-          sortOrder,
+          sortOrder: 0,
           enabled,
         });
         toast.success(`${name} added`);
@@ -188,17 +185,6 @@ const AddCityModal = ({
             <p className="text-xs text-muted-foreground">
               Must match the location/market string used on inventory items
             </p>
-          </div>
-
-          {/* Sort Order */}
-          <div className="space-y-1.5">
-            <Label>Sort Order</Label>
-            <Input
-              type="number"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)}
-              min={0}
-            />
           </div>
 
           {/* Toggles */}

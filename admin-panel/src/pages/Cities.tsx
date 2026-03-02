@@ -178,9 +178,6 @@ const Cities = () => {
                   <th className="text-center px-4 py-3 font-medium text-muted-foreground">
                     Enabled
                   </th>
-                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">
-                    Order
-                  </th>
                   {canManage && (
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground">
                       Actions
@@ -257,9 +254,6 @@ const Cities = () => {
                           {city.enabled ? "Yes" : "No"}
                         </Badge>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-center text-muted-foreground">
-                      {city.sortOrder}
                     </td>
                     {canManage && (
                       <td className="px-4 py-3 text-right">
