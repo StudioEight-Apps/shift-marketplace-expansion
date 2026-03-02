@@ -145,7 +145,7 @@ const BookingRequestsTable = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">Loading bookings...</div>
+        <div className="text-muted-foreground">Loading bookings...</div>
       </div>
     );
   }
@@ -154,7 +154,7 @@ const BookingRequestsTable = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-white">Bookings</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Bookings</h1>
 
         {/* Filter Tabs */}
         <div className="flex gap-2">
@@ -165,7 +165,7 @@ const BookingRequestsTable = () => {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === status
                   ? "bg-primary text-black"
-                  : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
               }`}
             >
               {status}
@@ -177,7 +177,7 @@ const BookingRequestsTable = () => {
 
       {/* Bookings List */}
       {filteredRequests.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-muted-foreground">
           No {filter.toLowerCase()} bookings found
         </div>
       ) : (
@@ -195,8 +195,8 @@ const BookingRequestsTable = () => {
                   <div className="flex items-center gap-6">
                     {/* Customer */}
                     <div className="min-w-[180px]">
-                      <p className="text-white font-medium">{booking.customer.name}</p>
-                      <p className="text-gray-500 text-sm">{booking.customer.email}</p>
+                      <p className="text-foreground font-medium">{booking.customer.name}</p>
+                      <p className="text-muted-foreground text-sm">{booking.customer.email}</p>
                     </div>
 
                     {/* Items icons */}
@@ -222,12 +222,12 @@ const BookingRequestsTable = () => {
                     </div>
 
                     {/* Dates */}
-                    <div className="text-gray-400 text-sm">
+                    <div className="text-muted-foreground text-sm">
                       {getDateRange(booking)}
                     </div>
 
                     {/* Location */}
-                    <div className="text-gray-400 text-sm min-w-[120px]">
+                    <div className="text-muted-foreground text-sm min-w-[120px]">
                       {getLocation(booking) || "—"}
                     </div>
                   </div>
@@ -236,7 +236,7 @@ const BookingRequestsTable = () => {
                   <div className="flex items-center gap-6">
                     {/* Price */}
                     <div className="text-right min-w-[100px]">
-                      <p className="text-white font-semibold">${booking.grandTotal.toLocaleString()}</p>
+                      <p className="text-foreground font-semibold">${booking.grandTotal.toLocaleString()}</p>
                     </div>
 
                     {/* Status */}
@@ -245,7 +245,7 @@ const BookingRequestsTable = () => {
                     </div>
 
                     {/* Arrow */}
-                    <ChevronRight className="h-5 w-5 text-gray-500 group-hover:text-primary transition-colors" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                 </div>
               </div>
