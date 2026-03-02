@@ -36,15 +36,15 @@ export const FALLBACK_CITIES: CityDoc[] = [
   { id: "chicago", name: "Chicago", state: "IL", hasYachts: false, locationKey: "Chicago, IL", sharedWith: [], sortOrder: 2, enabled: true },
   { id: "connecticut", name: "Connecticut", state: "CT", hasYachts: false, locationKey: "Connecticut, CT", sharedWith: ["new-york", "new-jersey"], sortOrder: 3, enabled: true },
   { id: "fort-lauderdale", name: "Fort Lauderdale", state: "FL", hasYachts: true, locationKey: "Fort Lauderdale, FL", sharedWith: ["miami"], sortOrder: 4, enabled: true },
-  { id: "hamptons", name: "The Hamptons", state: "NY", hasYachts: true, locationKey: "The Hamptons, NY", sharedWith: [], sortOrder: 5, enabled: true },
-  { id: "las-vegas", name: "Las Vegas", state: "NV", hasYachts: false, locationKey: "Las Vegas, NV", sharedWith: [], sortOrder: 6, enabled: true },
-  { id: "los-angeles", name: "Los Angeles", state: "CA", hasYachts: true, locationKey: "Los Angeles, CA", sharedWith: [], sortOrder: 7, enabled: true },
-  { id: "miami", name: "Miami", state: "FL", hasYachts: true, locationKey: "Miami, FL", sharedWith: ["fort-lauderdale"], sortOrder: 8, enabled: true },
-  { id: "nashville", name: "Nashville", state: "TN", hasYachts: false, locationKey: "Nashville, TN", sharedWith: [], sortOrder: 9, enabled: true },
-  { id: "new-jersey", name: "New Jersey", state: "NJ", hasYachts: false, locationKey: "New Jersey, NJ", sharedWith: ["new-york", "connecticut"], sortOrder: 10, enabled: true },
-  { id: "new-york", name: "New York City", state: "NY", hasYachts: true, locationKey: "New York City, NY", sharedWith: ["connecticut", "new-jersey"], sortOrder: 11, enabled: true },
-  { id: "park-city", name: "Park City", state: "UT", hasYachts: false, locationKey: "Park City, UT", sharedWith: [], sortOrder: 12, enabled: true },
-  { id: "scottsdale", name: "Scottsdale", state: "AZ", hasYachts: false, locationKey: "Scottsdale, AZ", sharedWith: [], sortOrder: 13, enabled: true },
+  { id: "las-vegas", name: "Las Vegas", state: "NV", hasYachts: false, locationKey: "Las Vegas, NV", sharedWith: [], sortOrder: 5, enabled: true },
+  { id: "los-angeles", name: "Los Angeles", state: "CA", hasYachts: true, locationKey: "Los Angeles, CA", sharedWith: [], sortOrder: 6, enabled: true },
+  { id: "miami", name: "Miami", state: "FL", hasYachts: true, locationKey: "Miami, FL", sharedWith: ["fort-lauderdale"], sortOrder: 7, enabled: true },
+  { id: "nashville", name: "Nashville", state: "TN", hasYachts: false, locationKey: "Nashville, TN", sharedWith: [], sortOrder: 8, enabled: true },
+  { id: "new-jersey", name: "New Jersey", state: "NJ", hasYachts: false, locationKey: "New Jersey, NJ", sharedWith: ["new-york", "connecticut"], sortOrder: 9, enabled: true },
+  { id: "new-york", name: "New York City", state: "NY", hasYachts: true, locationKey: "New York City, NY", sharedWith: ["connecticut", "new-jersey"], sortOrder: 10, enabled: true },
+  { id: "park-city", name: "Park City", state: "UT", hasYachts: false, locationKey: "Park City, UT", sharedWith: [], sortOrder: 11, enabled: true },
+  { id: "scottsdale", name: "Scottsdale", state: "AZ", hasYachts: false, locationKey: "Scottsdale, AZ", sharedWith: [], sortOrder: 12, enabled: true },
+  { id: "hamptons", name: "The Hamptons", state: "NY", hasYachts: true, locationKey: "The Hamptons, NY", sharedWith: [], sortOrder: 13, enabled: true },
 ];
 
 // ============================================
@@ -59,7 +59,7 @@ export const subscribeToCities = (
     return () => {};
   }
 
-  const q = query(collection(db, "cities"), orderBy("sortOrder", "asc"));
+  const q = query(collection(db, "cities"), orderBy("name", "asc"));
 
   const unsubscribe = onSnapshot(
     q,
