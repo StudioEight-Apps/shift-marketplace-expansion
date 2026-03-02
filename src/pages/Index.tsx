@@ -8,7 +8,7 @@ import HeroTagline from "@/components/shift/HeroTagline";
 import AboutSection from "@/components/shift/AboutSection";
 import WhyShiftSection from "@/components/shift/WhyShiftSection";
 import HowItWorks from "@/components/shift/HowItWorks";
-import { cities } from "@/components/shift/CitySelector";
+import { useCities } from "@/context/CitiesContext";
 import SearchPill from "@/components/shift/SearchPill";
 import AssetTypeSelector from "@/components/shift/AssetTypeSelector";
 import QuickFilters, { type FilterState } from "@/components/shift/QuickFilters";
@@ -48,18 +48,6 @@ const allSortLabels: Record<SortOption, string> = {
   "size-low": "Size: Smallest First",
 };
 
-// Map city IDs to location strings used in listings data
-const cityLocationMap: Record<string, string> = {
-  "miami": "Miami, FL",
-  "los-angeles": "Los Angeles, CA",
-  "new-york": "New York City, NY",
-  "las-vegas": "Las Vegas, NV",
-  "aspen": "Aspen, CO",
-  "chicago": "Chicago, IL",
-  "nashville": "Nashville, TN",
-  "hamptons": "The Hamptons, NY",
-};
-
 // Get popular listing titles by asset type
 const getPopularHeading = (type: AssetType) => {
   return `Popular ${type}`;
@@ -68,6 +56,7 @@ const getPopularHeading = (type: AssetType) => {
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { cities, getCityLocationKeys } = useCities();
   const { cityId: searchCityId, startDate, endDate, setCityId, setSearchDates, hasDates } = useSearch();
   const [selectedCityId, setSelectedCityId] = useState(searchCityId || "");
   const [selectedType, setSelectedType] = useState<AssetType>("Stays");
@@ -215,10 +204,10 @@ const Index = () => {
   const filteredListings = useMemo(() => {
     let filtered = allListingsForType;
 
-    // Filter by city
-    const locationString = cityLocationMap[selectedCityId];
-    if (locationString) {
-      filtered = filtered.filter(l => l.location === locationString);
+    // Filter by city (includes shared-inventory cities)
+    const locationKeys = getCityLocationKeys(selectedCityId);
+    if (locationKeys.length > 0) {
+      filtered = filtered.filter(l => locationKeys.includes(l.location));
     }
 
     // Filter by availability (if dates selected)
@@ -310,14 +299,14 @@ const Index = () => {
     }
 
     return filtered;
-  }, [selectedCityId, allListingsForType, hasDates, startDate, endDate, villas, cars, yachts, quickFilters, sortBy]);
+  }, [selectedCityId, getCityLocationKeys, allListingsForType, hasDates, startDate, endDate, villas, cars, yachts, quickFilters, sortBy]);
 
   // Popular listings (show only featured listings, filtered by city, up to 8)
   const popularListings = useMemo(() => {
     let popular = allListingsForType.filter(l => l.badges.includes("Guest Favorite"));
-    const locationString = cityLocationMap[selectedCityId];
-    if (locationString) {
-      popular = popular.filter(l => l.location === locationString);
+    const locationKeys = getCityLocationKeys(selectedCityId);
+    if (locationKeys.length > 0) {
+      popular = popular.filter(l => locationKeys.includes(l.location));
     }
     let result = popular.slice(0, 8);
     // Apply sorting to popular listings too
@@ -333,7 +322,7 @@ const Index = () => {
       });
     }
     return result;
-  }, [allListingsForType, selectedCityId, sortBy]);
+  }, [allListingsForType, selectedCityId, getCityLocationKeys, sortBy]);
 
   // Get sort options for current asset type
   const currentSortOptions = sortOptionsForType[selectedType];

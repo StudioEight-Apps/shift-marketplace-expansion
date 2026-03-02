@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cities, type City } from "./CitySelector";
+import { useCities } from "@/context/CitiesContext";
 import type { DateRange } from "react-day-picker";
 
 type AssetType = "Stays" | "Cars" | "Yachts";
@@ -32,10 +32,11 @@ const SearchPill = ({
   onDateChange,
   onSearch,
 }: SearchPillProps) => {
+  const { cities } = useCities();
   const [cityOpen, setCityOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [displayMonth, setDisplayMonth] = useState<Date>(startDate || new Date());
-  
+
   const selectedCity = cities.find(c => c.id === selectedCityId);
   const isSingleDayMode = selectedType === "Yachts";
 

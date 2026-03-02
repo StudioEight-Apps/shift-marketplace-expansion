@@ -473,13 +473,24 @@ export const deleteYacht = async (id: string) => {
 
 import { Listing } from "@/components/shift/ListingCard";
 
+/** Deterministic rating between 4.7–4.9 based on listing ID */
+function getDeterministicRating(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = ((hash << 5) - hash) + id.charCodeAt(i);
+    hash |= 0;
+  }
+  const options = [4.7, 4.8, 4.9];
+  return options[Math.abs(hash) % options.length];
+}
+
 export const villaToListing = (villa: Villa): Listing => ({
   id: villa.id,
   title: villa.name,
   location: villa.location,
   guests: villa.maxGuests,
   bedrooms: villa.bedrooms,
-  rating: 0, // No ratings yet
+  rating: getDeterministicRating(villa.id),
   price: villa.pricePerNight,
   cleaningFee: villa.cleaningFee || 0,
   depositAmount: villa.depositAmount || 0,
@@ -500,7 +511,7 @@ export const carToListing = (car: Car): Listing => ({
   seats: car.seats,
   bodyStyle: car.bodyStyle,
   power: car.power,
-  rating: 0, // No ratings yet
+  rating: getDeterministicRating(car.id),
   price: car.pricePerDay,
   depositAmount: car.depositAmount || 0,
   priceUnit: "per day",
@@ -517,7 +528,7 @@ export const yachtToListing = (yacht: Yacht): Listing => ({
   location: yacht.location,
   guests: yacht.maxGuests,
   length: yacht.length,
-  rating: 0, // No ratings yet
+  rating: getDeterministicRating(yacht.id),
   price: yacht.pricePerHour,
   depositAmount: yacht.depositAmount || 0,
   priceUnit: "per hour",

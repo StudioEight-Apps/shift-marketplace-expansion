@@ -83,6 +83,7 @@ export interface BookingRequest {
   grandTotal: number;
   notes: BookingNote[];
   activityLog: ActivityLogEntry[];
+  deletedAt?: Date | null;
 }
 
 export interface UserProfile {

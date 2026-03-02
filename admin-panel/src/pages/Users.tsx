@@ -1,11 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, query, doc, deleteDoc, where, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, doc, deleteDoc, updateDoc, Timestamp, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { hasPermission, maskEmail, maskPhone } from "@/lib/permissions";
 import { formatDate, formatPrice } from "@/lib/booking-utils";
-import { Search, MoreHorizontal, ChevronRight, Trash2, AlertTriangle } from "lucide-react";
+import { Search, MoreHorizontal, ChevronRight, Trash2, AlertTriangle, Download, RotateCcw } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 
@@ -58,6 +59,7 @@ interface FirestoreUser {
   createdAt: Date;
   notes: { text: string; author: string; timestamp: Date }[];
   bookings: string[];
+  deletedAt?: Date | null;
 }
 
 const Users = () => {
@@ -71,6 +73,8 @@ const Users = () => {
   const [deleteBookingWarnings, setDeleteBookingWarnings] = useState<string[]>([]);
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const navigate = useNavigate();
   const { role } = useAuth();
@@ -107,6 +111,7 @@ const Users = () => {
                 })
               ) || [],
             bookings: data.bookings || [],
+            deletedAt: data.deletedAt?.toDate() || null,
           };
         });
         setUsers(userList);
@@ -123,9 +128,52 @@ const Users = () => {
     return () => unsubscribe();
   }, []);
 
+  // Separate active vs deleted
+  const activeUsers = useMemo(() => users.filter((u) => !u.deletedAt), [users]);
+  const deletedUsers = useMemo(() => users.filter((u) => !!u.deletedAt), [users]);
+
+  // Soft delete / restore
+  const softDeleteUser = async (uid: string) => {
+    await updateDoc(doc(db, "users", uid), { deletedAt: Timestamp.now() });
+    toast.success("User moved to recently deleted");
+  };
+  const restoreUser = async (uid: string) => {
+    await updateDoc(doc(db, "users", uid), { deletedAt: null });
+    toast.success("User restored");
+  };
+  const permanentDeleteUser = async (uid: string) => {
+    if (!window.confirm("Permanently delete this user? This cannot be undone.")) return;
+    await deleteDoc(doc(db, "users", uid));
+    toast.success("User permanently deleted");
+  };
+
+  // CSV export
+  const downloadCSV = () => {
+    let csv = "Name,Email,Phone,Trips,Lifetime Value,Last Trip,Joined\n";
+    activeUsers.forEach((u) => {
+      const row = [
+        `"${u.name.replace(/"/g, '""')}"`,
+        u.email,
+        u.phone || "",
+        u.totalTrips,
+        u.lifetimeValue,
+        u.lastTripDate ? format(u.lastTripDate, "yyyy-MM-dd") : "",
+        format(u.createdAt, "yyyy-MM-dd"),
+      ];
+      csv += row.join(",") + "\n";
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `users-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Filter by search term and sort
   const filteredAndSortedUsers = useMemo(() => {
-    let result = users.filter((u) => {
+    let result = activeUsers.filter((u) => {
       const searchLower = search.toLowerCase();
       return (
         search === "" ||
@@ -209,13 +257,13 @@ const Users = () => {
     setDeleteChecking(false);
   };
 
-  // Actually delete the user
+  // Soft-delete the user (moves to Recently Deleted)
   const handleDeleteUser = async () => {
     if (!deleteUser) return;
     setDeleting(true);
     try {
-      await deleteDoc(doc(db, "users", deleteUser.uid));
-      toast.success(`${deleteUser.name} has been deleted`);
+      await updateDoc(doc(db, "users", deleteUser.uid), { deletedAt: Timestamp.now() });
+      toast.success(`${deleteUser.name} moved to recently deleted`);
       setDeleteUser(null);
       setDeleteConfirmed(false);
     } catch (err) {
@@ -245,6 +293,29 @@ const Users = () => {
               className="pl-10"
             />
           </div>
+          <button
+            onClick={downloadCSV}
+            className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </button>
+          <button
+            onClick={() => setShowDeleted(!showDeleted)}
+            className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+              showDeleted
+                ? "border-red-500/30 bg-red-500/10 text-red-500"
+                : "border-border bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Deleted
+            {deletedUsers.length > 0 && (
+              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-500">
+                {deletedUsers.length}
+              </span>
+            )}
+          </button>
           <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Sort by..." />
@@ -301,7 +372,7 @@ const Users = () => {
               ) : filteredAndSortedUsers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                    {users.length === 0 ? "No users yet" : "No users match your search"}
+                    {activeUsers.length === 0 ? "No users yet" : "No users match your search"}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -387,6 +458,64 @@ const Users = () => {
             </TableBody>
           </Table>
         </div>
+        {/* Recently Deleted Users */}
+        {showDeleted && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-red-500" />
+              Recently Deleted
+              <span className="text-sm font-normal text-muted-foreground">({deletedUsers.length})</span>
+            </h2>
+            {deletedUsers.length === 0 ? (
+              <div className="rounded-lg border border-border bg-card py-8 text-center text-sm text-muted-foreground">
+                No deleted users
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-card">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Deleted</TableHead>
+                      <TableHead className="w-[180px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {deletedUsers.map((user) => (
+                      <TableRow key={user.uid}>
+                        <TableCell className="font-medium text-foreground/60">{user.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {canViewPii ? user.email : maskEmail(user.email)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {user.deletedAt ? formatDistanceToNow(user.deletedAt, { addSuffix: true }) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => restoreUser(user.uid)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors border border-green-500/20"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Restore
+                            </button>
+                            <button
+                              onClick={() => permanentDeleteUser(user.uid)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors border border-red-500/20"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Delete User Confirmation Dialog */}

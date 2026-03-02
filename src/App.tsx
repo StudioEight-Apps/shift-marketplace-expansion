@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
+import { CitiesProvider } from "./context/CitiesContext";
 import { SearchProvider } from "./context/SearchContext";
 import { ContactProvider } from "./context/ContactContext";
 import ContactModal from "./components/shift/ContactModal";
@@ -22,6 +23,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
+        <CitiesProvider>
         <SearchProvider>
           <ContactProvider>
             <TooltipProvider>
@@ -43,6 +45,7 @@ const App = () => (
             </TooltipProvider>
           </ContactProvider>
         </SearchProvider>
+        </CitiesProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

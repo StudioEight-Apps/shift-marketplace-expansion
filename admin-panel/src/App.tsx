@@ -10,6 +10,7 @@ import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Inventory from "./pages/Inventory";
 import Inquiries from "./pages/Inquiries";
+import Cities from "./pages/Cities";
 import Import from "./pages/Import";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -61,6 +62,7 @@ const AppRoutes = () => {
         <Route path="users/:id" element={<UserDetail />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="inquiries" element={<Inquiries />} />
+        <Route path="cities" element={<Cities />} />
         <Route path="import" element={<Import />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -4,6 +4,7 @@ import PhotoGrid from "./PhotoGrid";
 import { Villa, addVilla, updateVilla } from "@/lib/listings";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
+import { subscribeToCities, getMarketOptions } from "@/lib/cities";
 
 interface AddVillaModalProps {
   villa: Villa | null;
@@ -16,22 +17,14 @@ const AMENITIES_OPTIONS = [
   "Concierge", "Security", "Dock", "Helipad"
 ];
 
-const MARKET_OPTIONS = [
-  "Miami, FL",
-  "Los Angeles, CA",
-  "New York City, NY",
-  "Las Vegas, NV",
-  "Scottsdale, AZ",
-  "Aspen, CO",
-  "Austin, TX",
-  "Chicago, IL",
-  "Nashville, TN",
-  "The Hamptons, NY",
-  "Park City, UT"
-];
-
 const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
   const isEditing = !!villa;
+
+  const [marketOptions, setMarketOptions] = useState<string[]>([]);
+  useEffect(() => {
+    const unsub = subscribeToCities((cities) => setMarketOptions(getMarketOptions(cities)));
+    return () => unsub();
+  }, []);
 
   const [form, setForm] = useState({
     name: villa?.name || "",
@@ -405,7 +398,7 @@ const AddVillaModal = ({ villa, onClose }: AddVillaModalProps) => {
               className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               required
             >
-              {MARKET_OPTIONS.map((market) => (
+              {marketOptions.map((market) => (
                 <option key={market} value={market}>{market}</option>
               ))}
             </select>

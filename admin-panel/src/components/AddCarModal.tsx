@@ -4,6 +4,7 @@ import PhotoGrid from "./PhotoGrid";
 import { Car, addCar, updateCar } from "@/lib/listings";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
+import { subscribeToCities, getMarketOptions } from "@/lib/cities";
 
 interface AddCarModalProps {
   car: Car | null;
@@ -41,22 +42,14 @@ const BRANDS: BrandOption[] = [
 
 const BODY_STYLES = ["SUV", "Sedan", "Coupe", "Convertible"];
 
-const MARKET_OPTIONS = [
-  "Miami, FL",
-  "Los Angeles, CA",
-  "New York City, NY",
-  "Las Vegas, NV",
-  "Scottsdale, AZ",
-  "Aspen, CO",
-  "Austin, TX",
-  "Chicago, IL",
-  "Nashville, TN",
-  "The Hamptons, NY",
-  "Park City, UT"
-];
-
 const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
   const isEditing = !!car;
+
+  const [marketOptions, setMarketOptions] = useState<string[]>([]);
+  useEffect(() => {
+    const unsub = subscribeToCities((cities) => setMarketOptions(getMarketOptions(cities)));
+    return () => unsub();
+  }, []);
 
   const [form, setForm] = useState({
     name: car?.name || "",
@@ -303,7 +296,7 @@ const AddCarModal = ({ car, onClose }: AddCarModalProps) => {
               className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               required
             >
-              {MARKET_OPTIONS.map((market) => (
+              {marketOptions.map((market) => (
                 <option key={market} value={market}>{market}</option>
               ))}
             </select>

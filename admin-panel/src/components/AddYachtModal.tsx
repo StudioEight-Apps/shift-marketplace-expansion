@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Upload, Trash2 } from "lucide-react";
 import PhotoGrid from "./PhotoGrid";
 import { Yacht, addYacht, updateYacht } from "@/lib/listings";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
+import { subscribeToCities, getMarketOptions } from "@/lib/cities";
 
 interface AddYachtModalProps {
   yacht: Yacht | null;
@@ -15,22 +16,14 @@ const AMENITIES_OPTIONS = [
   "Open Bar", "Sound System", "DJ Setup", "Tender", "Kayaks", "Paddleboards"
 ];
 
-const MARKET_OPTIONS = [
-  "Miami, FL",
-  "Los Angeles, CA",
-  "New York City, NY",
-  "Las Vegas, NV",
-  "Scottsdale, AZ",
-  "Aspen, CO",
-  "Austin, TX",
-  "Chicago, IL",
-  "Nashville, TN",
-  "The Hamptons, NY",
-  "Park City, UT"
-];
-
 const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
   const isEditing = !!yacht;
+
+  const [marketOptions, setMarketOptions] = useState<string[]>([]);
+  useEffect(() => {
+    const unsub = subscribeToCities((cities) => setMarketOptions(getMarketOptions(cities)));
+    return () => unsub();
+  }, []);
 
   const [form, setForm] = useState({
     name: yacht?.name || "",
@@ -203,7 +196,7 @@ const AddYachtModal = ({ yacht, onClose }: AddYachtModalProps) => {
               className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground"
               required
             >
-              {MARKET_OPTIONS.map((market) => (
+              {marketOptions.map((market) => (
                 <option key={market} value={market}>{market}</option>
               ))}
             </select>

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, MessageSquare, Upload, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Package, MessageSquare, Upload, MapPin, LogOut } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -12,6 +12,7 @@ const navItems = [
   { label: "Inquiries", path: "/inquiries", icon: MessageSquare },
   { label: "Users", path: "/users", icon: Users },
   { label: "Inventory", path: "/inventory", icon: Package },
+  { label: "Cities", path: "/cities", icon: MapPin },
   { label: "Import", path: "/import", icon: Upload },
 ];
 
@@ -26,7 +27,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar overflow-y-auto">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-6">
         <img src={theme === "dark" ? shiftLogoLight : shiftLogoDark} alt="Shift" className="h-8 w-auto" />

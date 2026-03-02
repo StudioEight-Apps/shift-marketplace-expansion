@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, query } from "firebase/firestore";
+import { collection, onSnapshot, query, doc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { hasPermission, maskEmail } from "@/lib/permissions";
@@ -11,6 +11,7 @@ import {
   getActiveTotal,
   getStatusVariant,
 } from "@/lib/booking-utils";
+import { format, formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -20,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Home, Car, Ship, Search, ChevronRight } from "lucide-react";
+import { Home, Car, Ship, Search, ChevronRight, Download, Trash2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BookingRequest, BookingStatus, ItemStatus } from "@/lib/types";
 
@@ -125,6 +126,7 @@ const Dashboard = () => {
             grandTotal: data.grandTotal || 0,
             notes: data.notes || [],
             activityLog: data.activityLog || [],
+            deletedAt: data.deletedAt?.toDate() || null,
           };
         });
         setBookings(requests);
@@ -141,8 +143,60 @@ const Dashboard = () => {
     return () => unsubscribe();
   }, []);
 
+  const [showDeleted, setShowDeleted] = useState(false);
+
+  // Separate active vs deleted
+  const activeBookings = useMemo(() => bookings.filter((b) => !b.deletedAt), [bookings]);
+  const deletedBookings = useMemo(() => bookings.filter((b) => !!b.deletedAt), [bookings]);
+
+  // Soft delete / restore
+  const softDeleteBooking = async (id: string) => {
+    await updateDoc(doc(db, "bookingRequests", id), { deletedAt: Timestamp.now() });
+  };
+  const restoreBooking = async (id: string) => {
+    await updateDoc(doc(db, "bookingRequests", id), { deletedAt: null });
+  };
+  const permanentDeleteBooking = async (id: string) => {
+    if (!window.confirm("Permanently delete this booking? This cannot be undone.")) return;
+    await deleteDoc(doc(db, "bookingRequests", id));
+  };
+
+  // CSV export
+  const downloadCSV = () => {
+    let csv = "Booking ID,Customer,Email,Phone,Items,Status,Total,Location,Date Range,Created\n";
+    activeBookings.forEach((b) => {
+      const items: string[] = [];
+      if (b.villa) items.push("Villa: " + b.villa.name);
+      if (b.car) items.push("Car: " + b.car.name);
+      if (b.yacht) items.push("Yacht: " + b.yacht.name);
+      const status = deriveBookingStatus(b);
+      const location = getLocation(b);
+      const dateRange = getDateRange(b);
+      const row = [
+        b.id,
+        `"${b.customer.name.replace(/"/g, '""')}"`,
+        b.customer.email,
+        b.customer.phone || "",
+        `"${items.join("; ")}"`,
+        status,
+        getActiveTotal(b),
+        `"${location}"`,
+        `"${dateRange}"`,
+        format(b.createdAt, "yyyy-MM-dd HH:mm"),
+      ];
+      csv += row.join(",") + "\n";
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bookings-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const filteredBookings = useMemo(() => {
-    let result = bookings.filter((b) => {
+    let result = activeBookings.filter((b) => {
       const status = deriveBookingStatus(b);
       if (statusFilter !== "All" && status !== statusFilter) return false;
       if (search) {
@@ -170,12 +224,12 @@ const Dashboard = () => {
 
   const stats = useMemo(() => {
     const counts: Record<string, number> = {
-      total: bookings.length,
+      total: activeBookings.length,
       Pending: 0, Approved: 0, Partial: 0, Completed: 0, Declined: 0,
     };
-    bookings.forEach((b) => { counts[deriveBookingStatus(b)]++; });
+    activeBookings.forEach((b) => { counts[deriveBookingStatus(b)]++; });
     return counts;
-  }, [bookings]);
+  }, [activeBookings]);
 
   const getDateRange = (b: BookingRequest) => {
     const dates: Date[] = [];
@@ -239,6 +293,30 @@ const Dashboard = () => {
             className="border-border bg-background pl-9"
           />
         </div>
+        <button
+          onClick={downloadCSV}
+          className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Export CSV
+        </button>
+        <button
+          onClick={() => setShowDeleted(!showDeleted)}
+          className={cn(
+            "flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+            showDeleted
+              ? "border-red-500/30 bg-red-500/10 text-red-500"
+              : "border-border bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"
+          )}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Deleted
+          {deletedBookings.length > 0 && (
+            <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-500">
+              {deletedBookings.length}
+            </span>
+          )}
+        </button>
         <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
           <SelectTrigger className="w-44 border-border bg-background text-foreground">
             <SelectValue />
@@ -292,7 +370,7 @@ const Dashboard = () => {
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="rounded-xl border border-border bg-card py-12 text-center text-sm text-muted-foreground">
-            {bookings.length === 0 ? "No bookings yet" : "No bookings match your search"}
+            {activeBookings.length === 0 ? "No bookings yet" : "No bookings match your search"}
           </div>
         ) : (
           filteredBookings.map((booking) => {
@@ -379,6 +457,74 @@ const Dashboard = () => {
           })
         )}
       </div>
+
+      {/* Recently Deleted */}
+      {showDeleted && (
+        <div className="mt-6 space-y-2">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Trash2 className="h-4 w-4 text-red-500" />
+            Recently Deleted
+            <span className="text-sm font-normal text-muted-foreground">({deletedBookings.length})</span>
+          </h2>
+          {deletedBookings.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card py-8 text-center text-sm text-muted-foreground">
+              No deleted bookings
+            </div>
+          ) : (
+            deletedBookings.map((booking) => (
+              <div
+                key={booking.id}
+                className="flex items-center gap-4 rounded-xl border border-border/50 bg-card/50 px-5 py-4"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground/60">{booking.customer.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {showPII ? booking.customer.email : maskEmail(booking.customer.email)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {booking.villa && (
+                    <div className="flex items-center gap-1.5 rounded-md bg-secondary/50 px-2 py-1">
+                      <ItemIcon type="villa" className="text-muted-foreground/50" />
+                      <span className="text-xs text-muted-foreground/50">Villa</span>
+                    </div>
+                  )}
+                  {booking.car && (
+                    <div className="flex items-center gap-1.5 rounded-md bg-secondary/50 px-2 py-1">
+                      <ItemIcon type="car" className="text-muted-foreground/50" />
+                      <span className="text-xs text-muted-foreground/50">Car</span>
+                    </div>
+                  )}
+                  {booking.yacht && (
+                    <div className="flex items-center gap-1.5 rounded-md bg-secondary/50 px-2 py-1">
+                      <ItemIcon type="yacht" className="text-muted-foreground/50" />
+                      <span className="text-xs text-muted-foreground/50">Yacht</span>
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {booking.deletedAt ? formatDistanceToNow(booking.deletedAt, { addSuffix: true }) : "—"}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => restoreBooking(booking.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors border border-green-500/20"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Restore
+                  </button>
+                  <button
+                    onClick={() => permanentDeleteBooking(booking.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors border border-red-500/20"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };

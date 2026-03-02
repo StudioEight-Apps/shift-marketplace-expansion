@@ -36,6 +36,7 @@ import { useAuth } from "@/context/AuthContext";
 import { hasPermission } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/booking-utils";
+import { subscribeToCities, getMarketOptions } from "@/lib/cities";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
@@ -70,19 +71,7 @@ type SourceFilter = "all" | "shift_fleet" | "external";
 type SortOption = "name_asc" | "name_desc" | "price_asc" | "price_desc" | "newest" | "oldest";
 type AnyListing = Villa | CarType | Yacht;
 
-const MARKET_OPTIONS = [
-  "Aspen, CO",
-  "Austin, TX",
-  "Chicago, IL",
-  "Las Vegas, NV",
-  "Los Angeles, CA",
-  "Miami, FL",
-  "Nashville, TN",
-  "New York City, NY",
-  "Park City, UT",
-  "Scottsdale, AZ",
-  "The Hamptons, NY",
-];
+// MARKET_OPTIONS loaded dynamically from Firestore cities collection
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -151,6 +140,13 @@ function getRawPrice(listing: AnyListing, tab: TabType): number {
 // ---------------------------------------------------------------------------
 const Inventory = () => {
   const { role } = useAuth();
+
+  // Dynamic market options from Firestore cities
+  const [marketOptions, setMarketOptions] = useState<string[]>([]);
+  useEffect(() => {
+    const unsub = subscribeToCities((cities) => setMarketOptions(getMarketOptions(cities)));
+    return () => unsub();
+  }, []);
 
   // Data
   const [villas, setVillas] = useState<Villa[]>([]);
@@ -449,7 +445,7 @@ const Inventory = () => {
               )}
             >
               <option value="all">All Cities</option>
-              {MARKET_OPTIONS.map((city) => (
+              {marketOptions.map((city) => (
                 <option key={city} value={city}>{city}</option>
               ))}
             </select>
